@@ -1,0 +1,14 @@
+const mongoose = require('mongoose');
+
+// Connessione a MongoDB Atlas tramite Mongoose
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI);
+    console.log(`MongoDB connesso: ${conn.connection.host}`);
+  } catch (err) {
+    console.error(`Errore connessione MongoDB: ${err.message}`);
+    process.exit(1);
+  }
+};
+
+module.exports = connectDB;
