@@ -35,7 +35,19 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Route autenticazione
-app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth',  require('./routes/auth'));
+
+// Route utenti
+app.use('/api/users',      require('./routes/users'));
+
+// Route challenge
+app.use('/api/challenges', require('./routes/challenges'));
+
+// Route War Room
+app.use('/api/warroom',      require('./routes/warroom'));
+
+// Route leaderboard
+app.use('/api/leaderboard',  require('./routes/leaderboard'));
 
 // Route base — health check
 app.get('/', (req, res) => {
