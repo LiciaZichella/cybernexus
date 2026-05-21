@@ -1,12 +1,25 @@
 require('dotenv').config();
 
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
+const http     = require('http');
+const express  = require('express');
+const cors     = require('cors');
+const helmet   = require('helmet');
 const rateLimit = require('express-rate-limit');
-const connectDB = require('./config/db');
+const { Server } = require('socket.io');
+const connectDB      = require('./config/db');
+const warroomSocket  = require('./sockets/warroom');
 
-const app = express();
+const app        = express();
+const httpServer = http.createServer(app);
+
+// Socket.IO montato sull'HTTP server con CORS allineato al frontend
+const io = new Server(httpServer, {
+  cors: {
+    origin:      process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+    credentials: true,
+  },
+});
+warroomSocket(io);
 
 // Connessione al database
 connectDB();
@@ -61,6 +74,6 @@ process.on('unhandledRejection', (err) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server avviato sulla porta ${PORT}`);
 });
