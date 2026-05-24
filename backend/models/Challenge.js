@@ -92,9 +92,4 @@ ChallengeSchema.virtual('solveCount').get(function () {
   return this.solvedBy.length;
 });
 
-// Metodo d'istanza: verifica se la flag inviata è corretta
-ChallengeSchema.methods.checkFlag = function (submitted) {
-  return this.flag === submitted.trim();
-};
-
 module.exports = mongoose.model('Challenge', ChallengeSchema);

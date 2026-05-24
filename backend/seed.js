@@ -44,7 +44,7 @@ const challengeData = [
     category:    'Web',
     difficulty:  'Easy',
     points:      100,
-    flag:        'cybernexus{c00k1e_m0nst3r_found}',
+    flag:        'FLAG{c00k1e_m0nst3r_found}',
     hints: [
       { text: 'Apri gli strumenti sviluppatore e guarda la scheda Application.', cost: 0 },
       { text: 'Cerca un cookie con un nome insolito.', cost: 10 },
@@ -57,7 +57,7 @@ const challengeData = [
     category:    'Crypto',
     difficulty:  'Medium',
     points:      250,
-    flag:        'cybernexus{julius_cAeS3r_easy}',
+    flag:        'FLAG{julius_cAeS3r_easy}',
     hints: [
       { text: 'Giulio Cesare usava uno shift fisso sulle lettere.', cost: 0 },
       { text: 'Prova uno shift di 12.', cost: 25 },
@@ -70,7 +70,7 @@ const challengeData = [
     category:    'Forensics',
     difficulty:  'Hard',
     points:      400,
-    flag:        'cybernexus{m3m0ry_dump_4n4lys1s}',
+    flag:        'FLAG{m3m0ry_dump_4n4lys1s}',
     hints: [
       { text: 'Usa strings per estrarre le stringhe leggibili dal dump.', cost: 0 },
       { text: "Filtra l'output cercando il prefisso cybernexus{.", cost: 40 },
