@@ -1,0 +1,278 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ── Variabili scoped — non inquinano le altre pagine ── */
+.admin-app {
+  --bg:#09090f;--bg2:#0d0d18;--bg3:#121220;--bg4:#16162a;
+  --border:rgba(124,111,234,0.08);--border2:rgba(124,111,234,0.16);
+  --text1:#e8e6ff;--text2:#4a4870;--text3:#252540;
+  --v:#7C6FEA;--v1:rgba(124,111,234,0.18);--v2:rgba(124,111,234,0.10);--v3:rgba(124,111,234,0.06);
+  --sidebar-w:210px;
+  height:100vh;overflow:hidden;font-family:'DM Sans',sans-serif;font-size:14px;
+  background:var(--bg);color:var(--text1);
+}
+[data-theme="light"] .admin-app {
+  --bg:#f5f5f8;--bg2:#ffffff;--bg3:#f0f0f6;--bg4:#eaeaf4;
+  --border:rgba(124,111,234,0.10);--border2:rgba(124,111,234,0.20);
+  --text1:#1a1a2e;--text2:#b0aed0;--text3:#d5d3e8;
+  --v1:rgba(124,111,234,0.10);--v2:rgba(124,111,234,0.06);--v3:rgba(124,111,234,0.03);
+}
+.admin-app *{box-sizing:border-box;margin:0;padding:0}
+
+@keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes slideInRight{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+@keyframes liveBlip{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.6);opacity:.5}}
+@keyframes rowFresh{0%{background:var(--v2)}100%{background:transparent}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.admin-app .ai{opacity:0;animation:fadeInUp .5s ease forwards}
+.admin-app .d1{animation-delay:.05s}.admin-app .d2{animation-delay:.1s}
+.admin-app .d3{animation-delay:.15s}.admin-app .d4{animation-delay:.2s}
+.admin-app .d5{animation-delay:.25s}
+
+/* ── LAYOUT ── */
+.admin-app .app{display:flex;height:100%;position:relative;z-index:1}
+
+/* ── SIDEBAR ── */
+.admin-app .sidebar{
+  width:var(--sidebar-w);flex-shrink:0;background:var(--bg2);
+  border-right:0.5px solid var(--border);
+  display:flex;flex-direction:column;position:relative;overflow:hidden;
+}
+.admin-app .sidebar::after{content:'';position:absolute;right:0;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--v),transparent);opacity:.4}
+.admin-app .sb-logo{padding:20px 16px 16px;border-bottom:0.5px solid var(--border);flex-shrink:0}
+.admin-app .sb-logo-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text1);margin-bottom:2px}
+.admin-app .sb-logo-sub{font-size:9px;color:var(--v);font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;background:var(--v1);padding:2px 8px;border-radius:4px;border:0.5px solid var(--border2);display:inline-block;margin-top:4px}
+.admin-app .sb-nav{flex:1;overflow-y:auto;padding:10px 8px}
+.admin-app .sb-nav::-webkit-scrollbar{width:3px}
+.admin-app .sb-nav::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.admin-app .sb-grp-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;padding:8px 10px 4px;font-family:'JetBrains Mono',monospace;font-weight:600}
+.admin-app .sb-item{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 10px;border-radius:0 8px 8px 0;cursor:pointer;
+  transition:all .15s;font-size:13px;color:var(--text2);
+  margin-bottom:2px;border-left:2px solid transparent;
+}
+.admin-app .sb-item:hover{color:var(--text1);background:var(--v3);border-left-color:rgba(124,111,234,.3)}
+.admin-app .sb-item.active{color:var(--v);background:var(--v1);border-left-color:var(--v);font-weight:500}
+.admin-app .sb-badge{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--v1);color:var(--v);border:0.5px solid var(--border2)}
+.admin-app .sb-footer{padding:12px 14px;border-top:0.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:9px}
+.admin-app .sb-av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--v),#9d93f0);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;border:1.5px solid var(--border2)}
+.admin-app .sb-user-name{font-size:12px;font-weight:500;flex:1;color:var(--text1)}
+.admin-app .sb-user-role{font-size:9px;color:var(--v);font-family:'JetBrains Mono',monospace}
+.admin-app .mode-btn{width:26px;height:26px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;font-size:14px}
+.admin-app .mode-btn:hover{background:var(--v1);border-color:var(--v)}
+
+/* ── MAIN ── */
+.admin-app .main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── TOPBAR ── */
+.admin-app .topbar{
+  height:56px;padding:0 24px;display:flex;align-items:center;gap:14px;
+  background:var(--bg2);border-bottom:0.5px solid var(--border);
+  flex-shrink:0;position:relative;
+}
+.admin-app .topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--v),transparent);opacity:.5}
+.admin-app .tb-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;flex:1;letter-spacing:-.01em}
+.admin-app .tb-title span{color:var(--v)}
+.admin-app .tb-search{display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:9px;max-width:240px;flex:1;transition:border-color .15s}
+.admin-app .tb-search:focus-within{border-color:var(--v)}
+.admin-app .tb-search input{background:transparent;border:none;outline:none;font-size:13px;color:var(--text1);width:100%;font-family:'DM Sans',sans-serif}
+.admin-app .tb-search input::placeholder{color:var(--text2)}
+.admin-app .tb-btn{padding:8px 16px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;gap:6px}
+.admin-app .tb-primary{background:var(--v);color:#fff;position:relative;overflow:hidden}
+.admin-app .tb-primary::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);background-size:200%;animation:shimmer 2.5s linear infinite}
+.admin-app .tb-primary span{position:relative;z-index:1;display:flex;align-items:center;gap:6px}
+.admin-app .tb-primary:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(124,111,234,.4)}
+.admin-app .tb-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.admin-app .tb-ghost{background:var(--bg3);color:var(--text2);border:0.5px solid var(--border2)}
+.admin-app .tb-ghost:hover{color:var(--text1)}
+
+/* ── CONTENT ── */
+.admin-app .content{flex:1;overflow-y:auto;padding:24px}
+.admin-app .content::-webkit-scrollbar{width:5px}
+.admin-app .content::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── STATO LOADING / ERRORE ── */
+.admin-app .a-loading{display:flex;align-items:center;gap:12px;padding:48px 0;justify-content:center;color:var(--text2);font-size:13px}
+.admin-app .a-spinner{width:22px;height:22px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--v);animation:spin .8s linear infinite;flex-shrink:0}
+.admin-app .a-errore{padding:16px 20px;color:#F07060;background:rgba(240,112,96,.08);border:0.5px solid rgba(240,112,96,.2);border-radius:10px;font-size:13px;margin-bottom:16px}
+
+/* ── SECTION EYEBROW ── */
+.admin-app .sec-eyebrow{display:flex;align-items:center;gap:14px;padding:16px 20px;border-radius:12px;margin-bottom:22px;border:0.5px solid var(--border2);background:linear-gradient(135deg,var(--v1),var(--v3));position:relative;overflow:hidden}
+.admin-app .sec-eyebrow::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--v),rgba(124,111,234,.2))}
+.admin-app .se-icon{width:42px;height:42px;border-radius:11px;background:var(--v);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 4px 14px rgba(124,111,234,.35)}
+.admin-app .se-info{flex:1;min-width:0}
+.admin-app .se-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:2px}
+.admin-app .se-sub{font-size:12px;color:var(--text2)}
+.admin-app .se-badge{font-size:10px;font-weight:600;padding:4px 11px;border-radius:20px;font-family:'JetBrains Mono',monospace;flex-shrink:0;border:0.5px solid var(--border2)}
+
+/* ── STAT CARDS ── */
+.admin-app .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.admin-app .stat-card{border-radius:13px;padding:18px 16px;border:0.5px solid var(--border2);background:var(--bg2);position:relative;overflow:hidden;transition:all .25s;cursor:default}
+.admin-app .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--v),rgba(124,111,234,.2));opacity:0;transition:opacity .2s}
+.admin-app .stat-card:hover{transform:translateY(-3px);border-color:var(--v);box-shadow:0 8px 28px rgba(124,111,234,.12)}
+.admin-app .stat-card:hover::before{opacity:1}
+.admin-app .sc-icon-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.admin-app .sc-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.admin-app .sc-trend{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:4px}
+.admin-app .sc-val{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1;margin-bottom:4px;color:var(--v)}
+.admin-app .sc-lbl{font-size:11px;color:var(--text2);font-weight:500}
+.admin-app .sc-val-shimmer{background:linear-gradient(90deg,var(--v),#b5b0f5,var(--v));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:200%;animation:shimmer 3s linear infinite}
+
+/* ── LAYOUT ── */
+.admin-app .two-col{display:grid;grid-template-columns:1fr 360px;gap:16px;margin-bottom:22px}
+
+/* ── CARD ── */
+.admin-app .card{background:var(--bg2);border:0.5px solid var(--border);border-radius:13px;overflow:hidden;transition:border-color .2s;margin-bottom:22px}
+[data-theme="light"] .admin-app .card{background:#fff}
+.admin-app .card:hover{border-color:var(--border2)}
+.admin-app .card:last-child{margin-bottom:0}
+.admin-app .card-hdr{padding:14px 18px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:10px}
+.admin-app .card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;flex:1}
+.admin-app .card-sub{font-size:11px;color:var(--text2)}
+.admin-app .card-body{padding:14px 18px}
+
+/* ── SPARK BAR ── */
+.admin-app .spark-wrap{display:flex;align-items:flex-end;gap:5px;height:64px;padding:0 2px}
+.admin-app .spark-b{border-radius:4px 4px 0 0;flex:1;transition:height .8s ease,background .2s;cursor:pointer;min-width:0;height:0}
+.admin-app .spark-b:hover{filter:brightness(1.2)}
+.admin-app .spark-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:5px;padding:0 2px}
+
+/* ── BAR ORIZZONTALI ── */
+.admin-app .bar-h-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.admin-app .bar-h-row:last-child{margin:0}
+.admin-app .bar-h-lbl{font-size:12px;color:var(--text2);min-width:96px}
+.admin-app .bar-h-track{flex:1;height:7px;border-radius:4px;background:var(--bg3);overflow:hidden}
+.admin-app .bar-h-fill{height:7px;border-radius:4px;background:var(--v);width:0;transition:width 1.2s ease;position:relative;overflow:hidden}
+.admin-app .bar-h-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);background-size:200%;animation:shimmer 2s linear infinite}
+.admin-app .bar-h-val{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--v);min-width:30px;text-align:right}
+
+/* ── ACTIVITY FEED ── */
+.admin-app .act-feed{padding:8px 0}
+.admin-app .act-item{display:flex;gap:11px;padding:10px 18px;border-bottom:0.5px solid var(--border);transition:background .15s;cursor:default}
+.admin-app .act-item:last-child{border:none}
+.admin-app .act-item:hover{background:var(--v3)}
+.admin-app .act-item.fresh{animation:rowFresh 2s ease forwards}
+.admin-app .act-ico{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;margin-top:1px}
+.admin-app .act-main{flex:1;min-width:0}
+.admin-app .act-text{font-size:13px;color:var(--text1);line-height:1.4}
+.admin-app .act-text strong{color:var(--v);font-weight:500}
+.admin-app .act-time{font-size:10px;color:var(--text2);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.admin-app .live-pill{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--v);font-family:'JetBrains Mono',monospace;padding:2px 8px;border-radius:10px;background:var(--v1);border:0.5px solid var(--border2)}
+.admin-app .live-dot{width:5px;height:5px;border-radius:50%;background:var(--v);animation:liveBlip 1.5s infinite}
+
+/* ── TABELLA ── */
+.admin-app .tbl-wrap{overflow-x:auto}
+.admin-app table{width:100%;border-collapse:collapse;font-size:13px}
+.admin-app th{padding:11px 16px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:600;border-bottom:0.5px solid var(--border);background:var(--bg3);position:sticky;top:0}
+.admin-app td{padding:11px 16px;border-bottom:0.5px solid var(--border);color:var(--text2);vertical-align:middle}
+.admin-app tr:last-child td{border:none}
+.admin-app tbody tr{transition:background .15s;cursor:pointer}
+.admin-app tbody tr:hover td{background:var(--v3)}
+.admin-app .td-user{display:flex;align-items:center;gap:10px}
+.admin-app .td-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0}
+.admin-app .td-name{font-size:13px;color:var(--text1);font-weight:500}
+.admin-app .td-handle{font-size:10px;color:var(--text2);font-family:'JetBrains Mono',monospace}
+.admin-app .badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;font-family:'JetBrains Mono',monospace;display:inline-block}
+.admin-app .badge-v{background:var(--v1);color:var(--v);border:0.5px solid var(--border2)}
+.admin-app .badge-ok{background:rgba(92,206,138,.1);color:#5CCE8A;border:0.5px solid rgba(92,206,138,.2)}
+.admin-app .badge-warn{background:rgba(246,198,82,.1);color:#F6C652;border:0.5px solid rgba(246,198,82,.2)}
+.admin-app .badge-err{background:rgba(240,112,96,.1);color:#F07060;border:0.5px solid rgba(240,112,96,.2)}
+.admin-app .badge-gray{background:var(--bg3);color:var(--text2);border:0.5px solid var(--border2)}
+.admin-app .act-btns{display:flex;gap:5px}
+.admin-app .act-btn{font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.admin-app .act-btn:hover{color:var(--v);border-color:var(--v);background:var(--v1)}
+.admin-app .act-btn.danger:hover{color:#F07060;border-color:rgba(240,112,96,.3);background:rgba(240,112,96,.08)}
+.admin-app .wr-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600}
+.admin-app .wr-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* ── FORM ── */
+.admin-app .form-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:13px;padding:0;overflow:hidden;margin-bottom:16px;position:relative}
+[data-theme="light"] .admin-app .form-card{background:#fff}
+.admin-app .form-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--v),rgba(124,111,234,.2))}
+.admin-app .fc-hdr{padding:16px 20px 14px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:10px}
+.admin-app .fc-icon{width:34px;height:34px;border-radius:9px;background:var(--v);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.admin-app .fc-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600}
+.admin-app .fc-body{padding:18px 20px}
+.admin-app .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.admin-app .fg{display:flex;flex-direction:column;gap:5px}
+.admin-app .fg.full{grid-column:1/-1}
+.admin-app .fg-lbl{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-family:'JetBrains Mono',monospace}
+.admin-app .fg-input{padding:10px 13px;border-radius:8px;border:0.5px solid var(--border2);background:var(--bg);color:var(--text1);font-size:13px;outline:none;transition:all .15s;font-family:'DM Sans',sans-serif;width:100%}
+[data-theme="light"] .admin-app .fg-input{background:var(--bg3)}
+.admin-app .fg-input:focus{border-color:var(--v);box-shadow:0 0 0 3px rgba(124,111,234,.08)}
+.admin-app .fg-input::placeholder{color:var(--text3)}
+.admin-app textarea.fg-input{resize:vertical;min-height:80px;line-height:1.6}
+.admin-app select.fg-input{cursor:pointer;appearance:none}
+.admin-app .fg-note{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.admin-app .flag-wrap{position:relative}
+.admin-app .flag-badge{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(92,206,138,.1);color:#5CCE8A;border:0.5px solid rgba(92,206,138,.2);font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:4px;pointer-events:none}
+.admin-app .form-actions{display:flex;gap:8px;padding:14px 20px;border-top:0.5px solid var(--border);background:var(--bg3)}
+[data-theme="light"] .admin-app .form-actions{background:var(--bg4)}
+
+/* ── WEBHOOK ── */
+.admin-app .wh-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.admin-app .wh-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:13px;padding:18px;position:relative;overflow:hidden;transition:all .2s}
+[data-theme="light"] .admin-app .wh-card{background:#fff}
+.admin-app .wh-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--v)}
+.admin-app .wh-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.admin-app .wh-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.admin-app .wh-ico{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--v1);flex-shrink:0;border:0.5px solid var(--border2)}
+.admin-app .wh-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;color:var(--text1)}
+.admin-app .wh-status{margin-left:auto;font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace}
+.admin-app .toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12px;color:var(--text2)}
+.admin-app .toggler{width:28px;height:15px;border-radius:8px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.admin-app .toggler.on{background:var(--v)}
+.admin-app .toggler.off{background:var(--border2)}
+.admin-app .toggler-thumb{position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:#fff;transition:transform .2s}
+.admin-app .toggler.on .toggler-thumb{transform:translateX(13px)}
+.admin-app .wh-test{width:100%;padding:8px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px;transition:all .15s}
+.admin-app .wh-test:hover{border-color:var(--v);color:var(--v);background:var(--v1)}
+.admin-app .wh-test.testing{border-color:rgba(246,198,82,.4);color:#F6C652;animation:pulse 1s infinite}
+.admin-app .wh-test.ok{border-color:rgba(92,206,138,.3);color:#5CCE8A;background:rgba(92,206,138,.06)}
+
+/* ── MODAL ── */
+/* React usa rendering condizionale — display:flex fisso quando presente nel DOM */
+.admin-app .modal-overlay{
+  position:fixed;inset:0;z-index:900;
+  background:rgba(9,9,15,.85);backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  animation:fadeIn .2s ease;
+}
+[data-theme="light"] .admin-app .modal-overlay{background:rgba(240,242,248,.8)}
+.admin-app .modal{width:100%;max-width:420px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:14px;overflow:hidden;animation:scaleIn .3s cubic-bezier(.34,1.56,.64,1)}
+[data-theme="light"] .admin-app .modal{background:#fff}
+.admin-app .modal-top{height:2px;background:linear-gradient(90deg,var(--v),rgba(124,111,234,.2))}
+.admin-app .modal-hdr{padding:16px 18px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.admin-app .modal-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.admin-app .modal-close{width:26px;height:26px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:13px;transition:all .15s}
+.admin-app .modal-close:hover{color:var(--text1)}
+.admin-app .modal-body{padding:18px}
+.admin-app .modal-footer{padding:12px 18px;border-top:0.5px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--bg3)}
+[data-theme="light"] .admin-app .modal-footer{background:var(--bg4)}
+
+/* ── TOAST ── */
+.admin-app .toast-wrap{position:fixed;top:68px;right:20px;z-index:950;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.admin-app .toast{padding:11px 15px;border-radius:10px;background:var(--bg2);border:0.5px solid var(--border2);font-size:13px;color:var(--text1);display:flex;align-items:center;gap:9px;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:slideInRight .3s ease both;pointer-events:all}
+.admin-app .toast.tok{border-color:rgba(92,206,138,.3)}
+.admin-app .toast.terr{border-color:rgba(240,112,96,.3)}
+
+/* ── MISC ── */
+.admin-app .dot-live{width:7px;height:7px;border-radius:50%;display:inline-block;animation:liveBlip 1.5s infinite;flex-shrink:0}
+.admin-app .text-v{color:var(--v)}
+.admin-app .text-sm{font-size:12px;color:var(--text2)}
+
+@media(max-width:1100px){.admin-app .stats-grid{grid-template-columns:repeat(2,1fr)}.admin-app .two-col{grid-template-columns:1fr}}
+@media(max-width:780px){
+  .admin-app .sidebar{width:52px}
+  .admin-app .sb-logo-name,.admin-app .sb-logo-sub,.admin-app .sb-grp-label,
+  .admin-app .sb-item span:not(:first-child),.admin-app .sb-badge,
+  .admin-app .sb-user-name,.admin-app .sb-user-role{display:none}
+  .admin-app .sb-item{justify-content:center}
+  .admin-app .form-grid{grid-template-columns:1fr}
+  .admin-app .wh-grid{grid-template-columns:1fr}
+}
