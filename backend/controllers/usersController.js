@@ -79,4 +79,38 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-module.exports = { getMe, updateMe, getUserById, getAllUsers };
+// PATCH /api/users/:id/role — cambia il ruolo di un utente (solo Admin)
+const changeUserRole = async (req, res) => {
+  try {
+    const RUOLI_VALIDI = ['Guest', 'Player', 'Analyst', 'Manager', 'Admin'];
+    const { role } = req.body;
+
+    // Verifica che il ruolo sia uno dei valori accettati dall'enum
+    if (!role || !RUOLI_VALIDI.includes(role)) {
+      return res.status(400).json({
+        error: `Ruolo non valido. Valori ammessi: ${RUOLI_VALIDI.join(', ')}.`,
+      });
+    }
+
+    // Un Admin non può modificare il proprio ruolo
+    if (req.params.id === req.user._id.toString()) {
+      return res.status(403).json({ error: 'Non puoi modificare il tuo stesso ruolo.' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { role },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) return res.status(404).json({ error: 'Utente non trovato.' });
+
+    res.json({ user: user.toPublicJSON() });
+  } catch (err) {
+    // CastError: id malformato
+    if (err.name === 'CastError') return res.status(400).json({ error: 'ID non valido.' });
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { getMe, updateMe, getUserById, getAllUsers, changeUserRole };

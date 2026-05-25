@@ -1,5 +1,5 @@
 const express = require('express');
-const { getMe, updateMe, getUserById, getAllUsers } = require('../controllers/usersController');
+const { getMe, updateMe, getUserById, getAllUsers, changeUserRole } = require('../controllers/usersController');
 const { protect, authorize } = require('../middleware/verificaUtenti');
 
 const router = express.Router();
@@ -13,6 +13,7 @@ router.put('/me',  updateMe);        // aggiorna profilo utente loggato
 router.get('/',    authorize('Admin'), getAllUsers);  // lista utenti — solo Admin
 
 // :id dopo le route statiche per evitare che '/me' venga catturata come parametro
-router.get('/:id', getUserById);     // profilo pubblico per ID
+router.get('/:id',        getUserById);                          // profilo pubblico per ID
+router.patch('/:id/role', authorize('Admin'), changeUserRole);   // cambia ruolo — solo Admin
 
 module.exports = router;
