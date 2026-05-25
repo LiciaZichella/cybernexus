@@ -1,11 +1,13 @@
 require('dotenv').config();
 
-const http     = require('http');
-const express  = require('express');
-const cors     = require('cors');
-const helmet   = require('helmet');
-const rateLimit = require('express-rate-limit');
-const { Server } = require('socket.io');
+const http        = require('http');
+const express     = require('express');
+const cors        = require('cors');
+const helmet      = require('helmet');
+const rateLimit   = require('express-rate-limit');
+const { Server }  = require('socket.io');
+const swaggerUi   = require('swagger-ui-express');
+const YAML        = require('yamljs');
 const connectDB      = require('./config/db');
 const warroomSocket  = require('./sockets/warroom');
 
@@ -36,6 +38,10 @@ app.use(cors({
 // Parsing del body JSON e form URL-encoded
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Documentazione API — montata PRIMA del rate limiter per non essere soggetta al limite
+const swaggerDoc = YAML.load('./swagger.yaml');
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 // Rate limiting globale: max 100 richieste per IP ogni 15 minuti
 const limiter = rateLimit({
@@ -76,4 +82,5 @@ process.on('unhandledRejection', (err) => {
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
   console.log(`Server avviato sulla porta ${PORT}`);
+  console.log(`Swagger UI disponibile su http://localhost:5005/api/docs`);
 });

@@ -1,43 +1,9 @@
-const https   = require('https');
-const http    = require('http');
 const crypto  = require('crypto');
 const WARRoom = require('../models/WARRoom');
+const { inviaWebhook } = require('../services/webhook');
 
 // Utility: genera un codice invito casuale di 8 caratteri
 const generaInviteCode = () => crypto.randomBytes(4).toString('hex');
-
-// Utility: invia un webhook POST in fire-and-forget (errori solo loggati)
-const inviaWebhook = (payload) => {
-  const url = process.env.WEBHOOK_URL;
-  if (!url) return;
-
-  try {
-    const body = JSON.stringify(payload);
-    const parsedUrl = new URL(url);
-    const lib = parsedUrl.protocol === 'https:' ? https : http;
-
-    const req = lib.request(
-      {
-        hostname: parsedUrl.hostname,
-        port:     parsedUrl.port,
-        path:     parsedUrl.pathname + parsedUrl.search,
-        method:   'POST',
-        headers:  { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
-      },
-      (res) => {
-        // Consuma la risposta per liberare il socket
-        res.resume();
-        console.log(`Webhook inviato — status: ${res.statusCode}`);
-      }
-    );
-
-    req.on('error', (err) => console.error(`Errore webhook: ${err.message}`));
-    req.write(body);
-    req.end();
-  } catch (err) {
-    console.error(`Webhook URL non valido: ${err.message}`);
-  }
-};
 
 // GET /api/warroom — lista War Room (attive per utenti, tutte per Admin/Manager)
 const getWARRooms = async (req, res) => {
