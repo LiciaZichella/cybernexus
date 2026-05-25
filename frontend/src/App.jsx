@@ -20,7 +20,7 @@ export default function App() {
         <Route path="/dashboard"   element={<Dashboard />} />
         <Route path="/ctf"         element={<CTFArena />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/warroom"     element={<WarRoom />} />
+        <Route path="/warroom/:id" element={<WarRoom />} />
       </Route>
 
       {/* Route protetta — solo ruolo Admin */}

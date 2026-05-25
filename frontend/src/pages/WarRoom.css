@@ -1,0 +1,732 @@
+/* WarRoom.css — variabili scoped sotto .warroom-app per evitare conflitti globali */
+
+.warroom-app {
+  --bg:#07090f;--bg2:#0d1117;--bg3:#111825;--bg4:#161d2b;
+  --border:rgba(255,255,255,0.05);--border2:rgba(255,255,255,0.10);
+  --brd-red:rgba(240,112,96,0.2);--brd-red2:rgba(240,112,96,0.4);
+  --text1:#e8edf8;--text2:#7a8aaa;--text3:#4a5a7a;
+  --violet:#7C6FEA;--violet-bg:rgba(124,111,234,0.10);
+  --fuchsia:#E870B8;--fuchsia-bg:rgba(232,112,184,0.08);
+  --cyan:#5BC4D4;--cyan-bg:rgba(91,196,212,0.10);
+  --mint:#5CCE8A;--mint-bg:rgba(92,206,138,0.10);
+  --amber:#F6C652;--amber-bg:rgba(246,198,82,0.10);
+  --coral:#F07060;--coral-bg:rgba(240,112,96,0.10);
+  --lw:272px;--rw:292px;
+  --navbar-h:56px;--banner-h:56px;
+  height:100vh;overflow:hidden;display:flex;flex-direction:column;
+  font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5;
+  background:var(--bg);color:var(--text1);position:relative;
+}
+
+.warroom-app * { box-sizing:border-box;margin:0;padding:0 }
+
+/* Tema chiaro */
+[data-theme="light"] .warroom-app {
+  --bg:#f0f2f8;--bg2:#ffffff;--bg3:#f5f7fc;--bg4:#eaeef8;
+  --border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);
+  --brd-red:rgba(240,112,96,0.15);--brd-red2:rgba(240,112,96,0.3);
+  --text1:#0f1623;--text2:#5a6480;--text3:#9aa3b8;
+}
+
+/* Scanline sfondo */
+.warroom-app .scan-line {
+  position:fixed;left:0;right:0;height:2px;pointer-events:none;z-index:300;
+  background:linear-gradient(90deg,transparent,rgba(240,112,96,.1),transparent);
+  animation:wr-scan 7s linear infinite;
+}
+[data-theme="light"] .warroom-app .scan-line { display:none }
+
+/* Grid noise */
+.warroom-app::before {
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(240,112,96,.013) 3px,rgba(240,112,96,.013) 4px);
+}
+[data-theme="light"] .warroom-app::before { display:none }
+
+/* ── Animazioni ── */
+@keyframes wr-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.6)} }
+@keyframes wr-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes wr-fadeInUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes wr-fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes wr-shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+@keyframes wr-scaleIn { from{opacity:0;transform:scale(.93)} to{opacity:1;transform:scale(1)} }
+@keyframes wr-glowPulse { 0%,100%{box-shadow:0 0 6px rgba(240,112,96,.1)} 50%{box-shadow:0 0 20px rgba(240,112,96,.3)} }
+@keyframes wr-newRow { 0%{background:rgba(92,206,138,.12)} 100%{background:transparent} }
+@keyframes wr-scan { 0%{top:-2px} 100%{top:100%} }
+@keyframes wr-slideUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+@keyframes wr-timerPulse { 0%,100%{color:var(--coral)} 50%{color:#fff} }
+
+/* ── NAVBAR ── */
+.warroom-app .wr-navbar {
+  height:var(--navbar-h);padding:0 20px;display:flex;align-items:center;gap:12px;
+  background:rgba(7,9,15,.98);border-bottom:0.5px solid var(--brd-red);
+  position:relative;z-index:200;flex-shrink:0;
+}
+[data-theme="light"] .warroom-app .wr-navbar { background:rgba(240,242,248,.98) }
+
+.warroom-app .nav-logo {
+  display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;
+  font-size:16px;font-weight:700;color:var(--text1);text-decoration:none;flex-shrink:0;
+}
+.warroom-app .nav-back {
+  font-size:12px;color:var(--text2);padding:5px 12px;border-radius:7px;
+  border:0.5px solid var(--border2);background:var(--bg2);flex-shrink:0;
+  text-decoration:none;cursor:pointer;transition:color .15s;
+}
+.warroom-app .nav-back:hover { color:var(--text1) }
+.warroom-app .nav-inc { display:flex;align-items:center;gap:10px;flex:1;min-width:0 }
+.warroom-app .ni-dot {
+  width:9px;height:9px;border-radius:50%;background:var(--coral);
+  animation:wr-pulse 1.2s infinite;flex-shrink:0;
+}
+.warroom-app .ni-title {
+  font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--coral);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.warroom-app .ni-badge {
+  font-size:10px;font-weight:700;padding:3px 9px;border-radius:5px;
+  background:rgba(240,112,96,.12);color:var(--coral);border:0.5px solid var(--brd-red2);
+  flex-shrink:0;animation:wr-glowPulse 2s infinite;
+}
+.warroom-app .ni-sep { width:0.5px;height:20px;background:var(--border2);flex-shrink:0 }
+.warroom-app .ni-timer-wrap { flex-shrink:0;text-align:center }
+.warroom-app .ni-timer {
+  font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;
+  color:var(--amber);line-height:1.1;transition:color .3s;
+}
+.warroom-app .ni-timer.warning { color:var(--coral);animation:wr-timerPulse 1s infinite }
+.warroom-app .ni-tlbl { font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em }
+.warroom-app .nav-right { display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0 }
+.warroom-app .nav-avs { display:flex }
+.warroom-app .nav-av {
+  width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:9px;font-weight:700;color:#fff;
+  border:2px solid var(--bg);margin-left:-6px;cursor:pointer;
+  transition:transform .15s;position:relative;
+}
+.warroom-app .nav-av:first-child { margin-left:0 }
+.warroom-app .nav-av:hover { transform:scale(1.12);z-index:5 }
+.warroom-app .online-pill {
+  display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;
+  color:var(--mint);padding:4px 10px;border-radius:20px;
+  background:var(--mint-bg);border:0.5px solid rgba(92,206,138,.25);flex-shrink:0;
+}
+.warroom-app .ol-dot { width:6px;height:6px;border-radius:50%;background:var(--mint);animation:wr-pulse 2s infinite }
+.warroom-app .mode-toggle {
+  display:flex;align-items:center;gap:6px;padding:5px 11px 5px 7px;
+  border-radius:20px;border:0.5px solid var(--border2);background:var(--bg2);
+  cursor:pointer;font-size:12px;color:var(--text2);flex-shrink:0;
+}
+.warroom-app .toggle-track {
+  width:26px;height:14px;border-radius:7px;background:var(--violet);position:relative;flex-shrink:0;
+}
+.warroom-app .toggle-thumb {
+  position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;
+  background:#fff;transition:transform .25s cubic-bezier(.5,0,.5,1.4);
+}
+.warroom-app .toggle-thumb.light { transform:translateX(12px) }
+
+/* ── PROGRESS BANNER ── */
+.warroom-app .prog-banner {
+  height:var(--banner-h);padding:0 20px;flex-shrink:0;
+  background:linear-gradient(135deg,rgba(240,112,96,.07),rgba(246,198,82,.03));
+  border-bottom:0.5px solid var(--brd-red);
+  display:flex;align-items:center;gap:14px;position:relative;z-index:190;
+}
+[data-theme="light"] .warroom-app .prog-banner {
+  background:linear-gradient(135deg,rgba(240,112,96,.05),transparent);
+}
+.warroom-app .pb-icon {
+  width:36px;height:36px;border-radius:9px;background:rgba(240,112,96,.1);
+  border:0.5px solid var(--brd-red2);display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;animation:wr-glowPulse 2s infinite;
+}
+.warroom-app .pb-info { flex:1;min-width:0 }
+.warroom-app .pb-lbl {
+  font-size:10px;color:var(--coral);text-transform:uppercase;letter-spacing:.08em;
+  font-family:'JetBrains Mono',monospace;font-weight:600;margin-bottom:2px;
+}
+.warroom-app .pb-row { display:flex;align-items:center;gap:10px;flex-wrap:wrap }
+.warroom-app .pb-title { font-family:'Syne',sans-serif;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0 }
+.warroom-app .pb-bar {
+  flex:1;height:6px;border-radius:3px;background:var(--border2);
+  overflow:hidden;min-width:80px;max-width:280px;
+}
+.warroom-app .pb-fill {
+  height:6px;border-radius:3px;
+  background:linear-gradient(90deg,var(--mint),var(--cyan));
+  background-size:200%;animation:wr-shimmer 2s linear infinite;transition:width .6s ease;
+}
+.warroom-app .pb-pct { font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--mint);flex-shrink:0 }
+.warroom-app .pb-rem { font-size:11px;color:var(--text2);flex-shrink:0 }
+.warroom-app .resolve-btn {
+  padding:9px 20px;border-radius:9px;border:none;
+  background:linear-gradient(135deg,var(--mint),var(--cyan));
+  color:#0a1a10;font-size:13px;font-weight:700;cursor:pointer;
+  font-family:'Syne',sans-serif;display:flex;align-items:center;gap:7px;
+  flex-shrink:0;position:relative;overflow:hidden;transition:all .2s;
+}
+.warroom-app .resolve-btn::before {
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
+  background-size:200%;animation:wr-shimmer 2.5s linear infinite;
+}
+.warroom-app .resolve-btn span { position:relative;z-index:1;display:flex;align-items:center;gap:7px }
+.warroom-app .resolve-btn:hover { transform:translateY(-2px);box-shadow:0 6px 20px rgba(92,206,138,.4) }
+.warroom-app .resolve-btn:disabled { opacity:.4;cursor:not-allowed;transform:none;box-shadow:none }
+
+/* ── SHELL ── */
+.warroom-app .war-shell {
+  display:flex;flex:1;min-height:0;position:relative;z-index:1;overflow:hidden;
+}
+
+/* Sidebar toggles */
+.warroom-app .stoggle {
+  position:absolute;top:50%;z-index:100;width:20px;height:54px;
+  background:var(--bg2);border:0.5px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  font-size:12px;color:var(--text3);user-select:none;transition:background .15s,color .15s;
+}
+[data-theme="light"] .warroom-app .stoggle { background:var(--bg4) }
+.warroom-app .stoggle:hover { background:var(--bg3);color:var(--text1) }
+.warroom-app .ltoggle {
+  transform:translateY(-50%);border-left:none;border-radius:0 8px 8px 0;left:var(--lw);
+}
+.warroom-app .ltoggle.closed {
+  border-left:0.5px solid var(--border2);border-right:none;
+  border-radius:8px 0 0 8px;left:0;
+}
+.warroom-app .rtoggle {
+  transform:translateY(-50%);border-right:none;border-radius:8px 0 0 8px;right:var(--rw);
+}
+.warroom-app .rtoggle.closed {
+  border-right:0.5px solid var(--border2);border-left:none;
+  border-radius:0 8px 8px 0;right:0;
+}
+
+/* ── SIDEBAR SINISTRA ── */
+.warroom-app .col-left {
+  width:var(--lw);flex-shrink:0;background:var(--bg2);border-right:0.5px solid var(--brd-red);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:width .3s cubic-bezier(.4,0,.2,1),opacity .25s;position:relative;
+}
+[data-theme="light"] .warroom-app .col-left { background:#fff }
+.warroom-app .col-left::before {
+  content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:linear-gradient(180deg,var(--coral),var(--amber),transparent);
+  opacity:.5;pointer-events:none;
+}
+.warroom-app .col-left.hidden { width:0;opacity:0;pointer-events:none;border:none }
+.warroom-app .sb-scroll { flex:1;overflow-y:auto;padding:12px }
+.warroom-app .sb-scroll::-webkit-scrollbar { width:3px }
+.warroom-app .sb-scroll::-webkit-scrollbar-thumb { background:var(--brd-red);border-radius:2px }
+.warroom-app .sb-sec {
+  margin-bottom:10px;background:var(--bg3);border:0.5px solid var(--border);
+  border-radius:11px;overflow:hidden;
+}
+[data-theme="light"] .warroom-app .sb-sec { background:var(--bg3) }
+.warroom-app .sb-hdr {
+  padding:11px 13px;display:flex;align-items:center;gap:8px;
+  cursor:pointer;user-select:none;transition:background .15s;
+}
+.warroom-app .sb-hdr:hover { background:rgba(255,255,255,.03) }
+[data-theme="light"] .warroom-app .sb-hdr:hover { background:rgba(0,0,0,.03) }
+.warroom-app .sb-ico { font-size:15px;flex-shrink:0 }
+.warroom-app .sb-nm { font-family:'Syne',sans-serif;font-size:12px;font-weight:600;flex:1 }
+.warroom-app .sb-ct {
+  font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3);
+  padding:2px 6px;border-radius:4px;background:var(--bg2);border:0.5px solid var(--border);flex-shrink:0;
+}
+[data-theme="light"] .warroom-app .sb-ct { background:var(--bg4) }
+.warroom-app .sb-cv { font-size:10px;color:var(--text3);transition:transform .2s;flex-shrink:0 }
+.warroom-app .sb-sec.collapsed .sb-cv { transform:rotate(-90deg) }
+.warroom-app .sb-body { padding:10px 12px;border-top:0.5px solid var(--border) }
+.warroom-app .sb-sec.collapsed .sb-body { display:none }
+
+/* IOC */
+.warroom-app .ioc-row {
+  display:flex;align-items:center;gap:7px;padding:7px 0;
+  border-bottom:0.5px solid var(--border);
+}
+.warroom-app .ioc-row:last-child { border:none }
+.warroom-app .ioc-t {
+  font-size:10px;padding:2px 7px;border-radius:5px;font-weight:700;flex-shrink:0;
+  font-family:'JetBrains Mono',monospace;
+}
+.warroom-app .ioc-v {
+  flex:1;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.warroom-app .ioc-s {
+  font-size:10px;padding:2px 7px;border-radius:5px;font-weight:600;flex-shrink:0;
+  font-family:'JetBrains Mono',monospace;
+}
+
+/* Mappa rete */
+.warroom-app .net-legend { display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--text3) }
+
+/* Log live */
+.warroom-app .log-feed { display:flex;flex-direction:column;max-height:200px;overflow-y:auto }
+.warroom-app .log-feed::-webkit-scrollbar { width:3px }
+.warroom-app .log-feed::-webkit-scrollbar-thumb { background:var(--border2);border-radius:2px }
+.warroom-app .log-row {
+  display:flex;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--border);
+  animation:wr-fadeInUp .3s ease both;
+}
+.warroom-app .log-row:last-child { border:none }
+.warroom-app .log-row.fresh { animation:wr-newRow 2s ease forwards }
+.warroom-app .log-time {
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);
+  flex-shrink:0;padding-top:1px;min-width:36px;
+}
+.warroom-app .log-dot { width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px }
+.warroom-app .log-txt { font-size:12px;color:var(--text2);line-height:1.4;flex:1 }
+.warroom-app .log-txt strong { color:var(--text1);font-weight:500 }
+.warroom-app .tld { width:5px;height:5px;border-radius:50%;background:var(--mint);animation:wr-pulse 1.5s infinite }
+
+/* ── CENTRO ── */
+.warroom-app .col-center {
+  flex:1;min-width:0;background:var(--bg);display:flex;flex-direction:column;
+  overflow:hidden;transition:all .3s;
+}
+[data-theme="light"] .warroom-app .col-center { background:var(--bg3) }
+
+.warroom-app .step-hdr {
+  padding:12px 18px;flex-shrink:0;
+  background:linear-gradient(135deg,rgba(246,198,82,.08),transparent);
+  border-bottom:0.5px solid rgba(246,198,82,.2);
+  display:flex;align-items:center;gap:12px;
+}
+.warroom-app .sh-ico {
+  width:40px;height:40px;border-radius:11px;display:flex;align-items:center;
+  justify-content:center;font-size:20px;background:var(--amber-bg);
+  border:0.5px solid rgba(246,198,82,.3);flex-shrink:0;
+}
+.warroom-app .sh-info { flex:1;min-width:0 }
+.warroom-app .sh-badge {
+  font-size:10px;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;
+  font-family:'JetBrains Mono',monospace;font-weight:600;margin-bottom:2px;
+}
+.warroom-app .sh-title { font-family:'Syne',sans-serif;font-size:15px;font-weight:700;line-height:1.25;margin-bottom:2px }
+.warroom-app .sh-desc { font-size:12px;color:var(--text2);line-height:1.5 }
+.warroom-app .sh-btn-group { display:flex;gap:8px;flex-shrink:0 }
+.warroom-app .sh-guide-btn {
+  padding:8px 14px;border-radius:9px;border:0.5px solid rgba(246,198,82,.3);
+  background:var(--amber-bg);color:var(--amber);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;
+  display:flex;align-items:center;gap:6px;transition:all .2s;
+}
+.warroom-app .sh-guide-btn:hover { background:rgba(246,198,82,.18);transform:translateY(-1px) }
+.warroom-app .sh-done-btn {
+  padding:8px 14px;border-radius:9px;border:none;background:var(--mint);
+  color:#0a1a10;font-size:12px;font-weight:700;cursor:pointer;
+  font-family:'DM Sans',sans-serif;flex-shrink:0;display:flex;align-items:center;gap:5px;transition:all .2s;
+}
+.warroom-app .sh-done-btn:hover { transform:translateY(-1px);box-shadow:0 4px 14px rgba(92,206,138,.3) }
+.warroom-app .sh-done-btn:disabled { opacity:.4;cursor:not-allowed;transform:none;box-shadow:none }
+
+/* Terminale */
+.warroom-app .center-scroll { flex:1;overflow:hidden;padding:16px 18px;display:flex;flex-direction:column }
+.warroom-app .terminal-card {
+  background:#020408;border:0.5px solid rgba(92,206,138,.18);
+  border-radius:12px;overflow:hidden;flex:1;display:flex;flex-direction:column;
+}
+[data-theme="light"] .warroom-app .terminal-card { background:#1a1a2e }
+.warroom-app .term-hdr {
+  padding:8px 14px;background:rgba(255,255,255,.02);
+  border-bottom:0.5px solid rgba(92,206,138,.12);
+  display:flex;align-items:center;gap:7px;flex-shrink:0;
+}
+.warroom-app .term-dot { width:10px;height:10px;border-radius:50% }
+.warroom-app .term-title {
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:rgba(92,206,138,.4);margin-left:4px;flex:1;
+}
+.warroom-app .term-live { display:flex;align-items:center;gap:4px;font-size:10px;color:var(--mint);font-family:'JetBrains Mono',monospace;font-weight:600 }
+.warroom-app .term-body {
+  padding:12px 16px;font-family:'JetBrains Mono',monospace;font-size:12px;
+  line-height:1.9;flex:1;overflow-y:auto;
+}
+.warroom-app .term-body::-webkit-scrollbar { width:3px }
+.warroom-app .term-body::-webkit-scrollbar-thumb { background:rgba(92,206,138,.15);border-radius:2px }
+.warroom-app .t-line { display:block;animation:wr-fadeInUp .2s ease both }
+.warroom-app .t-p { color:rgba(92,206,138,.5) }
+.warroom-app .t-cmd { color:var(--text1) }
+.warroom-app .t-out { color:rgba(91,196,212,.8) }
+.warroom-app .t-warn { color:var(--amber) }
+.warroom-app .t-err { color:var(--coral) }
+.warroom-app .t-ok { color:var(--mint) }
+.warroom-app .t-cur {
+  display:inline-block;width:8px;height:14px;background:rgba(92,206,138,.7);
+  animation:wr-blink 1s infinite;vertical-align:middle;
+}
+.warroom-app .term-inp-row {
+  padding:10px 14px;border-top:0.5px solid rgba(92,206,138,.08);
+  display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.25);flex-shrink:0;
+}
+.warroom-app .t-prompt { color:rgba(92,206,138,.5);font-family:'JetBrains Mono',monospace;font-size:12px;flex-shrink:0 }
+.warroom-app .t-inp {
+  flex:1;background:transparent;border:none;outline:none;
+  font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(92,206,138,.88);
+}
+.warroom-app .t-inp::placeholder { color:rgba(92,206,138,.22) }
+.warroom-app .t-inp:disabled { opacity:.3;cursor:not-allowed }
+.warroom-app .t-run {
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;
+  padding:6px 12px;border-radius:6px;border:0.5px solid rgba(92,206,138,.25);
+  background:rgba(92,206,138,.07);color:var(--mint);cursor:pointer;transition:all .15s;
+}
+.warroom-app .t-run:hover { background:rgba(92,206,138,.14) }
+.warroom-app .t-run:disabled { opacity:.3;cursor:not-allowed }
+
+/* ── SIDEBAR DESTRA ── */
+.warroom-app .col-right {
+  width:var(--rw);flex-shrink:0;background:var(--bg2);border-left:0.5px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:width .3s cubic-bezier(.4,0,.2,1),opacity .25s;position:relative;
+}
+[data-theme="light"] .warroom-app .col-right { background:#fff }
+.warroom-app .col-right.hidden { width:0;opacity:0;pointer-events:none;border:none }
+
+/* Pannello dettagli step */
+.warroom-app .step-details {
+  position:absolute;inset:0;background:var(--bg2);z-index:50;
+  display:flex;flex-direction:column;
+  transform:translateX(100%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+  border-left:0.5px solid var(--border);
+}
+[data-theme="light"] .warroom-app .step-details { background:#fff }
+.warroom-app .step-details.open { transform:translateX(0) }
+.warroom-app .sd-hdr {
+  padding:14px 14px 10px;border-bottom:0.5px solid var(--border);
+  display:flex;align-items:flex-start;gap:10px;flex-shrink:0;
+}
+.warroom-app .sd-ico {
+  width:38px;height:38px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;font-size:19px;flex-shrink:0;
+  background:var(--amber-bg);border:0.5px solid rgba(246,198,82,.3);
+}
+.warroom-app .sd-info { flex:1;min-width:0 }
+.warroom-app .sd-badge {
+  font-size:9px;color:var(--amber);text-transform:uppercase;letter-spacing:.07em;
+  font-family:'JetBrains Mono',monospace;font-weight:600;margin-bottom:2px;
+}
+.warroom-app .sd-title { font-family:'Syne',sans-serif;font-size:13px;font-weight:700;line-height:1.3;color:var(--text1) }
+.warroom-app .sd-close {
+  width:26px;height:26px;border-radius:50%;border:0.5px solid var(--border2);
+  background:var(--bg3);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text2);font-size:13px;flex-shrink:0;transition:all .15s;
+}
+[data-theme="light"] .warroom-app .sd-close { background:var(--bg4) }
+.warroom-app .sd-close:hover { color:var(--text1);background:var(--border2) }
+.warroom-app .sd-scroll { flex:1;overflow-y:auto;padding:12px 13px;display:flex;flex-direction:column }
+.warroom-app .sd-scroll::-webkit-scrollbar { width:3px }
+.warroom-app .sd-scroll::-webkit-scrollbar-thumb { background:var(--border2);border-radius:2px }
+.warroom-app .sd-guide-lbl {
+  font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;
+  font-family:'JetBrains Mono',monospace;font-weight:600;margin-bottom:7px;
+  display:flex;align-items:center;gap:7px;
+}
+.warroom-app .sd-guide-lbl::after { content:'';flex:1;height:0.5px;background:var(--border) }
+.warroom-app .sd-guide-text {
+  font-size:12px;color:var(--text2);line-height:1.75;margin-bottom:14px;
+  padding:12px;background:var(--bg3);border-radius:9px;
+  border:0.5px solid var(--border);border-top:2px solid var(--amber);
+}
+[data-theme="light"] .warroom-app .sd-guide-text { background:var(--bg4) }
+.warroom-app .sd-guide-text strong { color:var(--text1);font-weight:500 }
+.warroom-app .sd-guide-text code {
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  background:var(--bg2);padding:1px 5px;border-radius:4px;color:var(--cyan);
+}
+[data-theme="light"] .warroom-app .sd-guide-text code { background:var(--bg3) }
+.warroom-app .sd-obj-lbl {
+  font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;
+  font-family:'JetBrains Mono',monospace;font-weight:600;margin-bottom:7px;
+  display:flex;align-items:center;gap:7px;
+}
+.warroom-app .sd-obj-lbl::after { content:'';flex:1;height:0.5px;background:var(--border) }
+.warroom-app .obj-list { display:flex;flex-direction:column;gap:5px;margin-bottom:14px }
+.warroom-app .obj-item {
+  display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;
+  border:0.5px solid var(--border);background:var(--bg3);cursor:pointer;
+  transition:all .15s;font-size:12px;color:var(--text2);
+}
+[data-theme="light"] .warroom-app .obj-item { background:var(--bg4) }
+.warroom-app .obj-item:hover { border-color:var(--border2);color:var(--text1) }
+.warroom-app .obj-item.done { border-color:rgba(92,206,138,.2);background:rgba(92,206,138,.04);color:var(--mint);text-decoration:line-through;opacity:.75 }
+.warroom-app .obj-chk {
+  width:17px;height:17px;border-radius:5px;border:1.5px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:9px;transition:all .2s;background:var(--bg2);
+}
+[data-theme="light"] .warroom-app .obj-chk { background:#fff }
+.warroom-app .obj-item.done .obj-chk { background:var(--mint);border-color:var(--mint);color:#0a1a10;font-weight:700 }
+
+/* Playbook accordion */
+.warroom-app .acc-ph { margin-bottom:7px;border-radius:10px;overflow:hidden;border:0.5px solid var(--border) }
+.warroom-app .acc-tr {
+  display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;
+  background:var(--bg3);user-select:none;transition:background .15s;
+}
+[data-theme="light"] .warroom-app .acc-tr { background:var(--bg4) }
+.warroom-app .acc-tr:hover { background:var(--bg4) }
+[data-theme="light"] .warroom-app .acc-tr:hover { background:var(--bg3) }
+.warroom-app .acc-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0 }
+.warroom-app .acc-nm { font-family:'Syne',sans-serif;font-size:12px;font-weight:700;flex:1 }
+.warroom-app .acc-bg { font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:600;padding:2px 7px;border-radius:4px }
+.warroom-app .acc-cv { font-size:10px;color:var(--text3);transition:transform .22s;flex-shrink:0 }
+.warroom-app .acc-ph.open .acc-cv { transform:rotate(180deg) }
+.warroom-app .acc-bd { display:none;background:var(--bg2);padding:6px 8px }
+[data-theme="light"] .warroom-app .acc-bd { background:#fff }
+.warroom-app .acc-ph.open .acc-bd { display:block }
+.warroom-app .acc-st {
+  display:flex;align-items:flex-start;gap:7px;padding:8px 9px;border-radius:8px;
+  border:0.5px solid var(--border);background:var(--bg);margin-bottom:4px;
+  cursor:pointer;transition:all .18s;position:relative;
+}
+[data-theme="light"] .warroom-app .acc-st { background:var(--bg3) }
+.warroom-app .acc-st:hover { border-color:var(--border2) }
+.warroom-app .acc-st.active { border-color:var(--amber);background:rgba(246,198,82,.05) }
+.warroom-app .acc-st.active::before {
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  border-radius:8px 0 0 8px;background:var(--amber);
+}
+.warroom-app .acc-st.done { border-color:rgba(92,206,138,.2);background:rgba(92,206,138,.04) }
+.warroom-app .acc-st.done .as-tx { text-decoration:line-through;color:var(--text3) }
+.warroom-app .acc-ck {
+  width:17px;height:17px;border-radius:5px;border:1.5px solid var(--border2);
+  background:var(--bg2);display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:1px;font-size:9px;transition:all .18s;
+}
+[data-theme="light"] .warroom-app .acc-ck { background:#fff }
+.warroom-app .acc-st.done .acc-ck { background:var(--mint);border-color:var(--mint);color:#0a1a10;font-weight:700 }
+.warroom-app .acc-st.active .acc-ck { border-color:var(--amber) }
+.warroom-app .as-tx { font-size:11px;line-height:1.45;color:var(--text1);flex:1 }
+.warroom-app .as-mt { display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap }
+.warroom-app .as-tag {
+  font-size:8px;padding:1px 5px;border-radius:4px;background:var(--bg3);
+  border:0.5px solid var(--border);color:var(--text3);font-family:'JetBrains Mono',monospace;
+}
+[data-theme="light"] .warroom-app .as-tag { background:var(--bg4) }
+.warroom-app .as-av {
+  width:11px;height:11px;border-radius:50%;display:inline-flex;align-items:center;
+  justify-content:center;font-size:5px;font-weight:700;color:#fff;
+}
+.warroom-app .sd-pb-lbl { margin-top:16px }
+
+/* ── CHAT ── */
+.warroom-app .chat-sec { flex:1;display:flex;flex-direction:column;min-height:0;background:var(--bg) }
+[data-theme="light"] .warroom-app .chat-sec { background:var(--bg3) }
+.warroom-app .chat-hdr {
+  padding:8px 13px;border-bottom:0.5px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.warroom-app .chat-hdr-t { font-family:'Syne',sans-serif;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px }
+.warroom-app .chat-msgs { flex:1;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:5px }
+.warroom-app .chat-msgs::-webkit-scrollbar { width:3px }
+.warroom-app .chat-msgs::-webkit-scrollbar-thumb { background:var(--border2);border-radius:2px }
+.warroom-app .chat-msg { display:flex;gap:6px;animation:wr-slideUp .3s ease both }
+.warroom-app .chat-msg.me { flex-direction:row-reverse }
+.warroom-app .cm-av {
+  width:21px;height:21px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:7px;font-weight:700;color:#fff;flex-shrink:0;
+}
+.warroom-app .cm-bub {
+  max-width:82%;padding:6px 9px;border-radius:8px;font-size:11px;line-height:1.45;
+  background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);
+}
+[data-theme="light"] .warroom-app .cm-bub { background:var(--bg4) }
+.warroom-app .chat-msg.me .cm-bub { background:var(--violet-bg);color:var(--text1);border-color:rgba(124,111,234,.2) }
+.warroom-app .cm-sys {
+  background:transparent !important;border:none !important;color:var(--text3) !important;
+  font-family:'JetBrains Mono',monospace;font-size:9px !important;font-style:italic;padding:1px 0 !important;
+}
+.warroom-app .chat-inp-row {
+  padding:7px 11px;border-top:0.5px solid var(--border);display:flex;gap:6px;flex-shrink:0;
+}
+.warroom-app .chat-inp {
+  flex:1;padding:7px 10px;border-radius:8px;border:0.5px solid var(--border2);
+  background:var(--bg2);color:var(--text1);font-size:12px;outline:none;
+  transition:border-color .15s;font-family:'DM Sans',sans-serif;
+}
+[data-theme="light"] .warroom-app .chat-inp { background:#fff }
+.warroom-app .chat-inp:focus { border-color:var(--violet) }
+.warroom-app .chat-inp::placeholder { color:var(--text3) }
+.warroom-app .chat-inp:disabled { opacity:.4;cursor:not-allowed }
+.warroom-app .chat-send {
+  width:29px;height:29px;border-radius:8px;border:none;background:var(--violet);
+  color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all .15s;
+}
+.warroom-app .chat-send:hover { background:var(--fuchsia) }
+.warroom-app .chat-send:disabled { opacity:.4;cursor:not-allowed }
+
+/* ── LOADING / ERRORE ── */
+.warroom-app .wr-loading {
+  flex:1;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:14px;color:var(--text2);font-size:13px;
+}
+.warroom-app .wr-spinner {
+  width:30px;height:30px;border-radius:50%;
+  border:2px solid var(--brd-red);border-top-color:var(--coral);
+  animation:wr-scan 1s linear infinite;
+}
+.warroom-app .wr-errore {
+  padding:16px 20px;color:var(--coral);background:rgba(240,112,96,.08);
+  border:0.5px solid rgba(240,112,96,.2);border-radius:10px;font-size:13px;margin:20px;
+}
+
+/* ── TIMEOUT OVERLAY ── */
+.warroom-app .timeout-overlay {
+  position:fixed;inset:0;z-index:900;
+  background:rgba(7,9,15,.92);backdrop-filter:blur(16px);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  animation:wr-fadeIn .5s ease;
+}
+[data-theme="light"] .warroom-app .timeout-overlay { background:rgba(240,242,248,.85) }
+.warroom-app .to-modal {
+  width:100%;max-width:520px;background:var(--bg2);
+  border:0.5px solid rgba(240,112,96,.4);border-radius:18px;overflow:hidden;
+  animation:wr-scaleIn .4s cubic-bezier(.34,1.56,.64,1);
+}
+[data-theme="light"] .warroom-app .to-modal { background:#fff }
+.warroom-app .to-bar {
+  height:4px;background:linear-gradient(90deg,var(--coral),var(--amber),var(--fuchsia));
+  background-size:200%;animation:wr-shimmer 2s linear infinite;
+}
+.warroom-app .to-inner { padding:32px;text-align:center }
+.warroom-app .to-emoji { font-size:52px;margin-bottom:14px;display:block }
+.warroom-app .to-title { font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:8px;color:var(--coral) }
+.warroom-app .to-sub { font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:22px }
+.warroom-app .to-stats { display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px }
+.warroom-app .to-stat { background:var(--bg3);border-radius:10px;padding:12px;border:0.5px solid var(--border) }
+[data-theme="light"] .warroom-app .to-stat { background:var(--bg4) }
+.warroom-app .tos-v { font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:2px }
+.warroom-app .tos-l { font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em }
+.warroom-app .to-sol { border:0.5px solid rgba(91,196,212,.25);border-radius:10px;overflow:hidden;margin-bottom:20px;text-align:left }
+.warroom-app .to-sol-tr {
+  padding:11px 14px;display:flex;align-items:center;gap:9px;cursor:pointer;
+  background:rgba(91,196,212,.06);transition:background .15s;user-select:none;
+}
+.warroom-app .to-sol-tr:hover { background:rgba(91,196,212,.12) }
+.warroom-app .to-sol-title { font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--cyan);flex:1 }
+.warroom-app .to-sol-cv { font-size:11px;color:var(--cyan);transition:transform .22s;flex-shrink:0 }
+.warroom-app .to-sol.open .to-sol-cv { transform:rotate(180deg) }
+.warroom-app .to-sol-bd { display:none;border-top:0.5px solid rgba(91,196,212,.2) }
+.warroom-app .to-sol.open .to-sol-bd { display:block }
+.warroom-app .to-sol-step { border-bottom:0.5px solid var(--border);padding:10px 14px }
+.warroom-app .to-sol-step:last-child { border:none }
+.warroom-app .to-sol-step-t { font-size:11px;font-weight:600;color:var(--text1);margin-bottom:6px }
+.warroom-app .to-cmd-block {
+  background:#020408;border-radius:7px;padding:8px 11px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.85;
+}
+[data-theme="light"] .warroom-app .to-cmd-block { background:#1a1a2e }
+.warroom-app .rc { display:block }
+.warroom-app .rc .p { color:rgba(92,206,138,.5) }
+.warroom-app .rc .ok { color:var(--mint) }
+.warroom-app .rc .out { color:rgba(91,196,212,.8) }
+.warroom-app .rc .w { color:var(--amber) }
+.warroom-app .rc .e { color:var(--coral) }
+.warroom-app .to-btn-row { display:flex;gap:10px;justify-content:center;flex-wrap:wrap }
+.warroom-app .to-btn {
+  padding:11px 24px;border-radius:10px;border:none;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;display:flex;align-items:center;gap:7px;
+}
+.warroom-app .to-btn-primary { background:linear-gradient(135deg,var(--coral),var(--amber));color:#0a1a10 }
+.warroom-app .to-btn-primary:hover { transform:translateY(-2px);box-shadow:0 6px 18px rgba(240,112,96,.3) }
+.warroom-app .to-btn-ghost { background:var(--bg3);color:var(--text2);border:0.5px solid var(--border2) }
+[data-theme="light"] .warroom-app .to-btn-ghost { background:var(--bg4) }
+.warroom-app .to-btn-ghost:hover { color:var(--text1) }
+
+/* ── RESOLVE MODAL ── */
+.warroom-app .resolve-overlay {
+  position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.82);
+  backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;
+  padding:20px;overflow-y:auto;animation:wr-fadeIn .25s ease;
+}
+.warroom-app .rm {
+  width:100%;max-width:520px;background:var(--bg2);
+  border:0.5px solid rgba(92,206,138,.3);border-radius:16px;overflow:hidden;
+  animation:wr-scaleIn .35s cubic-bezier(.34,1.56,.64,1);
+}
+[data-theme="light"] .warroom-app .rm { background:#fff }
+.warroom-app .rm-bar {
+  height:4px;background:linear-gradient(90deg,var(--mint),var(--cyan),var(--violet),var(--fuchsia));
+  background-size:200%;animation:wr-shimmer 2s linear infinite;
+}
+.warroom-app .rm-in { padding:24px }
+.warroom-app .rm-emoji { font-size:44px;text-align:center;display:block;margin-bottom:8px }
+.warroom-app .rm-title { font-family:'Syne',sans-serif;font-size:20px;font-weight:800;text-align:center;margin-bottom:4px }
+.warroom-app .rm-sub { font-size:12px;color:var(--text2);text-align:center;line-height:1.6;margin-bottom:14px }
+.warroom-app .rm-pts {
+  text-align:center;padding:14px;border-radius:12px;margin-bottom:12px;
+  background:linear-gradient(135deg,rgba(92,206,138,.1),rgba(91,196,212,.06));
+  border:0.5px solid rgba(92,206,138,.25);
+}
+.warroom-app .rm-pts-v { font-family:'Syne',sans-serif;font-size:48px;font-weight:800;color:var(--mint);line-height:1;display:block }
+.warroom-app .rm-pts-l { font-size:11px;color:var(--text2);margin-top:4px }
+.warroom-app .rm-bonus {
+  display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--amber);
+  background:var(--amber-bg);padding:4px 10px;border-radius:20px;margin-top:7px;
+  border:0.5px solid rgba(246,198,82,.25);
+}
+.warroom-app .rm-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px }
+.warroom-app .rm-stat { background:var(--bg3);border-radius:8px;padding:9px 6px;text-align:center;border:0.5px solid var(--border) }
+[data-theme="light"] .warroom-app .rm-stat { background:var(--bg4) }
+.warroom-app .rms-v { font-family:'Syne',sans-serif;font-size:17px;font-weight:700;line-height:1;margin-bottom:2px }
+.warroom-app .rms-l { font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em }
+.warroom-app .rm-team { display:flex;justify-content:center;gap:14px;margin-bottom:14px }
+.warroom-app .rm-mb { display:flex;flex-direction:column;align-items:center;gap:3px }
+.warroom-app .rm-av {
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:12px;font-weight:700;color:#fff;
+  border:2px solid var(--bg2);box-shadow:0 2px 10px rgba(0,0,0,.3);
+}
+.warroom-app .rm-av-n { font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace }
+.warroom-app .rm-webhook { border:0.5px solid rgba(91,196,212,.25);border-radius:10px;overflow:hidden;margin-bottom:12px }
+.warroom-app .rm-wh-hdr { padding:10px 13px;background:rgba(91,196,212,.06);display:flex;align-items:center;gap:9px }
+.warroom-app .rm-wh-ico { font-size:17px;flex-shrink:0 }
+.warroom-app .rm-wh-info { flex:1 }
+.warroom-app .rm-wh-title { font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--cyan) }
+.warroom-app .rm-wh-sub { font-size:10px;color:var(--text2);margin-top:1px }
+.warroom-app .rm-wh-body { padding:9px 13px;border-top:0.5px solid rgba(91,196,212,.15);display:flex;flex-direction:column;gap:7px }
+.warroom-app .rm-wh-targets { display:flex;gap:5px;flex-wrap:wrap }
+.warroom-app .rm-wh-t {
+  font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;
+  border:0.5px solid var(--border2);background:var(--bg3);color:var(--text2);
+  cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;
+}
+[data-theme="light"] .warroom-app .rm-wh-t { background:var(--bg4) }
+.warroom-app .rm-wh-t.sel { border-color:var(--cyan);color:var(--cyan);background:var(--cyan-bg) }
+.warroom-app .rm-wh-send {
+  width:100%;padding:8px;border-radius:8px;border:none;
+  background:linear-gradient(135deg,var(--cyan),var(--violet));color:#fff;
+  font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:5px;transition:all .2s;
+}
+.warroom-app .rm-wh-send:hover { transform:translateY(-1px);box-shadow:0 4px 12px rgba(91,196,212,.3) }
+.warroom-app .rm-wh-send:disabled { opacity:.6;cursor:not-allowed;transform:none }
+.warroom-app .rm-wh-sent {
+  display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:7px;
+  background:var(--mint-bg);border:0.5px solid rgba(92,206,138,.25);
+  font-size:11px;color:var(--mint);animation:wr-fadeInUp .4s ease both;
+}
+.warroom-app .rm-tech {
+  padding:7px 11px;background:var(--bg3);border-radius:8px;border:0.5px solid var(--border);
+  display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;
+}
+[data-theme="light"] .warroom-app .rm-tech { background:var(--bg4) }
+.warroom-app .rm-tp {
+  font-size:9px;font-weight:600;padding:2px 7px;border-radius:20px;border:0.5px solid;
+  display:inline-flex;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace;
+}
+.warroom-app .rm-close {
+  width:100%;padding:12px;border-radius:9px;border:none;
+  background:linear-gradient(135deg,var(--mint),var(--cyan));color:#0a1a10;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;
+  transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.warroom-app .rm-close:hover { transform:translateY(-2px);box-shadow:0 8px 22px rgba(92,206,138,.35) }
