@@ -89,7 +89,7 @@ const ChallengeSchema = new mongoose.Schema(
 
 // Virtual: numero totale di solve
 ChallengeSchema.virtual('solveCount').get(function () {
-  return this.solvedBy.length;
+  return (this.solvedBy ?? []).length;
 });
 
 module.exports = mongoose.model('Challenge', ChallengeSchema);

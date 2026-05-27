@@ -413,7 +413,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const navigate   = useNavigate();
 
   const [theme,         setTheme]         = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
@@ -428,6 +428,7 @@ export default function Dashboard() {
 
   // Load API data
   useEffect(() => {
+    if (authLoading) return;
     let active = true;
     (async () => {
       try {
@@ -436,14 +437,14 @@ export default function Dashboard() {
           challengesAPI.getAll({ limit: 5 }),
         ]);
         if (!active) return;
-        setProfile(prof);
+        setProfile(prof.user ?? prof);
         setChallenges((chData.challenges || chData || []).slice(0, 5));
       } catch (err) {
         console.error('Dashboard load error:', err);
       }
     })();
     return () => { active = false; };
-  }, []);
+  }, [authLoading]);
 
   // Animate progress bar after profile loads
   useEffect(() => {

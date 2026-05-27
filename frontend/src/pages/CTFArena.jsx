@@ -5,28 +5,31 @@ import { usersAPI, challengesAPI } from '../services/api';
 
 /* ─── Config ──────────────────────────────────────────────────────────────── */
 const CAT_TABS = [
-  { id: 'all',          label: 'Tutte',         count: null, icon: null,  color: null,            bg: null,                   cls: '' },
-  { id: 'Cryptography', label: 'Cryptography',  count: 89,   icon: '🔐', color: 'var(--violet)', bg: 'rgba(124,111,234,.12)', cls: 'cc-crypto'   },
-  { id: 'Web',          label: 'Web Exploit',   count: 74,   icon: '💻', color: 'var(--fuchsia)',bg: 'rgba(232,112,184,.12)', cls: 'cc-web'      },
-  { id: 'OSINT',        label: 'OSINT',         count: 61,   icon: '🔍', color: 'var(--cyan)',   bg: 'rgba(91,196,212,.12)',  cls: 'cc-osint'    },
-  { id: 'Steganography',label: 'Steganography', count: 55,   icon: '🖼️', color: 'var(--mint)',   bg: 'rgba(92,206,138,.12)',  cls: 'cc-stegano'  },
-  { id: 'Forensics',    label: 'Forensics',     count: 62,   icon: '🔎', color: 'var(--amber)',  bg: 'rgba(246,198,82,.12)',  cls: 'cc-forensics'},
-  { id: 'Reverse',      label: 'Reverse Eng.',  count: 39,   icon: '⚙️', color: 'var(--coral)',  bg: 'rgba(240,112,96,.12)',  cls: 'cc-reverse'  },
+  { id: 'all',      label: 'Tutte',     count: null, icon: null,  color: null,             bg: null,                    cls: '' },
+  { id: 'Web',      label: 'Web',       count: null, icon: '💻', color: 'var(--fuchsia)', bg: 'rgba(232,112,184,.12)', cls: 'cc-web'      },
+  { id: 'Crypto',   label: 'Crypto',    count: null, icon: '🔐', color: 'var(--violet)',  bg: 'rgba(124,111,234,.12)', cls: 'cc-crypto'   },
+  { id: 'Forensics',label: 'Forensics', count: null, icon: '🔎', color: 'var(--amber)',   bg: 'rgba(246,198,82,.12)',  cls: 'cc-forensics'},
+  { id: 'Pwn',      label: 'Pwn',       count: null, icon: '💀', color: 'var(--coral)',   bg: 'rgba(240,112,96,.12)',  cls: 'cc-reverse'  },
+  { id: 'Reverse',  label: 'Reverse',   count: null, icon: '⚙️', color: 'var(--coral)',   bg: 'rgba(240,112,96,.12)',  cls: 'cc-reverse'  },
+  { id: 'OSINT',    label: 'OSINT',     count: null, icon: '🔍', color: 'var(--cyan)',    bg: 'rgba(91,196,212,.12)',  cls: 'cc-osint'    },
+  { id: 'Misc',     label: 'Misc',      count: null, icon: '🔧', color: 'var(--text2)',   bg: 'rgba(138,150,176,.10)', cls: 'cc-misc'     },
 ];
 
 const CAT_STYLE = {
-  Cryptography: { color:'var(--violet)', bg:'rgba(124,111,234,.12)', cls:'cc-crypto'    },
-  Crypto:       { color:'var(--violet)', bg:'rgba(124,111,234,.12)', cls:'cc-crypto'    },
   Web:          { color:'var(--fuchsia)',bg:'rgba(232,112,184,.12)', cls:'cc-web'       },
-  OSINT:        { color:'var(--cyan)',   bg:'rgba(91,196,212,.12)',  cls:'cc-osint'     },
-  Steganography:{ color:'var(--mint)',   bg:'rgba(92,206,138,.12)',  cls:'cc-stegano'   },
+  Crypto:       { color:'var(--violet)', bg:'rgba(124,111,234,.12)', cls:'cc-crypto'    },
+  Cryptography: { color:'var(--violet)', bg:'rgba(124,111,234,.12)', cls:'cc-crypto'    },
   Forensics:    { color:'var(--amber)',  bg:'rgba(246,198,82,.12)',  cls:'cc-forensics' },
+  Pwn:          { color:'var(--coral)',  bg:'rgba(240,112,96,.12)',  cls:'cc-reverse'   },
   Reverse:      { color:'var(--coral)',  bg:'rgba(240,112,96,.12)',  cls:'cc-reverse'   },
+  OSINT:        { color:'var(--cyan)',   bg:'rgba(91,196,212,.12)',  cls:'cc-osint'     },
+  Misc:         { color:'var(--text2)',  bg:'rgba(138,150,176,.10)', cls:'cc-misc'      },
+  Steganography:{ color:'var(--mint)',   bg:'rgba(92,206,138,.12)',  cls:'cc-stegano'   },
 };
 
 const CAT_ICON = {
-  Cryptography:'🔐', Crypto:'🔐', Web:'💻', OSINT:'🔍',
-  Steganography:'🖼️', Forensics:'🔎', Reverse:'⚙️',
+  Web:'💻', Crypto:'🔐', Cryptography:'🔐', Forensics:'🔎',
+  Pwn:'💀', Reverse:'⚙️', OSINT:'🔍', Misc:'🔧', Steganography:'🖼️',
 };
 
 const DIFF_STYLE = {
@@ -212,7 +215,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
 export default function CTFArena() {
-  useAuth();
+  const { loading: authLoading } = useAuth();
 
   const [theme,   setTheme]   = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
   const [profile, setProfile] = useState(null);
@@ -240,11 +243,13 @@ export default function CTFArena() {
   const flagInputRef = useRef(null);
 
   useEffect(() => {
+    if (authLoading) return;
     usersAPI.getMe().then(({ data }) => {
-      setProfile(data);
-      setSolvedIds(new Set((data.solvedChallenges || []).map(String)));
+      const me = data.user ?? data;
+      setProfile(me);
+      setSolvedIds(new Set((me.solvedChallenges || []).map(String)));
     }).catch(() => {});
-  }, []);
+  }, [authLoading]);
 
   useEffect(() => {
     const t = setTimeout(() => { setDebouncedSearch(searchQuery); setPage(1); }, 400);
@@ -252,6 +257,7 @@ export default function CTFArena() {
   }, [searchQuery]);
 
   useEffect(() => {
+    if (authLoading) return;
     let active = true;
     setLoading(true);
     const params = { page, limit: LIMIT };
@@ -269,7 +275,7 @@ export default function CTFArena() {
       .finally(() => { if (active) setLoading(false); });
 
     return () => { active = false; };
-  }, [page, selectedCat, selectedDiff, debouncedSearch]);
+  }, [page, selectedCat, selectedDiff, debouncedSearch, authLoading]);
 
   useEffect(() => {
     document.body.style.overflow = modal ? 'hidden' : '';

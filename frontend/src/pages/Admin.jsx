@@ -45,7 +45,7 @@ function Toggler({ on, onClick }) {
 // ── Componente principale ────────────────────────────────────────────────────
 export default function Admin() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // Guard: redirect se non Admin
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function Admin() {
 
   // Form crea sfida
   const [formCTF, setFormCTF] = useState({
-    titolo: '', categoria: 'Cryptography', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '',
+    titolo: '', categoria: 'Web', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '',
   });
   const [flagHashPreview, setFlagHashPreview] = useState('');
   const [invioSfida, setInvioSfida]           = useState(false);
@@ -126,11 +126,12 @@ export default function Admin() {
 
   // ── Caricamento dati al cambio sezione ──────────────────────────────────────
   useEffect(() => {
+    if (authLoading) return;
     if (sezione === 'stats')    caricaStats();
     if (sezione === 'users')    caricaUtenti();
     if (sezione === 'ctf')      caricaSfide();
     if (sezione === 'warroom')  caricaWarrooms();
-  }, [sezione]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sezione, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Animazioni dashboard: counters + barre ───────────────────────────────────
   useEffect(() => {
@@ -273,10 +274,13 @@ export default function Admin() {
         points: Number(formCTF.punti), flag: formCTF.flag,
       });
       mostraToast('Sfida creata! Flag SHA-256 salvata ✓', 'tok');
-      setFormCTF({ titolo: '', categoria: 'Cryptography', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '' });
+      setFormCTF({ titolo: '', categoria: 'Web', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '' });
       setFlagHashPreview('');
       caricaSfide();
     } catch (err) {
+      console.log('[handleCreaSfida] status:', err.response?.status);
+      console.log('[handleCreaSfida] body:', err.response?.data);
+      console.log('[handleCreaSfida] err:', err.message);
       mostraToast(err.response?.data?.message ?? 'Errore nella creazione della sfida', 'terr');
     } finally {
       setInvioSfida(false);
@@ -568,7 +572,7 @@ export default function Admin() {
             <div className="fg">
               <div className="fg-lbl">Categoria</div>
               <select className="fg-input" value={formCTF.categoria} onChange={(e) => setFormCTF((f) => ({ ...f, categoria: e.target.value }))}>
-                {['Cryptography', 'Web Exploit', 'OSINT', 'Steganography', 'Forensics', 'Reverse Engineering'].map((c) => <option key={c}>{c}</option>)}
+                {['Web', 'Crypto', 'Forensics', 'Pwn', 'Reverse', 'OSINT', 'Misc'].map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div className="fg">
@@ -999,7 +1003,7 @@ export default function Admin() {
                 ))}
               </div>
             ))}
-            <div className="sb-item" onClick={() => navigate('/')}>
+            <div className="sb-item" onClick={() => navigate('/dashboard')}>
               <span style={{ fontSize: 15 }}>↩</span>
               <span>↩ App utente</span>
             </div>

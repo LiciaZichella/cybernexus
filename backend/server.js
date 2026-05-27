@@ -43,10 +43,10 @@ app.use(express.urlencoded({ extended: true }));
 const swaggerDoc = YAML.load('./swagger.yaml');
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
-// Rate limiting globale: max 100 richieste per IP ogni 15 minuti
+// Rate limiting globale: 500 req/15min in sviluppo, 100 in produzione
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: process.env.NODE_ENV === 'production' ? 100 : 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Troppe richieste, riprova tra qualche minuto.' },

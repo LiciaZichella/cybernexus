@@ -100,6 +100,8 @@ UserSchema.methods.toPublicJSON = function () {
     email: this.email,
     role: this.role,
     points: this.points,
+    solvedChallenges: this.solvedChallenges,
+    streak: this.streak,
     avatar: this.avatar,
     bio: this.bio,
     createdAt: this.createdAt,
