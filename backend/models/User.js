@@ -81,11 +81,10 @@ const UserSchema = new mongoose.Schema(
 );
 
 // Hash della password prima del salvataggio (solo se modificata)
-UserSchema.pre('save', async function (next) {
-  if (!this.isModified('passwordHash')) return next();
+UserSchema.pre('save', async function () {
+  if (!this.isModified('passwordHash')) return;
   const salt = await bcrypt.genSalt(12);
   this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
-  next();
 });
 
 // Metodo d'istanza: confronta password in chiaro con l'hash
