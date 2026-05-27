@@ -262,8 +262,8 @@ export default function CTFArena() {
     challengesAPI.getAll(params)
       .then(({ data }) => {
         if (!active) return;
-        setChallenges(data.challenges || data || []);
-        setPagination(data.pagination || { total: 0, pages: 1, page: 1 });
+        setChallenges(data.challenges || []);
+        setPagination({ total: data.total ?? 0, pages: 1, page: 1 });
       })
       .catch(() => { if (active) setChallenges([]); })
       .finally(() => { if (active) setLoading(false); });

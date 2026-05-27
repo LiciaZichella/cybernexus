@@ -123,6 +123,8 @@ export default function WarRoom() {
   const [sala, setSala] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState('');
+  const [sale, setSale] = useState([]);
+  const [saleLoading, setSaleLoading] = useState(false);
 
   // Layout
   const [tema, setTema] = useState(
@@ -207,7 +209,15 @@ export default function WarRoom() {
 
   // ── Carica dati sala dall'API ────────────────────────────────────────────────
   useEffect(() => {
-    if (!id) { setLoading(false); return; }
+    if (!id) {
+      setLoading(false);
+      setSaleLoading(true);
+      warroomAPI.getAll()
+        .then(({ data }) => setSale(Array.isArray(data) ? data : data.rooms ?? data.warrooms ?? []))
+        .catch(() => setSale([]))
+        .finally(() => setSaleLoading(false));
+      return;
+    }
     warroomAPI.getById(id)
       .then(({ data }) => {
         setSala(data);
@@ -294,9 +304,10 @@ export default function WarRoom() {
 
   // ── Blocca scroll body durante la sessione ───────────────────────────────────
   useEffect(() => {
+    if (!id) return;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
-  }, []);
+  }, [id]);
 
   // ── ESC chiude pannello dettagli e modal ─────────────────────────────────────
   useEffect(() => {
@@ -456,6 +467,149 @@ export default function WarRoom() {
       <div className="wr-errore">{errore}</div>
     </div>
   );
+
+  // ── Vista lista / stato vuoto (nessun id nella route) ────────────────────────
+  if (!id) {
+    const canCreate = user?.role === 'Admin' || user?.role === 'Manager';
+    return (
+      <div className="warroom-app">
+        <nav className="wr-navbar">
+          <Link className="nav-logo" to="/">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <defs>
+                <linearGradient id="nlg-wr" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#7C6FEA"/>
+                  <stop offset="100%" stopColor="#5BC4D4"/>
+                </linearGradient>
+              </defs>
+              <path d="M12 3a12 12 0 0 0 8.5 3A12 12 0 0 1 12 21 12 12 0 0 1 3.5 6 12 12 0 0 0 12 3"
+                fill="rgba(124,111,234,0.15)" stroke="url(#nlg-wr)"
+                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            CyberNexus
+          </Link>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <Link to="/"            className="nav-back">🏠 Home</Link>
+            <Link to="/leaderboard" className="nav-back">🏆 Classifica</Link>
+            <Link to="/ctf"         className="nav-back">⚑ CTF Arena</Link>
+            {user && <Link to="/dashboard" className="nav-back">📊 Dashboard</Link>}
+          </div>
+          <div className="nav-right">
+            {user && (
+              <div className="nav-av" style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
+                {user.username?.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+          </div>
+        </nav>
+
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', minHeight: 'calc(100vh - 52px)',
+          gap: 14, textAlign: 'center', padding: 24,
+        }}>
+          {saleLoading ? (
+            <div className="wr-loading">
+              <div className="wr-spinner" />
+              <span>Caricamento War Room...</span>
+            </div>
+          ) : sale.length > 0 ? (
+            <>
+              <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 6, fontFamily: "'JetBrains Mono',monospace" }}>
+                ⚔ {sale.length} War Room attiv{sale.length === 1 ? 'a' : 'e'}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 520 }}>
+                {sale.map((s) => (
+                  <button
+                    key={s._id}
+                    onClick={() => navigate(`/warroom/${s._id}`)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      padding: '14px 18px', borderRadius: 10,
+                      border: '0.5px solid var(--border2)', background: 'var(--bg2)',
+                      cursor: 'pointer', textAlign: 'left', width: '100%',
+                    }}
+                  >
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 8,
+                      background: 'rgba(124,111,234,.15)', border: '0.5px solid rgba(124,111,234,.25)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 18, flexShrink: 0,
+                    }}>⚔</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text1)', marginBottom: 3 }}>
+                        {s.title}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: "'JetBrains Mono',monospace" }}>
+                        {s.type ?? 'Incident'} ·{' '}
+                        <span style={{
+                          color: s.severity === 'CRITICAL' ? 'var(--coral)'
+                               : s.severity === 'HIGH'     ? 'var(--amber)'
+                               : 'var(--mint)',
+                        }}>
+                          {s.severity ?? 'MEDIUM'}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{
+                      fontSize: 11, color: 'var(--violet)', fontFamily: "'JetBrains Mono',monospace",
+                      padding: '3px 8px', borderRadius: 5,
+                      background: 'var(--violet-bg)', border: '0.5px solid rgba(124,111,234,.3)',
+                      flexShrink: 0,
+                    }}>
+                      Entra →
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {canCreate && (
+                <button
+                  onClick={() => navigate('/admin')}
+                  style={{
+                    marginTop: 8, padding: '9px 22px', borderRadius: 8,
+                    background: 'linear-gradient(135deg,var(--violet),var(--fuchsia))',
+                    border: 'none', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer',
+                  }}
+                >
+                  + Crea War Room
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <div style={{
+                width: 72, height: 72, borderRadius: 18,
+                background: 'rgba(124,111,234,.12)', border: '0.5px solid rgba(124,111,234,.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 34, marginBottom: 4,
+              }}>⚔</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text1)' }}>
+                Nessuna War Room attiva
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text3)', maxWidth: 360, lineHeight: 1.65 }}>
+                Non ci sono War Room disponibili al momento.
+                {canCreate
+                  ? ' Crea una nuova sessione per iniziare.'
+                  : ' Torna a controllare più tardi.'}
+              </div>
+              {canCreate && (
+                <button
+                  onClick={() => navigate('/admin')}
+                  style={{
+                    marginTop: 6, padding: '10px 28px', borderRadius: 8,
+                    background: 'linear-gradient(135deg,var(--violet),var(--fuchsia))',
+                    border: 'none', color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                  }}
+                >
+                  + Crea War Room
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // ── JSX principale ────────────────────────────────────────────────────────────
   return (

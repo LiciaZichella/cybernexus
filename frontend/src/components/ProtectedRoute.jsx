@@ -7,6 +7,9 @@ export default function ProtectedRoute({ requiredRole }) {
   // Aspetta il tentativo di refresh iniziale prima di decidere
   if (loading) return null;
 
+  // Debug temporaneo — rimuovere dopo verifica
+  console.log('[ProtectedRoute] user:', user);
+
   // Non autenticato → reindirizza al login
   if (!accessToken) return <Navigate to="/login" replace />;
 

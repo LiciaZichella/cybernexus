@@ -369,6 +369,17 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .badge-card.locked .bc-name{opacity:.5}
 .unlocked-check{position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--mint);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700}
 
+/* ADMIN */
+.admin-pill{font-size:11px;font-weight:600;padding:5px 11px;border-radius:var(--r8);background:var(--coral-bg);color:var(--coral);border:0.5px solid rgba(240,112,96,.3);text-decoration:none;transition:all .2s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.admin-pill:hover{background:rgba(240,112,96,.18);transform:translateY(-1px)}
+.admin-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(135deg,rgba(240,112,96,.07),rgba(246,198,82,.05));border:0.5px solid rgba(240,112,96,.2);border-radius:var(--r12);padding:12px 18px;margin-bottom:14px}
+.ab-left{display:flex;align-items:center;gap:12px}
+.ab-icon{width:36px;height:36px;border-radius:9px;background:var(--coral-bg);border:0.5px solid rgba(240,112,96,.25);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ab-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;color:var(--text1);margin-bottom:2px}
+.ab-sub{font-size:11px;color:var(--text3)}
+.ab-btn{font-size:12px;font-weight:600;padding:8px 16px;border-radius:var(--r8);background:var(--coral-bg);color:var(--coral);border:0.5px solid rgba(240,112,96,.3);text-decoration:none;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.ab-btn:hover{background:rgba(240,112,96,.18);transform:translateY(-1px)}
+
 /* LEADERBOARD */
 .lb-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r14);padding:18px 20px;margin-bottom:24px}
 .lb-mini{display:flex;flex-direction:column;gap:6px}
@@ -402,7 +413,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
 export default function Dashboard() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate   = useNavigate();
 
   const [theme,         setTheme]         = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
@@ -538,6 +549,12 @@ export default function Dashboard() {
             <div className="notif-dot"/>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
           </div>
+          {user?.role === 'Admin' && (
+            <Link to="/admin" className="admin-pill">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              Admin
+            </Link>
+          )}
           <div className="nav-avatar">{initials}</div>
         </div>
       </nav>
@@ -594,6 +611,20 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* ── ADMIN BANNER ── */}
+        {user?.role === 'Admin' && (
+          <div className="admin-banner animate-in delay-2">
+            <div className="ab-left">
+              <div className="ab-icon">⚙</div>
+              <div>
+                <div className="ab-title">Admin Panel</div>
+                <div className="ab-sub">Gestisci utenti, challenge e War Room</div>
+              </div>
+            </div>
+            <Link to="/admin" className="ab-btn">Vai al pannello →</Link>
+          </div>
+        )}
 
         {/* ── STAT CARDS ── */}
         <div className="stat-grid">

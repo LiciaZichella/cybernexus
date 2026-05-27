@@ -47,6 +47,9 @@ export function AuthProvider({ children }) {
       const { data } = await authAPI.refresh(rt);
       impostaToken(data.accessToken);
       salvaRefreshToken(data.refreshToken);
+      // Il refresh endpoint non restituisce user: ripristina il profilo (incluso role)
+      const { data: me } = await api.get('/users/me');
+      setUser(me.user);
       return true;
     } catch {
       impostaToken(null);

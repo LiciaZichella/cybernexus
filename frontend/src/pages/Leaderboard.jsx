@@ -121,9 +121,9 @@ export default function Leaderboard() {
       setErrore(null);
       const { data } = await leaderboardAPI.get({ page: pg, limit: 20 });
       setClassifica((prev) =>
-        pg === 1 ? data.entries : [...prev, ...data.entries]
+        pg === 1 ? data.classifica : [...prev, ...data.classifica]
       );
-      setTotalePagine(data.totalPages ?? 1);
+      setTotalePagine(data.pages ?? 1);
       setTotale(data.total ?? 0);
     } catch (err) {
       setErrore(err.response?.data?.message ?? 'Impossibile caricare la classifica.');
