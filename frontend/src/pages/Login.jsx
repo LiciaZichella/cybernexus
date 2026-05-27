@@ -287,6 +287,7 @@ export default function Login() {
         if (!username) { setError('Username obbligatorio.');        setLoading(false); return; }
         if (password !== confirm) { setError('Le password non coincidono.'); setLoading(false); return; }
         await authAPI.register({ username, email, password });
+        setIsReg(true);
         await login(email, password);
         navigate('/dashboard');
       }
@@ -448,7 +449,7 @@ export default function Login() {
               <div className="field-group">
                 <label className="field-label">
                   Password
-                  {tab === 'login' && <span className="forgot-link">Hai dimenticato?</span>}
+                  {tab === 'login' && <span className="forgot-link" onClick={() => setError('Funzionalità non ancora disponibile')}>Hai dimenticato?</span>}
                 </label>
                 <div className="field-wrap">
                   <input

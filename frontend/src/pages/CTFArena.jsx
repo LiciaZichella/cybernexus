@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usersAPI, challengesAPI } from '../services/api';
 
@@ -211,11 +211,96 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .pg-btn:disabled{opacity:.4;cursor:not-allowed}
 .pg-dots{color:var(--text3);padding:0 6px;font-family:'JetBrains Mono',monospace}
 @media(max-width:640px){.page{padding-left:14px;padding-right:14px}.hero-title{font-size:24px}.ch-grid{grid-template-columns:1fr}.hero-row{flex-direction:column;align-items:flex-start}}
+.nav-av:hover{transform:scale(1.08)}
+.profile-overlay{position:fixed;inset:0;z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(7,9,15,.72);backdrop-filter:blur(14px);animation:fadeIn .25s ease}
+[data-theme="light"] .profile-overlay{background:rgba(240,242,248,.75)}
+.profile-modal{width:100%;max-width:680px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:18px;overflow:hidden;animation:scaleIn .35s cubic-bezier(.34,1.56,.64,1);position:relative;max-height:88vh;display:flex;flex-direction:column}
+[data-theme="light"] .profile-modal{background:#fff}
+.pm-topbar{height:3px;flex-shrink:0;background:linear-gradient(90deg,var(--violet),var(--fuchsia),var(--cyan),var(--mint));background-size:200%;animation:shimmer 3s linear infinite}
+.pm-close{position:absolute;top:14px;right:14px;z-index:10;width:28px;height:28px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);transition:all .15s;font-size:14px;line-height:1}
+[data-theme="light"] .pm-close{background:var(--bg3)}
+.pm-close:hover{color:var(--text1);transform:scale(1.08)}
+.pm-body{display:grid;grid-template-columns:200px 1fr;overflow-y:auto;flex:1}
+.pm-body::-webkit-scrollbar{width:4px}
+.pm-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.pm-left{padding:28px 20px;background:linear-gradient(180deg,var(--violet-bg) 0%,transparent 60%);border-right:0.5px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.pm-avatar-wrap{position:relative;display:inline-block;margin-bottom:2px}
+.pm-avatar{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff;border:3px solid rgba(124,111,234,.35);box-shadow:0 0 24px rgba(124,111,234,.2)}
+.pm-name{font-family:'Syne',sans-serif;font-size:17px;font-weight:700}
+.pm-handle{font-size:11px;color:var(--violet);font-family:'JetBrains Mono',monospace}
+.pm-bio{font-size:12px;color:var(--text2);line-height:1.55;text-align:center;padding:0 4px}
+.pm-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+.pmsg-item{background:var(--bg2);border:0.5px solid var(--border);border-radius:9px;padding:9px 6px;text-align:center}
+[data-theme="light"] .pmsg-item{background:var(--bg3)}
+.pmsg-val{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;line-height:1;margin-bottom:2px}
+.pmsg-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+.pm-socials{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.pm-social-btn{font-size:11px;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.pm-social-btn:hover{border-color:var(--violet);color:var(--violet)}
+.pm-social-btn.primary{background:var(--violet);color:#fff;border-color:var(--violet)}
+.pm-social-btn.primary:hover{opacity:.88}
+.pm-right{padding:22px 20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.pm-right::-webkit-scrollbar{width:3px}
+.pm-right::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.pm-section-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;font-family:'JetBrains Mono',monospace;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.pm-section-title::after{content:'';flex:1;height:0.5px;background:var(--border)}
+.pm-heatmap{background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;padding:12px 14px}
+[data-theme="light"] .pm-heatmap{background:var(--bg4)}
+.pmh-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.pmh-title{font-size:11px;color:var(--text2);font-weight:500}
+.pmh-streak{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--amber);font-weight:600}
+.pm-hm-grid{display:grid;grid-template-columns:repeat(20,1fr);gap:2px}
+.pm-hm-cell{aspect-ratio:1;border-radius:2px}
+.pm-cats{background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;padding:12px 14px}
+[data-theme="light"] .pm-cats{background:var(--bg4)}
+.pm-cat-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.pm-cat-row:last-child{margin-bottom:0}
+.pm-cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pm-cat-name{font-size:11px;color:var(--text2);min-width:90px}
+.pm-cat-bar{flex:1;height:5px;border-radius:3px;background:var(--border2);overflow:hidden}
+.pm-cat-fill{height:5px;border-radius:3px}
+.pm-cat-pct{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;min-width:32px;text-align:right}
+.pm-badges-grid{display:flex;gap:7px;flex-wrap:wrap}
+.pm-badge{width:38px;height:38px;border-radius:9px;background:var(--bg3);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:all .2s}
+[data-theme="light"] .pm-badge{background:var(--bg4)}
+.pm-badge:hover{transform:scale(1.18) rotate(-6deg);border-color:var(--border2)}
+.pm-badge.unlocked{background:var(--mint-bg);border-color:rgba(92,206,138,.3)}
+.pm-badge.locked{opacity:.35;filter:grayscale(.8)}
+.pm-empty{font-size:12px;color:var(--text3);padding:8px 0}
+.pm-spinner{width:24px;height:24px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--violet);animation:spin 0.8s linear infinite}
+@media(max-width:700px){.pm-body{grid-template-columns:1fr}.pm-left{border-right:none;border-bottom:0.5px solid var(--border);padding:20px}}
 `;
+
+/* ─── Profile modal helpers ───────────────────────────────────────────────── */
+const PROFILE_HEATMAP = Array.from({ length: 80 }, (_, i) => {
+  const v = Math.sin(i * 17.3 + 1.7) * 0.5 + 0.5;
+  if (v < 0.45) return 0;
+  if (v < 0.65) return 1;
+  if (v < 0.80) return 2;
+  if (v < 0.92) return 3;
+  return 4;
+});
+const HEATMAP_COLORS = ['var(--border2)','rgba(92,206,138,.25)','rgba(92,206,138,.5)','rgba(92,206,138,.75)','var(--mint)'];
+const PROFILE_CATS = [
+  { nome:'Web',       colore:'#7C6FEA', pct:80 },
+  { nome:'Crypto',    colore:'#5BC4D4', pct:65 },
+  { nome:'Forensics', colore:'#5CCE8A', pct:50 },
+  { nome:'Rev/Pwn',   colore:'#F6C652', pct:35 },
+  { nome:'OSINT',     colore:'#E870B8', pct:20 },
+];
+const PROFILE_BADGES = [
+  { emoji:'🔑', label:'First Blood',   unlocked:true  },
+  { emoji:'💎', label:'Gem Collector', unlocked:true  },
+  { emoji:'⚡', label:'Speed Run',     unlocked:true  },
+  { emoji:'🔥', label:'On Fire',       unlocked:false },
+  { emoji:'👑', label:'Champion',      unlocked:false },
+  { emoji:'🕵️', label:'Ghost',         unlocked:false },
+];
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
 export default function CTFArena() {
-  const { loading: authLoading } = useAuth();
+  const { loading: authLoading, user } = useAuth();
+  const navigate = useNavigate();
 
   const [theme,   setTheme]   = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
   const [profile, setProfile] = useState(null);
@@ -241,6 +326,9 @@ export default function CTFArena() {
   const [hintLoadingIdx, setHintLoadingIdx] = useState(null);
 
   const flagInputRef = useRef(null);
+
+  const [profiloAperto, setProfiloAperto]   = useState(null);
+  const [profiloLoading, setProfiloLoading] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -269,7 +357,7 @@ export default function CTFArena() {
       .then(({ data }) => {
         if (!active) return;
         setChallenges(data.challenges || []);
-        setPagination({ total: data.total ?? 0, pages: 1, page: 1 });
+        setPagination({ total: data.total ?? 0, pages: data.pages ?? 1, page });
       })
       .catch(() => { if (active) setChallenges([]); })
       .finally(() => { if (active) setLoading(false); });
@@ -283,7 +371,13 @@ export default function CTFArena() {
   }, [modal]);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') setModal(null); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        setModal(null);
+        setProfiloAperto(null);
+        document.body.style.overflow = '';
+      }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
@@ -345,6 +439,26 @@ export default function CTFArena() {
 
   const changeCat  = (id) => { setSelectedCat(id);  setPage(1); };
   const changeDiff = (d)  => { setSelectedDiff(d);  setPage(1); };
+
+  const handleOpenProfile = async (item) => {
+    document.body.style.overflow = 'hidden';
+    setProfiloAperto(item);
+    setProfiloLoading(true);
+    try {
+      const { data } = await usersAPI.getById(item.id ?? item._id);
+      setProfiloAperto((prev) => ({ ...prev, ...(data.user ?? data) }));
+    } catch {
+      // mostra i dati già disponibili
+    } finally {
+      setProfiloLoading(false);
+    }
+  };
+
+  const handleCloseProfile = () => {
+    document.body.style.overflow = '';
+    setProfiloAperto(null);
+    setProfiloLoading(false);
+  };
 
   const displayed  = hideSolved ? challenges.filter(ch => !solvedIds.has(String(ch._id))) : challenges;
   const initials   = (profile?.username || 'US').slice(0, 2).toUpperCase();
@@ -464,6 +578,117 @@ export default function CTFArena() {
         </div>
       )}
 
+      {/* ── Profile modal ── */}
+      {profiloAperto && (
+        <div className="profile-overlay" onClick={handleCloseProfile}>
+          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="pm-topbar" />
+            <button className="pm-close" onClick={handleCloseProfile}>✕</button>
+            <div className="pm-body">
+              {/* Colonna sinistra */}
+              <div className="pm-left">
+                <div className="pm-avatar-wrap">
+                  <div className="pm-avatar" style={{ background: 'linear-gradient(135deg,var(--violet),var(--fuchsia))' }}>
+                    {(profiloAperto.username || 'US').slice(0, 2).toUpperCase()}
+                  </div>
+                </div>
+                <div className="pm-name">{profiloAperto.username}</div>
+                <div className="pm-handle">@{(profiloAperto.username ?? '').toLowerCase()}</div>
+                {profiloAperto.bio && <div className="pm-bio">{profiloAperto.bio}</div>}
+                <div className="pm-stats-grid">
+                  <div className="pmsg-item">
+                    <div className="pmsg-val" style={{ color: 'var(--violet)' }}>{profiloAperto.points ?? 0}</div>
+                    <div className="pmsg-lbl">Punti</div>
+                  </div>
+                  <div className="pmsg-item">
+                    <div className="pmsg-val" style={{ color: 'var(--mint)' }}>
+                      {(profiloAperto.solvedChallenges ?? []).length}
+                    </div>
+                    <div className="pmsg-lbl">Flag</div>
+                  </div>
+                  <div className="pmsg-item">
+                    <div className="pmsg-val" style={{ color: 'var(--amber)' }}>
+                      {profiloAperto.streak ?? '–'}
+                    </div>
+                    <div className="pmsg-lbl">Streak</div>
+                  </div>
+                  <div className="pmsg-item">
+                    <div className="pmsg-val" style={{ color: 'var(--cyan)' }}>
+                      {profiloAperto.role ?? '–'}
+                    </div>
+                    <div className="pmsg-lbl">Ruolo</div>
+                  </div>
+                </div>
+                <div className="pm-socials">
+                  <button
+                    className="pm-social-btn primary"
+                    onClick={() => { handleCloseProfile(); navigate('/dashboard'); }}
+                  >
+                    Dashboard
+                  </button>
+                </div>
+              </div>
+
+              {/* Colonna destra */}
+              <div className="pm-right">
+                {profiloLoading ? (
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, padding:'40px 0', color:'var(--text2)' }}>
+                    <div className="pm-spinner" />
+                    <span>Caricamento…</span>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <div className="pm-section-title">Attività</div>
+                      <div className="pm-heatmap">
+                        <div className="pmh-header">
+                          <span className="pmh-title">Ultimi 80 giorni</span>
+                          <span className="pmh-streak">🔥 {profiloAperto.streak ?? 0} giorni</span>
+                        </div>
+                        <div className="pm-hm-grid">
+                          {PROFILE_HEATMAP.map((lvl, i) => (
+                            <div key={i} className="pm-hm-cell" style={{ background: HEATMAP_COLORS[lvl] }} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="pm-section-title">Categorie</div>
+                      <div className="pm-cats">
+                        {PROFILE_CATS.map((cat) => (
+                          <div key={cat.nome} className="pm-cat-row">
+                            <div className="pm-cat-dot" style={{ background: cat.colore }} />
+                            <div className="pm-cat-name">{cat.nome}</div>
+                            <div className="pm-cat-bar">
+                              <div className="pm-cat-fill" style={{ width: `${cat.pct}%`, background: cat.colore }} />
+                            </div>
+                            <div className="pm-cat-pct" style={{ color: cat.colore }}>{cat.pct}%</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="pm-section-title">Badge</div>
+                      <div className="pm-badges-grid">
+                        {PROFILE_BADGES.map((badge) => (
+                          <div
+                            key={badge.label}
+                            className={`pm-badge ${badge.unlocked ? 'unlocked' : 'locked'}`}
+                            title={badge.label}
+                          >
+                            {badge.emoji}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Navbar ── */}
       <nav className="navbar">
         <Link className="nav-logo" to="/">
@@ -484,7 +709,13 @@ export default function CTFArena() {
             <div className="toggle-track"><div className="toggle-thumb"/></div>
             <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
           </div>
-          <div className="nav-av">{initials}</div>
+          <div
+            className="nav-av"
+            title={user?.username}
+            onClick={() => (profile ?? user) && handleOpenProfile(profile ?? { _id: user?._id ?? user?.id, username: user?.username })}
+          >
+            {initials}
+          </div>
         </div>
       </nav>
       <div className="grad-strip"/>

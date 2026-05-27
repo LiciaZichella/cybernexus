@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { usersAPI, challengesAPI } from '../services/api';
+import { usersAPI, challengesAPI, warroomAPI, leaderboardAPI } from '../services/api';
 
 /* ─── Counter ─────────────────────────────────────────────────────────────── */
 function Counter({ target = 0, style, delay = 400 }) {
@@ -419,6 +419,9 @@ export default function Dashboard() {
   const [theme,         setTheme]         = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
   const [profile,       setProfile]       = useState(null);
   const [challenges,    setChallenges]    = useState([]);
+  const [rankUtente,    setRankUtente]    = useState(0);
+  const [warroomCount,  setWarroomCount]  = useState(0);
+  const [warrooms,      setWarrooms]      = useState([]);
   const [chartFilter,   setChartFilter]   = useState('7g');
   const [notifs,        setNotifs]        = useState([]);
   const [progressWidth, setProgressWidth] = useState(0);
@@ -432,19 +435,40 @@ export default function Dashboard() {
     let active = true;
     (async () => {
       try {
-        const [{ data: prof }, { data: chData }] = await Promise.all([
+        const [profRes, chRes, wrRes, lbRes] = await Promise.allSettled([
           usersAPI.getMe(),
           challengesAPI.getAll({ limit: 5 }),
+          warroomAPI.getAll(),
+          leaderboardAPI.get({ page: 1, limit: 100 }),
         ]);
         if (!active) return;
-        setProfile(prof.user ?? prof);
-        setChallenges((chData.challenges || chData || []).slice(0, 5));
+        if (profRes.status === 'fulfilled') {
+          const prof = profRes.value.data;
+          setProfile(prof.user ?? prof);
+        }
+        if (chRes.status === 'fulfilled') {
+          const chData = chRes.value.data;
+          setChallenges((chData.challenges || chData || []).slice(0, 5));
+        }
+        if (wrRes.status === 'fulfilled') {
+          const rooms = wrRes.value.data?.rooms ?? wrRes.value.data ?? [];
+          const roomList = Array.isArray(rooms) ? rooms : [];
+          const active = roomList.filter(r => r.status === 'open' || r.isActive);
+          setWarroomCount(active.length);
+          setWarrooms(active.slice(0, 3));
+        }
+        if (lbRes.status === 'fulfilled') {
+          const classifica = lbRes.value.data?.classifica ?? [];
+          const uid = user?.id ?? user?._id;
+          const idx = classifica.findIndex(u => (u.id ?? u._id) === uid);
+          if (idx >= 0) setRankUtente(idx + 1);
+        }
       } catch (err) {
         console.error('Dashboard load error:', err);
       }
     })();
     return () => { active = false; };
-  }, [authLoading]);
+  }, [authLoading, user]);
 
   // Animate progress bar after profile loads
   useEffect(() => {
@@ -556,7 +580,12 @@ export default function Dashboard() {
               Admin
             </Link>
           )}
-          <div className="nav-avatar">{initials}</div>
+          <div
+            className="nav-avatar"
+            onClick={() => document.getElementById('profilo')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            {initials}
+          </div>
         </div>
       </nav>
 
@@ -566,7 +595,7 @@ export default function Dashboard() {
 
         {/* ── ROW 1: welcome + heatmap ── */}
         <div className="row-1">
-          <div className="welcome animate-in delay-1">
+          <div id="profilo" className="welcome animate-in delay-1">
             <div className="welcome-content">
               <div className="welcome-greet">
                 <span className="greet-dot"/>
@@ -665,7 +694,9 @@ export default function Dashboard() {
                   Rank globale
                 </div>
                 <div className="stat-val" style={{color:'var(--amber)'}}>
-                  #<Counter target={42} style={{color:'var(--amber)'}} delay={560}/>
+                  {rankUtente > 0
+                    ? <>#<Counter target={rankUtente} style={{color:'var(--amber)'}} delay={560}/></>
+                    : <span style={{color:'var(--amber)'}}>—</span>}
                 </div>
                 <div className="stat-badge" style={{background:'var(--amber-bg)',color:'var(--amber)'}}>▲ +3 settimana</div>
               </div>
@@ -680,7 +711,7 @@ export default function Dashboard() {
                   <svg className="stat-ico" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a12 12 0 008.5 3A12 12 0 0112 21 12 12 0 013.5 6 12 12 0 0012 3"/></svg>
                   War Room
                 </div>
-                <div className="stat-val"><Counter target={8} style={{color:'var(--cyan)'}} delay={640}/></div>
+                <div className="stat-val"><Counter target={warroomCount} style={{color:'var(--cyan)'}} delay={640}/></div>
                 <div className="stat-badge" style={{background:'var(--coral-bg)',color:'var(--coral)'}}>▲ 2 live ora</div>
               </div>
               <svg className="sc-spark" viewBox="0 0 60 30"><rect x="2" y="18" width="6" height="10" fill="var(--cyan-bg)" stroke="var(--cyan)" strokeWidth=".5"/><rect x="12" y="14" width="6" height="14" fill="var(--cyan-bg)" stroke="var(--cyan)" strokeWidth=".5"/><rect x="22" y="20" width="6" height="8" fill="var(--cyan-bg)" stroke="var(--cyan)" strokeWidth=".5"/><rect x="32" y="10" width="6" height="18" fill="var(--cyan-bg)" stroke="var(--cyan)" strokeWidth=".5"/><rect x="42" y="16" width="6" height="12" fill="var(--cyan-bg)" stroke="var(--cyan)" strokeWidth=".5"/><rect x="52" y="6" width="6" height="22" fill="var(--cyan)"/></svg>
@@ -810,23 +841,32 @@ export default function Dashboard() {
               <Link className="view-all" to="/warroom">Vedi tutte →</Link>
             </div>
             <div className="inc-list">
-              {WARROOMS_DATA.map(wr => (
-                <div key={wr.id} className={`incident-card ${wr.sc === 'amber' ? 'high' : wr.sc === 'cyan' ? 'medium' : ''}`}>
-                  <div className="inc-header">
-                    <div className="inc-dot" style={{background: wr.dc}}/>
-                    <div className="inc-title">{wr.title}</div>
-                    <div className="inc-badge" style={{background:`var(--${wr.sc}-bg)`,color:`var(--${wr.sc})`}}>{wr.sev}</div>
-                  </div>
-                  <div className="inc-meta">
-                    {wr.type} · {wr.pp.length} {wr.pp.length === 1 ? 'analista' : 'analisti'} connessi
-                    <div className="inc-participants">
-                      {wr.pp.map((p, pi) => (
-                        <div key={pi} className="part-av" style={{background: p.c}}>{p.i}</div>
-                      ))}
+              {(warrooms.length > 0 ? warrooms : WARROOMS_DATA.map(wr => ({ _id: wr.id, title: wr.title, type: wr.type, severity: wr.sev, participants: wr.pp.map(p => ({ username: p.i })) }))).map(wr => {
+                const sev = wr.severity ?? 'Critical';
+                const sc  = sev === 'High' ? 'amber' : sev === 'Medium' ? 'cyan' : sev === 'Low' ? 'mint' : 'coral';
+                const dc  = `var(--${sc})`;
+                const participants = wr.participants ?? wr.members ?? [];
+                return (
+                  <div key={wr._id ?? wr.id} className={`incident-card ${sc === 'amber' ? 'high' : sc === 'cyan' ? 'medium' : ''}`}
+                    onClick={() => navigate(`/warroom/${wr._id ?? wr.id}`)} style={{cursor:'pointer'}}>
+                    <div className="inc-header">
+                      <div className="inc-dot" style={{background: dc}}/>
+                      <div className="inc-title">{wr.title}</div>
+                      <div className="inc-badge" style={{background:`var(--${sc}-bg)`,color:dc}}>{sev}</div>
+                    </div>
+                    <div className="inc-meta">
+                      {wr.type ?? 'Incident'} · {participants.length} {participants.length === 1 ? 'analista' : 'analisti'} connessi
+                      <div className="inc-participants">
+                        {participants.slice(0, 4).map((p, pi) => (
+                          <div key={pi} className="part-av" style={{background:`var(--${['violet','cyan','mint','fuchsia'][pi % 4]})`}}>
+                            {getInitials(p.username ?? String(p))}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -887,7 +927,7 @@ export default function Dashboard() {
             ))}
             {profile && (
               <div className="lbm-row me">
-                <div className="lbm-rank" style={{color:'var(--violet)'}}>#42</div>
+                <div className="lbm-rank" style={{color:'var(--violet)'}}>{rankUtente > 0 ? `#${rankUtente}` : '—'}</div>
                 <div className="lbm-av" style={{background:'var(--violet)'}}>{initials}</div>
                 <div className="lbm-name" style={{fontWeight:500}}>{profile.username} (tu)</div>
                 <div className="lbm-pts"><Counter target={profile.points} style={{color:'var(--violet)'}} delay={720}/></div>

@@ -117,7 +117,7 @@ const formatTime = (s) =>
 export default function WarRoom() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, accessToken } = useAuth();
+  const { user, accessToken, loading: authLoading } = useAuth();
 
   // Dati sala
   const [sala, setSala] = useState(null);
@@ -209,6 +209,7 @@ export default function WarRoom() {
 
   // ── Carica dati sala dall'API ────────────────────────────────────────────────
   useEffect(() => {
+    if (authLoading) return;
     if (!id) {
       setLoading(false);
       setSaleLoading(true);
@@ -225,7 +226,7 @@ export default function WarRoom() {
       })
       .catch(() => setErrore('Impossibile caricare la War Room.'))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, authLoading]);
 
   // ── Connessione Socket.IO ─────────────────────────────────────────────────────
   useEffect(() => {

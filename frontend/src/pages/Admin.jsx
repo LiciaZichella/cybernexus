@@ -98,6 +98,10 @@ export default function Admin() {
   const [roleModal, setRoleModal]       = useState({ aperto: false, username: '', userId: '', ruolo: 'Player' });
   const [confirmModal, setConfirmModal] = useState({ aperto: false, titolo: '', testo: '', onConferma: null });
 
+  // Ricerca e modifica sfide
+  const [searchQuery, setSearchQuery]       = useState('');
+  const [sfidaInModifica, setSfidaInModifica] = useState(null);
+
   // Toast
   const [toasts, setToasts] = useState([]);
 
@@ -265,23 +269,34 @@ export default function Admin() {
   };
 
   const handleCreaSfida = async () => {
-    if (!formCTF.titolo || !formCTF.flag) { mostraToast('Titolo e flag sono obbligatori', 'terr'); return; }
+    if (!formCTF.titolo || (!sfidaInModifica && !formCTF.flag)) {
+      mostraToast('Titolo e flag sono obbligatori', 'terr'); return;
+    }
     setInvioSfida(true);
     try {
-      await challengesAPI.create({
-        title: formCTF.titolo, description: formCTF.descrizione,
-        category: formCTF.categoria, difficulty: formCTF.difficolta,
-        points: Number(formCTF.punti), flag: formCTF.flag,
-      });
-      mostraToast('Sfida creata! Flag SHA-256 salvata ✓', 'tok');
+      if (sfidaInModifica) {
+        const payload = {
+          title: formCTF.titolo, description: formCTF.descrizione,
+          category: formCTF.categoria, difficulty: formCTF.difficolta,
+          points: Number(formCTF.punti),
+        };
+        if (formCTF.flag) payload.flag = formCTF.flag;
+        await api.patch(`/challenges/${sfidaInModifica._id ?? sfidaInModifica.id}`, payload);
+        mostraToast('Sfida aggiornata ✓', 'tok');
+        setSfidaInModifica(null);
+      } else {
+        await challengesAPI.create({
+          title: formCTF.titolo, description: formCTF.descrizione,
+          category: formCTF.categoria, difficulty: formCTF.difficolta,
+          points: Number(formCTF.punti), flag: formCTF.flag,
+        });
+        mostraToast('Sfida creata! Flag SHA-256 salvata ✓', 'tok');
+      }
       setFormCTF({ titolo: '', categoria: 'Web', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '' });
       setFlagHashPreview('');
       caricaSfide();
     } catch (err) {
-      console.log('[handleCreaSfida] status:', err.response?.status);
-      console.log('[handleCreaSfida] body:', err.response?.data);
-      console.log('[handleCreaSfida] err:', err.message);
-      mostraToast(err.response?.data?.message ?? 'Errore nella creazione della sfida', 'terr');
+      mostraToast(err.response?.data?.message ?? 'Errore nell\'operazione', 'terr');
     } finally {
       setInvioSfida(false);
     }
@@ -464,7 +479,7 @@ export default function Admin() {
             <table>
               <thead><tr><th>Utente</th><th>Ruolo</th><th>Punti</th><th>Stato</th><th>Azioni</th></tr></thead>
               <tbody>
-                {utenti.map((u) => {
+                {utenti.filter(u => !searchQuery || u.username?.toLowerCase().includes(searchQuery.toLowerCase()) || u.email?.toLowerCase().includes(searchQuery.toLowerCase())).map((u) => {
                   const bannato = u.isBanned ?? u.status === 'banned';
                   const me      = isMe(u);
                   return (
@@ -509,9 +524,8 @@ export default function Admin() {
                                 className="act-btn"
                                 onClick={() => setConfirmModal({
                                   aperto: true, titolo: 'Sbanna utente', testo: `Riabilitare ${u.username}?`,
-                                  onConferma: async () => {
-                                    try { await api.patch(`/users/${u._id ?? u.id}/unban`); mostraToast(`${u.username} riabilitato`, 'tok'); caricaUtenti(); }
-                                    catch { mostraToast('Operazione non riuscita', 'terr'); }
+                                  onConferma: () => {
+                                    mostraToast('Funzionalità non disponibile', '');
                                   },
                                 })}
                               >
@@ -522,9 +536,8 @@ export default function Admin() {
                                 className="act-btn danger"
                                 onClick={() => setConfirmModal({
                                   aperto: true, titolo: 'Banna utente', testo: `Vuoi bannare ${u.username}?`,
-                                  onConferma: async () => {
-                                    try { await api.patch(`/users/${u._id ?? u.id}/ban`); mostraToast(`${u.username} bannato`, 'tok'); caricaUtenti(); }
-                                    catch { mostraToast('Operazione non riuscita', 'terr'); }
+                                  onConferma: () => {
+                                    mostraToast('Funzionalità non disponibile', '');
                                   },
                                 })}
                               >
@@ -560,7 +573,7 @@ export default function Admin() {
       <div className="form-card ai d2">
         <div className="fc-hdr">
           <div className="fc-icon">⚑</div>
-          <div className="fc-title">Crea nuova sfida CTF</div>
+          <div className="fc-title">{sfidaInModifica ? `Modifica sfida: ${sfidaInModifica.title}` : 'Crea nuova sfida CTF'}</div>
         </div>
         <div className="fc-body">
           <div className="form-grid">
@@ -613,10 +626,15 @@ export default function Admin() {
           <button className="tb-btn tb-primary" onClick={handleCreaSfida} disabled={invioSfida}>
             <span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              {invioSfida ? 'Creazione…' : 'Crea sfida'}
+              {invioSfida ? 'Salvataggio…' : (sfidaInModifica ? 'Salva modifiche' : 'Crea sfida')}
             </span>
           </button>
-          <button className="tb-btn tb-ghost">Anteprima</button>
+          {sfidaInModifica && (
+            <button className="tb-btn tb-ghost" onClick={() => { setSfidaInModifica(null); setFormCTF({ titolo: '', categoria: 'Web', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '' }); setFlagHashPreview(''); }}>Annulla</button>
+          )}
+          {!sfidaInModifica && (
+            <button className="tb-btn tb-ghost" onClick={() => mostraToast('Anteprima — funzionalità in sviluppo', '')}>Anteprima</button>
+          )}
         </div>
       </div>
 
@@ -633,7 +651,7 @@ export default function Admin() {
             <table>
               <thead><tr><th>Nome</th><th>Categoria</th><th>Difficoltà</th><th>Punti</th><th>Risolte da</th><th>Azioni</th></tr></thead>
               <tbody>
-                {sfide.map((s) => (
+                {sfide.filter(s => !searchQuery || s.title?.toLowerCase().includes(searchQuery.toLowerCase()) || s.category?.toLowerCase().includes(searchQuery.toLowerCase())).map((s) => (
                   <tr key={s._id ?? s.id}>
                     <td style={{ color: 'var(--text1)', fontWeight: 500 }}>{s.title}</td>
                     <td><span style={{ color: 'var(--v)', fontSize: 12 }}>{s.category}</span></td>
@@ -646,7 +664,12 @@ export default function Admin() {
                     <td><span style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--text2)' }}>{s.solveCount ?? 0}</span></td>
                     <td>
                       <div className="act-btns">
-                        <button className="act-btn">Modifica</button>
+                        <button className="act-btn" onClick={() => {
+                          setSfidaInModifica(s);
+                          setFormCTF({ titolo: s.title, categoria: s.category, difficolta: s.difficulty, punti: s.points, descrizione: s.description || '', flag: '', file: '' });
+                          setSezione('ctf');
+                          setTimeout(() => document.querySelector('.form-card')?.scrollIntoView({ behavior: 'smooth' }), 50);
+                        }}>Modifica</button>
                         <button
                           className="act-btn danger"
                           onClick={() => setConfirmModal({
@@ -740,7 +763,7 @@ export default function Admin() {
                 {invioWR ? 'Creazione…' : 'Crea War Room'}
               </span>
             </button>
-            <button className="tb-btn tb-ghost">Salva bozza</button>
+            <button className="tb-btn tb-ghost" onClick={() => mostraToast('Salva bozza — funzionalità in sviluppo', '')}>Salva bozza</button>
           </div>
         </div>
 
@@ -776,7 +799,7 @@ export default function Admin() {
                         <td><span style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--text2)' }}>{(wr.participants ?? wr.members ?? []).length}</span></td>
                         <td>
                           <div className="act-btns">
-                            <button className="act-btn">{isLive ? 'Osserva' : 'Report'}</button>
+                            <button className="act-btn" onClick={() => isLive ? navigate(`/warroom/${wr._id ?? wr.id}`) : mostraToast('Report War Room — funzionalità in sviluppo', '')}>{isLive ? 'Osserva' : 'Report'}</button>
                             {isLive && (
                               <button
                                 className="act-btn danger"
@@ -1033,7 +1056,7 @@ export default function Admin() {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text2)', flexShrink: 0 }}>
                 <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
               </svg>
-              <input type="text" placeholder="Cerca nella piattaforma..." />
+              <input type="text" placeholder="Cerca nella piattaforma..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
             {sezione === 'users' && (
               <button className="tb-btn tb-ghost" onClick={() => mostraToast(`Export CSV generato · ${utenti.length} utenti`, 'tok')}>

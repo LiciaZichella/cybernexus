@@ -91,7 +91,7 @@ const radarPoint = (values, idx, cx, cy, r) => {
 
 export default function Leaderboard() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // Dati classifica
   const [classifica, setClassifica]     = useState([]);
@@ -115,11 +115,13 @@ export default function Leaderboard() {
 
   // ── Caricamento classifica ──────────────────────────────────────────────────
 
-  const caricaClassifica = useCallback(async (pg) => {
+  const caricaClassifica = useCallback(async (pg, filter = 'global') => {
     try {
       if (pg === 1) setLoading(true);
       setErrore(null);
-      const { data } = await leaderboardAPI.get({ page: pg, limit: 20 });
+      const params = { page: pg, limit: 20 };
+      if (filter !== 'global') params.filter = filter;
+      const { data } = await leaderboardAPI.get(params);
       setClassifica((prev) =>
         pg === 1 ? data.classifica : [...prev, ...data.classifica]
       );
@@ -133,8 +135,9 @@ export default function Leaderboard() {
   }, []);
 
   useEffect(() => {
-    caricaClassifica(pagina);
-  }, [pagina, caricaClassifica]);
+    if (authLoading) return;
+    caricaClassifica(pagina, filterAttivo);
+  }, [pagina, caricaClassifica, authLoading, filterAttivo]);
 
   // ── Chiusura modale con tasto ESC ───────────────────────────────────────────
 
@@ -471,7 +474,7 @@ export default function Leaderboard() {
                 <button
                   key={id}
                   className={`lbf-btn ${filterAttivo === id ? 'active' : ''}`}
-                  onClick={() => setFilterAttivo(id)}
+                  onClick={() => { setFilterAttivo(id); setPagina(1); }}
                 >
                   {label}
                 </button>

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
+import { authAPI } from '../services/api';
 import './Landing.css';
 
 const FLAG_STR = 'FLAG{sql_1nj3ct10n_m4st3r}';
@@ -11,6 +12,10 @@ export default function Landing() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [cursorVisible, setCursorVisible] = useState(true);
   const idxRef = useRef(0);
+
+  const [regForm, setRegForm] = useState({ username: '', email: '', password: '' });
+  const [regError, setRegError] = useState('');
+  const [regLoading, setRegLoading] = useState(false);
 
   // Imposta data-theme al montaggio
   useEffect(() => {
@@ -56,6 +61,23 @@ export default function Landing() {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
+  };
+
+  const handleRegister = async () => {
+    if (!regForm.username || !regForm.email || !regForm.password) {
+      setRegError('Tutti i campi sono obbligatori.');
+      return;
+    }
+    setRegLoading(true);
+    setRegError('');
+    try {
+      await authAPI.register(regForm);
+      navigate('/login');
+    } catch (err) {
+      setRegError(err?.response?.data?.error || 'Errore nella registrazione.');
+    } finally {
+      setRegLoading(false);
+    }
   };
 
   // Scroll fluido verso una sezione della pagina
@@ -227,7 +249,7 @@ export default function Landing() {
                 <div className="war-title-txt">War Room — Ransomware #005</div>
                 <div className="war-sub-txt">3 analisti connessi · manager: marco_r</div>
               </div>
-              <button className="war-enter">Entra →</button>
+              <button className="war-enter" onClick={() => navigate('/warroom')}>Entra →</button>
             </div>
 
             {/* Notifica flag catturata */}
@@ -353,7 +375,7 @@ export default function Landing() {
               <div className="sec-eye"><div className="eye-line" />CTF Arena</div>
               <h2 className="sec-title">Le sfide più popolari</h2>
             </div>
-            <a className="ctf-link" href="#">Vedi tutte le sfide →</a>
+            <a className="ctf-link" href="#" onClick={(e) => { e.preventDefault(); navigate('/ctf'); }}>Vedi tutte le sfide →</a>
           </div>
 
           {/* Podio top 3 */}
@@ -755,7 +777,7 @@ export default function Landing() {
           <div className="login-card">
             <div className="login-card-title">Crea il tuo account</div>
             <div className="login-card-sub">
-              Hai già un account? <a href="#">Accedi qui</a>
+              Hai già un account? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login'); }}>Accedi qui</a>
             </div>
 
             <button className="oauth-btn">
@@ -783,19 +805,28 @@ export default function Landing() {
 
             <div className="inp-grp">
               <label className="inp-lbl">Username</label>
-              <input className="inp-field" type="text" placeholder="il_tuo_username" />
+              <input className="inp-field" type="text" placeholder="il_tuo_username"
+                value={regForm.username} onChange={(e) => setRegForm(f => ({ ...f, username: e.target.value }))} />
             </div>
             <div className="inp-grp">
               <label className="inp-lbl">Email</label>
-              <input className="inp-field" type="email" placeholder="nome@email.com" />
+              <input className="inp-field" type="email" placeholder="nome@email.com"
+                value={regForm.email} onChange={(e) => setRegForm(f => ({ ...f, email: e.target.value }))} />
             </div>
             <div className="inp-grp">
               <label className="inp-lbl">Password</label>
-              <input className="inp-field" type="password" placeholder="••••••••" />
+              <input className="inp-field" type="password" placeholder="••••••••"
+                value={regForm.password} onChange={(e) => setRegForm(f => ({ ...f, password: e.target.value }))} />
             </div>
 
-            <button className="btn-login" onClick={() => navigate('/login')}>
-              Crea account →
+            {regError && (
+              <div style={{ fontSize: 12, color: 'var(--coral)', padding: '8px 12px', borderRadius: 8, background: 'rgba(240,112,96,.1)', marginBottom: 8 }}>
+                {regError}
+              </div>
+            )}
+
+            <button className="btn-login" onClick={handleRegister} disabled={regLoading}>
+              {regLoading ? 'Creazione…' : 'Crea account →'}
             </button>
             <div className="login-note">
               Registrandoti accetti i <a href="#">Termini</a> e la <a href="#">Privacy Policy</a>
