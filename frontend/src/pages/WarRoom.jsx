@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
-import { warroomAPI } from '../services/api';
+import { warroomAPI, getMemoryToken } from '../services/api';
 import './WarRoom.css';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5005';
@@ -102,13 +102,6 @@ const CMD_SETS = [
   { cmd: 'volatility3 -f dump.raw windows.netscan', out: [['err','✗ ESTABLISHED 185.220.101.48:8443 — C2!']] },
 ];
 
-// Risposte auto-chat dal team
-const REPLIES = [
-  { av: 'MR', colore: 'var(--cyan)',    testo: 'Ok 👍' },
-  { av: 'GB', colore: 'var(--fuchsia)', testo: 'Procedo subito' },
-  { av: 'MR', colore: 'var(--cyan)',    testo: 'Rete isolata ✓' },
-];
-
 // Formatta secondi MM:SS
 const formatTime = (s) =>
   `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -117,7 +110,7 @@ const formatTime = (s) =>
 export default function WarRoom() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // Dati sala
   const [sala, setSala] = useState(null);
@@ -166,7 +159,6 @@ export default function WarRoom() {
   ]);
   const [inputChat, setInputChat] = useState('');
   const chatMsgsRef = useRef(null);
-  const repliesIdxRef = useRef(0);
 
   // Timer
   const [tempoRimanente, setTempoRimanente] = useState(90 * 60);
@@ -223,6 +215,7 @@ export default function WarRoom() {
       .then(({ data }) => {
         setSala(data);
         if (data.durataMinuti) setTempoRimanente(data.durataMinuti * 60);
+        warroomAPI.join(id).catch(() => {});
       })
       .catch(() => setErrore('Impossibile caricare la War Room.'))
       .finally(() => setLoading(false));
@@ -230,15 +223,20 @@ export default function WarRoom() {
 
   // ── Connessione Socket.IO ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!accessToken || !id) return;
-    const socket = io(`${SOCKET_URL}/warroom`, { auth: { token: accessToken } });
+    if (!id) return;
+    const token = getMemoryToken();
+    if (!token) return;
+
+    const socket = io(`${SOCKET_URL}/warroom`, { auth: { token } });
     socketRef.current = socket;
 
     socket.emit('join-room', { roomId: id });
 
     socket.on('chat-message', (msg) => {
+      const myUsername = user?.username;
+      if (msg.username === myUsername) return; // già mostrato in optimistic update
       setMessaggiChat(prev => [...prev, {
-        av: msg.iniziali || '??',
+        av: msg.iniziali || (msg.username ?? '??').slice(0, 2).toUpperCase(),
         colore: msg.colore || 'var(--text2)',
         testo: msg.testo,
         me: false,
@@ -257,23 +255,30 @@ export default function WarRoom() {
     socket.on('user-joined', ({ iniziali, username }) => {
       setMembriOnline(prev => {
         if (prev.find(m => m.username === username)) return prev;
-        return [...prev, { iniziali, username, gradiente: 'linear-gradient(135deg,var(--text2),var(--text3))' }];
+        return [...prev, { iniziali: iniziali || username.slice(0, 2).toUpperCase(), username, gradiente: 'linear-gradient(135deg,var(--cyan),var(--violet))' }];
       });
       aggiungiLog(`${username} si è unito`, 'var(--violet)');
+      setMessaggiChat(prev => [...prev, { tipo: 'sys', testo: `${username} è entrato nella War Room` }]);
     });
 
     socket.on('user-left', ({ username }) => {
       setMembriOnline(prev => prev.filter(m => m.username !== username));
       aggiungiLog(`${username} ha lasciato`, 'var(--text3)');
+      setMessaggiChat(prev => [...prev, { tipo: 'sys', testo: `${username} ha lasciato la War Room` }]);
     });
 
     socket.on('room-resolved', () => setRisolviAperto(true));
 
+    socket.on('connect_error', (err) => {
+      aggiungiLog(`⚠ Connessione socket persa: ${err.message}`, 'var(--coral)');
+    });
+
     return () => {
       socket.emit('leave-room', { roomId: id });
       socket.disconnect();
+      socketRef.current = null;
     };
-  }, [accessToken, id, aggiungiLog]);
+  }, [id, aggiungiLog, user?.username]);
 
   // ── Countdown timer ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -336,20 +341,6 @@ export default function WarRoom() {
     requestAnimationFrame(step);
   }, [risolviAperto, sala]);
 
-  // ── Auto-eventi live (simulati) ──────────────────────────────────────────────
-  useEffect(() => {
-    const t1 = setTimeout(() => {
-      aggiungiLog('marco_r ha aggiunto IOC al report', 'var(--cyan)');
-      setMessaggiChat(prev => [...prev, { av: 'MR', colore: 'var(--cyan)', testo: 'Ho aggiunto il C2 secondario', me: false }]);
-    }, 9000);
-    const t2 = setTimeout(() => {
-      aggiungiLog('giulia_b → snapshot completato', 'var(--mint)');
-      setMessaggiChat(prev => [...prev, { av: 'GB', colore: 'var(--fuchsia)', testo: 'Snapshot + hash SHA256 ✓', me: false }]);
-    }, 22000);
-    const t3 = setTimeout(() => aggiungiLog('marco_r → C2 secondario bloccato', 'var(--mint)'), 36000);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [aggiungiLog]);
-
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const toggleTema = () => {
@@ -369,8 +360,6 @@ export default function WarRoom() {
     setDettagliAperto(false);
     socketRef.current?.emit('step-completed', { roomId: id, stepIdx: passoAttivo, username: user?.username });
     aggiungiLog(`${user?.username || 'Tu'} ✓ ${PASSI[passoAttivo].titolo.slice(0, 30)}...`, 'var(--mint)');
-    setMessaggiChat(prev => [...prev, { av: 'GB', colore: 'var(--fuchsia)', testo: '✅ confermato anche da parte mia', me: false }]);
-    // Separatore nel terminale
     setRigheTerminale(prev => [...prev,
       { tipo: 'sep-active', testo: `── Passo: ${PASSI[passoAttivo].titolo.slice(0, 40)}... completato ──` },
     ]);
@@ -416,12 +405,6 @@ export default function WarRoom() {
     const meAv = user?.username?.slice(0, 2).toUpperCase() || 'TU';
     setMessaggiChat(prev => [...prev, { av: meAv, colore: 'linear-gradient(135deg,var(--violet),var(--fuchsia))', testo, me: true }]);
     socketRef.current?.emit('chat-message', { roomId: id, testo, username: user?.username, iniziali: meAv });
-    aggiungiLog(`${user?.username || 'Tu'} ha scritto in chat`, 'var(--violet)');
-    setTimeout(() => {
-      const r = REPLIES[repliesIdxRef.current % REPLIES.length];
-      repliesIdxRef.current++;
-      setMessaggiChat(prev => [...prev, { av: r.av, colore: r.colore, testo: r.testo, me: false }]);
-    }, 1200 + Math.random() * 1200);
   };
 
   const toggleObiettivo = (passoIdx, objIdx) => {
