@@ -110,12 +110,23 @@ const submitFlag = async (req, res) => {
       await challenge.save();
 
       // Aggiorna punti e challenge risolte sull'utente
-      await User.findByIdAndUpdate(req.user._id, {
-        $inc:      { points: challenge.points },
-        $addToSet: { solvedChallenges: challenge._id },
-      });
+      console.log('[submitFlag] req.user._id:', req.user._id, 'tipo:', typeof req.user._id);
+      console.log('[submitFlag] challenge._id:', challenge._id);
+      console.log(`[submitFlag] Aggiornamento utente – _id: ${req.user._id} | points da aggiungere: ${challenge.points}`);
+      const updateResult = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          $inc:      { points: challenge.points },
+          $addToSet: { solvedChallenges: challenge._id },
+        },
+        { new: true }
+      );
+      console.log(`[submitFlag] Risultato update – points ora: ${updateResult?.points} | solvedChallenges: ${updateResult?.solvedChallenges?.length}`);
+      if (!updateResult) {
+        console.error(`[submitFlag] ERRORE: utente ${req.user._id} non trovato nel DB per l'update`);
+      }
 
-      return res.json({ correct: true, pointsAwarded, message: 'Flag corretta! Punti assegnati.' });
+      return res.json({ correct: true, points: challenge.points, pointsAwarded: challenge.points, message: 'Flag corretta! Punti assegnati.' });
     }
 
     res.json({ correct: false, pointsAwarded: 0, message: 'Flag errata.' });

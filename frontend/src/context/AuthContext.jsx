@@ -80,6 +80,18 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
+  // Ricarica il profilo utente dal backend e aggiorna lo stato
+  const aggiornaUser = useCallback(async () => {
+    try {
+      const { data } = await api.get('/users/me');
+      const updated = data.user ?? data;
+      setUser(updated);
+      return updated;
+    } catch {
+      return null;
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Logout: revoca il token lato server e pulisce lo stato locale
   const logout = async () => {
     try {
@@ -94,7 +106,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, loading, login, logout, refreshToken }}>
+    <AuthContext.Provider value={{ user, accessToken, loading, login, logout, refreshToken, aggiornaUser }}>
       {children}
     </AuthContext.Provider>
   );

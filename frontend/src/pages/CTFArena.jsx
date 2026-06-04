@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationsContext';
+import NavDropdown from '../components/NavDropdown';
 import { usersAPI, challengesAPI } from '../services/api';
 
 /* ─── Config ──────────────────────────────────────────────────────────────── */
@@ -299,7 +301,8 @@ const PROFILE_BADGES = [
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
 export default function CTFArena() {
-  const { loading: authLoading, user } = useAuth();
+  const { loading: authLoading, user, aggiornaUser } = useAuth();
+  const { aggiungiNotifica } = useNotifications();
   const navigate = useNavigate();
 
   const [theme,   setTheme]   = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
@@ -427,9 +430,16 @@ export default function CTFArena() {
     setFlagStatus('submitting');
     try {
       const { data } = await challengesAPI.submitFlag(modal._id, { flag: flagInput.trim() });
-      setEarnedPts(data.points ?? data.pointsEarned ?? modal.points);
+      const earnedPts = data.points ?? data.pointsEarned ?? modal.points;
+      setEarnedPts(earnedPts);
       setFlagStatus('correct');
       setSolvedIds(prev => new Set([...prev, String(modal._id)]));
+      aggiungiNotifica({ icon: '🚩', testo: `Flag catturata: ${modal.title}`, sub: `+${earnedPts} pts` });
+      console.log('[CTF] submitFlag OK – punti API:', earnedPts, '| user prima:', user?.points);
+      aggiornaUser().then(updated => {
+        console.log('[CTF] aggiornaUser risposta:', updated ? { points: updated.points, solved: updated.solvedChallenges?.length } : 'null');
+        if (updated) setProfile(updated);
+      });
     } catch {
       setFlagStatus('wrong');
       setFlagShakeKey(k => k + 1);
@@ -709,13 +719,7 @@ export default function CTFArena() {
             <div className="toggle-track"><div className="toggle-thumb"/></div>
             <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
           </div>
-          <div
-            className="nav-av"
-            title={user?.username}
-            onClick={() => (profile ?? user) && handleOpenProfile(profile ?? { _id: user?._id ?? user?.id, username: user?.username })}
-          >
-            {initials}
-          </div>
+          <NavDropdown user={profile ?? user} initials={initials} />
         </div>
       </nav>
       <div className="grad-strip"/>

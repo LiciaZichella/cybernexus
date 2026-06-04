@@ -1,10 +1,11 @@
 const User = require('../models/User');
 
-// GET /api/users/me — profilo completo dell'utente autenticato
+// GET /api/users/me — profilo completo dell'utente autenticato (sempre fresco dal DB)
 const getMe = async (req, res) => {
   try {
-    // req.user è già caricato dal middleware protect
-    res.json({ user: req.user.toPublicJSON() });
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ error: 'Utente non trovato.' });
+    res.json({ user: user.toPublicJSON() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -4,11 +4,7 @@ import { useAuth } from '../context/AuthContext';
 export default function ProtectedRoute({ requiredRole }) {
   const { accessToken, user, loading } = useAuth();
 
-  // Aspetta il tentativo di refresh iniziale prima di decidere
   if (loading) return null;
-
-  // Debug temporaneo — rimuovere dopo verifica
-  console.log('[ProtectedRoute] user:', user);
 
   // Non autenticato → reindirizza al login
   if (!accessToken) return <Navigate to="/login" replace />;

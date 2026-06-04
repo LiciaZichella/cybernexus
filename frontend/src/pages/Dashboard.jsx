@@ -1,6 +1,8 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationsContext';
+import NavDropdown from '../components/NavDropdown';
 import { usersAPI, challengesAPI, warroomAPI, leaderboardAPI } from '../services/api';
 
 /* ─── Counter ─────────────────────────────────────────────────────────────── */
@@ -64,13 +66,6 @@ function genHeatmap() {
 }
 
 /* ─── Static data ─────────────────────────────────────────────────────────── */
-const NOTIF_TPL = [
-  { icon: '🚩', title: '<strong>marco_r</strong> ha catturato XSS Mayhem', sub: '+300 pts · Web Exploit', cls: 'mint' },
-  { icon: '🏆', title: '<strong>giulia_b</strong> ha sbloccato Top 50',    sub: 'Achievement raro',       cls: 'amber' },
-  { icon: '🚨', title: 'Nuova War Room aperta',                             sub: 'DDoS Drill #013',        cls: 'coral' },
-  { icon: '⬆️', title: '<strong>n3x7_g3n</strong> sale al rank #2',        sub: '7,200 pts',              cls: 'violet' },
-];
-
 const WEEK_LABELS = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
 const BAR_H       = [35, 55, 42, 70, 58, 80, 95];
 
@@ -109,14 +104,6 @@ const WARROOMS_DATA = [
   { id:3, title:'Phishing Campaign #008',     type:'Email Security',       sev:'Medium',  sc:'cyan',  dc:'var(--cyan)',   pp:[{i:'GB',c:'var(--violet)'}] },
 ];
 
-const ACTIVITY_ITEMS = [
-  { icon:'🚩', bg:'var(--mint-bg)',    html:'<strong>giulia_b</strong> ha catturato RSA Breaker',           time:'2 min · +500 pts'    },
-  { icon:'🚨', bg:'var(--coral-bg)',   html:'<strong>marco_r</strong> ha aperto WR #005',                   time:'15 min · Ransomware' },
-  { icon:'⬆️', bg:'var(--violet-bg)', html:'<strong>Tu</strong> sei salito al <strong>#42</strong>',        time:'1h · +3 posizioni'   },
-  { icon:'🔥', bg:'var(--amber-bg)',   html:'<strong>Tu</strong> hai sbloccato <strong>Streak 7</strong>',  time:'3h fa'               },
-  { icon:'🚩', bg:'var(--mint-bg)',    html:'<strong>shadow_k1ng</strong> ha catturato 3 flag',              time:'5h · +1,200 pts'     },
-  { icon:'🔍', bg:'var(--fuchsia-bg)',html:'<strong>n3x7_g3n</strong> ha risolto Ghost Identity',           time:'6h · +300 pts'       },
-];
 
 const BADGES_DATA = [
   { icon:'🔥', name:'First Blood',  st:'unlocked', bg:'var(--amber-bg)',   fc:'var(--mint)',    pct:100, lbl:''        },
@@ -129,11 +116,6 @@ const BADGES_DATA = [
   { icon:'🔒', name:'???',          st:'locked',   bg:'var(--border2)',    fc:'transparent',    pct:  0, lbl:'?'       },
 ];
 
-const TOP_LB = [
-  { rank:'🥇', i:'SK', name:'shadow_k1ng', pts:8450, c:'var(--fuchsia)' },
-  { rank:'🥈', i:'NX', name:'n3x7_g3n',    pts:7200, c:'var(--cyan)'    },
-  { rank:'🥉', i:'ZR', name:'z3r0_d4y',    pts:6800, c:'var(--mint)'    },
-];
 
 /* ─── Challenge icon by category ─────────────────────────────────────────── */
 function ChIcon({ category, color, size = 15 }) {
@@ -391,18 +373,27 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .lbm-name{font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lbm-pts{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;flex-shrink:0}
 
-/* LIVE NOTIFICATIONS */
-.live-notifs{position:fixed;top:74px;right:20px;z-index:600;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:300px}
-.live-notif{background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r12);padding:11px 13px;display:flex;align-items:center;gap:10px;box-shadow:0 12px 32px var(--shadow);animation:slideInTop .4s ease both;position:relative;overflow:hidden}
-.live-notif.exiting{animation:slideOutTop .4s ease forwards}
-.live-notif::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--mint)}
-.live-notif.coral::before{background:var(--coral)}
-.live-notif.violet::before{background:var(--violet)}
-.live-notif.amber::before{background:var(--amber)}
-.ln-icon{font-size:17px;flex-shrink:0}
-.ln-content{flex:1;min-width:0}
-.ln-title{font-size:12px;font-weight:500;color:var(--text1)}
-.ln-sub{font-size:10px;color:var(--text3);margin-top:2px}
+/* BELL DROPDOWN */
+.bell-wrap{position:relative}
+.bell-badge{position:absolute;top:4px;right:5px;min-width:15px;height:15px;border-radius:8px;background:var(--coral);border:1.5px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;line-height:1;padding:0 2px}
+.bell-drop{position:absolute;top:calc(100% + 10px);right:0;width:300px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r14);box-shadow:0 20px 48px var(--shadow);z-index:600;overflow:hidden;animation:ndFadeIn .15s ease both}
+@keyframes ndFadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.bell-drop-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:0.5px solid var(--border)}
+.bell-drop-title{font-size:13px;font-weight:600}
+.bell-mark-all{font-size:11px;color:var(--violet);cursor:pointer;font-weight:500;background:none;border:none;padding:0}
+.bell-drop-title:hover{text-decoration:underline}
+.bell-items{max-height:280px;overflow-y:auto}
+.bell-items::-webkit-scrollbar{width:3px}
+.bell-items::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.bell-item{display:flex;gap:10px;padding:10px 14px;border-bottom:0.5px solid var(--border);cursor:pointer;transition:background .15s}
+.bell-item:hover{background:var(--bg3)}
+.bell-item.unread{background:var(--violet-bg)}
+.bell-item:last-child{border:none}
+.bell-item-icon{font-size:16px;flex-shrink:0;margin-top:2px}
+.bell-item-body{flex:1;min-width:0}
+.bell-item-text{font-size:12px;color:var(--text1);line-height:1.4}
+.bell-item-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.bell-empty{padding:28px 14px;text-align:center;font-size:12px;color:var(--text3)}
 
 /* RESPONSIVE */
 @media(max-width:1280px){.page{padding-left:24px;padding-right:24px}.row-1{grid-template-columns:1fr 240px}.big-row{grid-template-columns:1fr 280px}}
@@ -413,8 +404,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
 export default function Dashboard() {
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate   = useNavigate();
+  const { notifiche, segnaLetta, segnaLetteTutte, nonLette } = useNotifications();
 
   const [theme,         setTheme]         = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
   const [profile,       setProfile]       = useState(null);
@@ -422,53 +414,62 @@ export default function Dashboard() {
   const [rankUtente,    setRankUtente]    = useState(0);
   const [warroomCount,  setWarroomCount]  = useState(0);
   const [warrooms,      setWarrooms]      = useState([]);
+  const [topClassifica, setTopClassifica] = useState([]);
   const [chartFilter,   setChartFilter]   = useState('7g');
-  const [notifs,        setNotifs]        = useState([]);
   const [progressWidth, setProgressWidth] = useState(0);
+  const [bellOpen,      setBellOpen]      = useState(false);
 
-  const notifRef = useRef({ idx: 0, key: 0 });
+  const bellRef  = useRef(null);
+  const userRef  = useRef(user);
   const heatmap  = useMemo(genHeatmap, []);
 
-  // Load API data
+  useEffect(() => { userRef.current = user; }, [user]);
+
+  const loadAllData = useCallback(async () => {
+    console.log('[Dashboard] loadAllData chiamata – visibilityState:', document.visibilityState);
+    try {
+      const [profRes, chRes, wrRes, lbRes] = await Promise.allSettled([
+        usersAPI.getMe(),
+        challengesAPI.getAll({ limit: 5 }),
+        warroomAPI.getAll(),
+        leaderboardAPI.get({ page: 1, limit: 100 }),
+      ]);
+      if (profRes.status === 'fulfilled') {
+        const prof = profRes.value.data;
+        const parsed = prof.user ?? prof;
+        console.log('[Dashboard] profilo ricevuto – points:', parsed.points, '| solvedChallenges:', parsed.solvedChallenges?.length);
+        setProfile(parsed);
+      } else {
+        console.warn('[Dashboard] profRes fallito:', profRes.reason?.message);
+      }
+      if (chRes.status === 'fulfilled') {
+        const chData = chRes.value.data;
+        setChallenges((chData.challenges || chData || []).slice(0, 5));
+      }
+      if (wrRes.status === 'fulfilled') {
+        const rooms = wrRes.value.data?.rooms ?? wrRes.value.data ?? [];
+        const roomList = Array.isArray(rooms) ? rooms : [];
+        const activeRooms = roomList.filter(r => r.status === 'open' || r.isActive);
+        setWarroomCount(activeRooms.length);
+        setWarrooms(activeRooms.slice(0, 3));
+      }
+      if (lbRes.status === 'fulfilled') {
+        const classifica = lbRes.value.data?.classifica ?? [];
+        const uid = userRef.current?.id ?? userRef.current?._id;
+        const idx = classifica.findIndex(u => (u.id ?? u._id) === uid);
+        if (idx >= 0) setRankUtente(idx + 1);
+        setTopClassifica(classifica.slice(0, 3));
+      }
+    } catch (err) {
+      console.error('Dashboard load error:', err);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Initial load when auth is ready
   useEffect(() => {
     if (authLoading) return;
-    let active = true;
-    (async () => {
-      try {
-        const [profRes, chRes, wrRes, lbRes] = await Promise.allSettled([
-          usersAPI.getMe(),
-          challengesAPI.getAll({ limit: 5 }),
-          warroomAPI.getAll(),
-          leaderboardAPI.get({ page: 1, limit: 100 }),
-        ]);
-        if (!active) return;
-        if (profRes.status === 'fulfilled') {
-          const prof = profRes.value.data;
-          setProfile(prof.user ?? prof);
-        }
-        if (chRes.status === 'fulfilled') {
-          const chData = chRes.value.data;
-          setChallenges((chData.challenges || chData || []).slice(0, 5));
-        }
-        if (wrRes.status === 'fulfilled') {
-          const rooms = wrRes.value.data?.rooms ?? wrRes.value.data ?? [];
-          const roomList = Array.isArray(rooms) ? rooms : [];
-          const active = roomList.filter(r => r.status === 'open' || r.isActive);
-          setWarroomCount(active.length);
-          setWarrooms(active.slice(0, 3));
-        }
-        if (lbRes.status === 'fulfilled') {
-          const classifica = lbRes.value.data?.classifica ?? [];
-          const uid = user?.id ?? user?._id;
-          const idx = classifica.findIndex(u => (u.id ?? u._id) === uid);
-          if (idx >= 0) setRankUtente(idx + 1);
-        }
-      } catch (err) {
-        console.error('Dashboard load error:', err);
-      }
-    })();
-    return () => { active = false; };
-  }, [authLoading, user]);
+    loadAllData();
+  }, [authLoading, loadAllData]);
 
   // Animate progress bar after profile loads
   useEffect(() => {
@@ -478,26 +479,25 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, [profile]);
 
-  // Live notifications
+  // Bell outside-click
   useEffect(() => {
-    const show = () => {
-      const { idx, key } = notifRef.current;
-      const tpl = NOTIF_TPL[idx % NOTIF_TPL.length];
-      const id  = key;
-      notifRef.current = { idx: idx + 1, key: key + 1 };
-      setNotifs(prev => {
-        const next = [...prev, { ...tpl, id, exiting: false }];
-        return next.length > 3 ? next.slice(1) : next;
-      });
-      setTimeout(() => {
-        setNotifs(prev => prev.map(n => n.id === id ? { ...n, exiting: true } : n));
-        setTimeout(() => setNotifs(prev => prev.filter(n => n.id !== id)), 400);
-      }, 4000);
+    if (!bellOpen) return;
+    const handler = (e) => {
+      if (bellRef.current && !bellRef.current.contains(e.target)) setBellOpen(false);
     };
-    let interval = null;
-    const timer = setTimeout(() => { show(); interval = setInterval(show, 6000); }, 3000);
-    return () => { clearTimeout(timer); if (interval) clearInterval(interval); };
-  }, []);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [bellOpen]);
+
+  // Re-fetch all data when returning to this tab
+  useEffect(() => {
+    const onVisible = () => {
+      console.log('[Dashboard] visibilitychange → stato:', document.visibilityState);
+      if (document.visibilityState === 'visible') loadAllData();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadAllData]);
 
   const toggleTheme = () => {
     setTheme(t => {
@@ -523,19 +523,6 @@ export default function Dashboard() {
 
       <div className="orb orb-1" />
       <div className="orb orb-2" />
-
-      {/* Live notifications */}
-      <div className="live-notifs">
-        {notifs.map(n => (
-          <div key={n.id} className={`live-notif ${n.cls}${n.exiting ? ' exiting' : ''}`}>
-            <div className="ln-icon">{n.icon}</div>
-            <div className="ln-content">
-              <div className="ln-title" dangerouslySetInnerHTML={{ __html: n.title }} />
-              <div className="ln-sub">{n.sub}</div>
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* Navbar */}
       <nav className="navbar">
@@ -570,9 +557,34 @@ export default function Dashboard() {
             <div className="toggle-track"><div className="toggle-thumb"/></div>
             <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
           </div>
-          <div className="notif-btn">
-            <div className="notif-dot"/>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <div className="bell-wrap" ref={bellRef}>
+            <div className="notif-btn" onClick={() => setBellOpen(o => !o)}>
+              {nonLette > 0 && <div className="bell-badge">{nonLette > 9 ? '9+' : nonLette}</div>}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            </div>
+            {bellOpen && (
+              <div className="bell-drop">
+                <div className="bell-drop-header">
+                  <div className="bell-drop-title">Notifiche {nonLette > 0 && `(${nonLette})`}</div>
+                  {nonLette > 0 && (
+                    <button className="bell-mark-all" onClick={segnaLetteTutte}>Segna tutte lette</button>
+                  )}
+                </div>
+                <div className="bell-items">
+                  {notifiche.length === 0 ? (
+                    <div className="bell-empty">Nessuna notifica</div>
+                  ) : notifiche.map(n => (
+                    <div key={n.id} className={`bell-item${n.letta ? '' : ' unread'}`} onClick={() => segnaLetta(n.id)}>
+                      <div className="bell-item-icon">{n.icon || '🔔'}</div>
+                      <div className="bell-item-body">
+                        <div className="bell-item-text">{n.testo}</div>
+                        {n.sub && <div className="bell-item-sub">{n.sub}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           {user?.role === 'Admin' && (
             <Link to="/admin" className="admin-pill">
@@ -580,12 +592,7 @@ export default function Dashboard() {
               Admin
             </Link>
           )}
-          <div
-            className="nav-avatar"
-            onClick={() => document.getElementById('profilo')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            {initials}
-          </div>
+          <NavDropdown user={profile ?? user} initials={initials} />
         </div>
       </nav>
 
@@ -876,12 +883,16 @@ export default function Dashboard() {
               <span className="live-tag"><span className="live-tag-dot"/>live</span>
             </div>
             <div className="activity-feed">
-              {ACTIVITY_ITEMS.map((act, i) => (
-                <div key={i} className="activity-item">
-                  <div className="act-icon" style={{background: act.bg}}>{act.icon}</div>
+              {notifiche.length === 0 ? (
+                <div style={{padding:'20px 0',textAlign:'center',fontSize:'12px',color:'var(--text3)'}}>
+                  Nessuna attività recente
+                </div>
+              ) : notifiche.slice(0, 8).map(n => (
+                <div key={n.id} className="activity-item" style={{cursor:'pointer',opacity: n.letta ? 0.65 : 1}} onClick={() => segnaLetta(n.id)}>
+                  <div className="act-icon" style={{background:'var(--violet-bg)'}}>{n.icon || '🔔'}</div>
                   <div className="act-content">
-                    <div className="act-text" dangerouslySetInnerHTML={{__html: act.html}}/>
-                    <div className="act-time">{act.time}</div>
+                    <div className="act-text">{n.testo}</div>
+                    {n.sub && <div className="act-time">{n.sub}</div>}
                   </div>
                 </div>
               ))}
@@ -917,14 +928,22 @@ export default function Dashboard() {
             <Link className="view-all" to="/leaderboard">Vedi tutto →</Link>
           </div>
           <div className="lb-mini">
-            {TOP_LB.map((row, i) => (
-              <div key={i} className="lbm-row">
-                <div className="lbm-rank">{row.rank}</div>
-                <div className="lbm-av" style={{background: row.c}}>{row.i}</div>
-                <div className="lbm-name">{row.name}</div>
-                <div className="lbm-pts"><Counter target={row.pts} style={{color: row.c}} delay={400 + i * 80}/></div>
-              </div>
-            ))}
+            {(topClassifica.length > 0 ? topClassifica : []).map((row, i) => {
+              const rowColors = ['var(--amber)', 'var(--text2)', 'var(--amber)'];
+              const rowC = i === 0 ? 'var(--amber)' : i === 1 ? 'var(--cyan)' : 'var(--coral)';
+              const rowName = row.username ?? row.nome ?? '—';
+              return (
+                <div key={row._id ?? row.id ?? i} className="lbm-row">
+                  <div className="lbm-rank" style={{color: rowC}}>#{i + 1}</div>
+                  <div className="lbm-av" style={{background: rowC}}>{getInitials(rowName)}</div>
+                  <div className="lbm-name">{rowName}</div>
+                  <div className="lbm-pts"><Counter target={row.points ?? row.punteggio ?? 0} style={{color: rowC}} delay={400 + i * 80}/></div>
+                </div>
+              );
+            })}
+            {topClassifica.length === 0 && (
+              <div style={{padding:'16px',textAlign:'center',fontSize:'12px',color:'var(--text3)'}}>Nessun dato disponibile</div>
+            )}
             {profile && (
               <div className="lbm-row me">
                 <div className="lbm-rank" style={{color:'var(--violet)'}}>{rankUtente > 0 ? `#${rankUtente}` : '—'}</div>

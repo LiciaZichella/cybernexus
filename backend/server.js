@@ -9,6 +9,7 @@ const { Server }  = require('socket.io');
 const swaggerUi   = require('swagger-ui-express');
 const YAML        = require('yamljs');
 const connectDB      = require('./config/db');
+const passport       = require('./config/passport');
 const warroomSocket  = require('./sockets/warroom');
 
 const app        = express();
@@ -38,6 +39,9 @@ app.use(cors({
 // Parsing del body JSON e form URL-encoded
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Passport (senza sessioni — solo OAuth stateless con JWT)
+app.use(passport.initialize());
 
 // Documentazione API — montata PRIMA del rate limiter per non essere soggetta al limite
 const swaggerDoc = YAML.load('./swagger.yaml');

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationsContext';
+import NavDropdown from '../components/NavDropdown';
 import { warroomAPI, getMemoryToken } from '../services/api';
 import './WarRoom.css';
 
@@ -111,6 +113,7 @@ export default function WarRoom() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { aggiungiNotifica } = useNotifications();
 
   // Dati sala
   const [sala, setSala] = useState(null);
@@ -267,7 +270,10 @@ export default function WarRoom() {
       setMessaggiChat(prev => [...prev, { tipo: 'sys', testo: `${username} ha lasciato la War Room` }]);
     });
 
-    socket.on('room-resolved', () => setRisolviAperto(true));
+    socket.on('room-resolved', () => {
+      setRisolviAperto(true);
+      aggiungiNotifica({ icon: '🏆', testo: `War Room risolta: ${sala?.title || 'Incidente'}`, sub: 'Incidente completato' });
+    });
 
     socket.on('connect_error', (err) => {
       aggiungiLog(`⚠ Connessione socket persa: ${err.message}`, 'var(--coral)');
@@ -479,11 +485,7 @@ export default function WarRoom() {
             {user && <Link to="/dashboard" className="nav-back">📊 Dashboard</Link>}
           </div>
           <div className="nav-right">
-            {user && (
-              <div className="nav-av" style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
-                {user.username?.slice(0, 2).toUpperCase()}
-              </div>
-            )}
+            {user && <NavDropdown user={user} initials={user.username?.slice(0, 2).toUpperCase() || 'US'} />}
           </div>
         </nav>
 
@@ -755,6 +757,7 @@ export default function WarRoom() {
             <div className="toggle-track"><div className={`toggle-thumb ${tema === 'light' ? 'light' : ''}`} /></div>
             <span>{tema === 'dark' ? 'Dark' : 'Light'}</span>
           </div>
+          {user && <NavDropdown user={user} initials={user.username?.slice(0, 2).toUpperCase() || 'US'} />}
         </div>
       </nav>
 

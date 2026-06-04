@@ -1,19 +1,21 @@
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
-import Landing     from './pages/Landing';
-import Login       from './pages/Login';
-import Dashboard   from './pages/Dashboard';
-import CTFArena    from './pages/CTFArena';
-import Leaderboard from './pages/Leaderboard';
-import WarRoom     from './pages/WarRoom';
-import Admin       from './pages/Admin';
+import Landing       from './pages/Landing';
+import Login         from './pages/Login';
+import OAuthCallback from './pages/OAuthCallback';
+import Dashboard     from './pages/Dashboard';
+import CTFArena      from './pages/CTFArena';
+import Leaderboard   from './pages/Leaderboard';
+import WarRoom       from './pages/WarRoom';
+import Admin         from './pages/Admin';
 
 export default function App() {
   return (
     <Routes>
       {/* Route pubbliche */}
-      <Route path="/"      element={<Landing />} />
-      <Route path="/login" element={<Login />} />
+      <Route path="/"               element={<Landing />} />
+      <Route path="/login"          element={<Login />} />
+      <Route path="/oauth/callback" element={<OAuthCallback />} />
 
       {/* Route protette — richiedono autenticazione */}
       <Route element={<ProtectedRoute />}>

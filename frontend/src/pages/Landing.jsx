@@ -16,6 +16,7 @@ export default function Landing() {
   const [regForm, setRegForm] = useState({ username: '', email: '', password: '' });
   const [regError, setRegError] = useState('');
   const [regLoading, setRegLoading] = useState(false);
+  const [modalLegale, setModalLegale] = useState(null);
 
   // Imposta data-theme al montaggio
   useEffect(() => {
@@ -829,11 +830,88 @@ export default function Landing() {
               {regLoading ? 'Creazione…' : 'Crea account →'}
             </button>
             <div className="login-note">
-              Registrandoti accetti i <a href="#">Termini</a> e la <a href="#">Privacy Policy</a>
+              Registrandoti accetti i{' '}
+              <a href="#" onClick={(e) => { e.preventDefault(); setModalLegale('termini'); }}>Termini</a>
+              {' '}e la{' '}
+              <a href="#" onClick={(e) => { e.preventDefault(); setModalLegale('privacy'); }}>Privacy Policy</a>
             </div>
           </div>
         </div>
       </div>
+
+      {/* ── MODAL LEGALE ── */}
+      {modalLegale && (
+        <div
+          onClick={() => setModalLegale(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(7,9,15,.82)', backdropFilter: 'blur(12px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'var(--bg2,#0d1117)', border: '0.5px solid rgba(255,255,255,.12)',
+              borderRadius: 16, maxWidth: 580, width: '100%', maxHeight: '80vh',
+              display: 'flex', flexDirection: 'column', overflow: 'hidden',
+              boxShadow: '0 24px 72px rgba(0,0,0,.5)',
+            }}
+          >
+            <div style={{
+              padding: '18px 24px', borderBottom: '0.5px solid rgba(255,255,255,.06)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
+            }}>
+              <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 17, color: '#f0f4ff' }}>
+                {modalLegale === 'privacy' ? '🔒 Privacy Policy' : '📋 Termini di Servizio'}
+              </div>
+              <button onClick={() => setModalLegale(null)} style={{
+                width: 28, height: 28, borderRadius: '50%', border: '0.5px solid rgba(255,255,255,.13)',
+                background: 'transparent', color: '#8a96b0', cursor: 'pointer', fontSize: 14, lineHeight: 1,
+              }}>✕</button>
+            </div>
+            <div style={{ padding: '20px 24px', overflowY: 'auto', fontSize: 13, color: '#8a96b0', lineHeight: 1.75 }}>
+              {modalLegale === 'privacy' ? (
+                <>
+                  <p style={{ marginBottom: 14 }}>
+                    <strong style={{ color: '#f0f4ff' }}>CyberNexus</strong> raccoglie i dati strettamente necessari al funzionamento della piattaforma: indirizzo email, username scelto dall'utente e hash della password. Non vengono raccolti dati sensibili, né le password in chiaro.
+                  </p>
+                  <p style={{ marginBottom: 14 }}>
+                    <strong style={{ color: '#f0f4ff' }}>Utilizzo dei dati.</strong> I dati personali sono utilizzati esclusivamente per autenticare l'utente, visualizzare il profilo pubblico in classifica e inviare comunicazioni strettamente legate all'account.
+                  </p>
+                  <p style={{ marginBottom: 14 }}>
+                    <strong style={{ color: '#f0f4ff' }}>Cookie e storage.</strong> La piattaforma utilizza <code>localStorage</code> per conservare il refresh token di sessione. Non vengono utilizzati cookie di profilazione o tracker di terze parti.
+                  </p>
+                  <p style={{ marginBottom: 14 }}>
+                    <strong style={{ color: '#f0f4ff' }}>Sicurezza.</strong> Tutte le password sono memorizzate esclusivamente come hash bcrypt. Le comunicazioni avvengono tramite HTTPS. I token JWT hanno scadenza breve (15 minuti).
+                  </p>
+                  <p style={{ color: '#4a5568', fontSize: 11, marginTop: 18 }}>
+                    Ultimo aggiornamento: Giugno 2026 · CyberNexus è un progetto didattico — Fondamenti del Web.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p style={{ marginBottom: 14 }}>
+                    Utilizzando <strong style={{ color: '#f0f4ff' }}>CyberNexus</strong> accetti di impiegare la piattaforma esclusivamente per scopi educativi e di formazione nel campo della cybersecurity. È vietato utilizzare le competenze acquisite per danneggiare sistemi reali o violare la privacy altrui.
+                  </p>
+                  <p style={{ marginBottom: 14 }}>
+                    <strong style={{ color: '#f0f4ff' }}>Condotta.</strong> Gli utenti si impegnano a mantenere un comportamento rispettoso all'interno delle War Room e nelle interazioni con la community. Comportamenti abusivi comportano la sospensione dell'account.
+                  </p>
+                  <p style={{ marginBottom: 14 }}>
+                    <strong style={{ color: '#f0f4ff' }}>Contenuti.</strong> Le sfide CTF presenti sulla piattaforma sono progettate e validate dal team di CyberNexus. È vietato pubblicare soluzioni o flag al di fuori del contesto della piattaforma.
+                  </p>
+                  <p style={{ marginBottom: 14 }}>
+                    <strong style={{ color: '#f0f4ff' }}>Account.</strong> Ogni utente è responsabile della sicurezza del proprio account. In caso di violazione segnalare immediatamente all'amministrazione.
+                  </p>
+                  <p style={{ color: '#4a5568', fontSize: 11, marginTop: 18 }}>
+                    Ultimo aggiornamento: Giugno 2026 · CyberNexus è un progetto didattico — Fondamenti del Web.
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── FOOTER ── */}
       <footer>
@@ -855,8 +933,8 @@ export default function Landing() {
           CyberNexus
         </div>
         <div className="foot-links">
-          <a className="foot-lnk" href="#">Privacy</a>
-          <a className="foot-lnk" href="#">Termini</a>
+          <a className="foot-lnk" href="#" onClick={(e) => { e.preventDefault(); setModalLegale('privacy'); }}>Privacy</a>
+          <a className="foot-lnk" href="#" onClick={(e) => { e.preventDefault(); setModalLegale('termini'); }}>Termini</a>
           <a className="foot-lnk" href="#">API Swagger</a>
           <a className="foot-lnk" href="#">GitHub</a>
           <a className="foot-lnk" href="#">Swagger</a>

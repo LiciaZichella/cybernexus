@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NavDropdown from '../components/NavDropdown';
 import { leaderboardAPI, usersAPI } from '../services/api';
 import './Leaderboard.css';
 
@@ -138,6 +139,18 @@ export default function Leaderboard() {
     if (authLoading) return;
     caricaClassifica(pagina, filterAttivo);
   }, [pagina, caricaClassifica, authLoading, filterAttivo]);
+
+  // Re-fetch page 1 when returning to this tab (e.g. after a CTF solve)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        setPagina(1);
+        caricaClassifica(1, filterAttivo);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [caricaClassifica, filterAttivo]);
 
   // ── Chiusura modale con tasto ESC ───────────────────────────────────────────
 
@@ -424,13 +437,7 @@ export default function Leaderboard() {
             {theme === 'dark' ? 'Dark' : 'Light'}
           </button>
           {user ? (
-            <div
-              className="nav-av"
-              title={user.username}
-              onClick={() => navigate('/dashboard')}
-            >
-              {getInitials(user.username)}
-            </div>
+            <NavDropdown user={user} initials={getInitials(user.username)} />
           ) : (
             <button className="nav-item" onClick={() => navigate('/login')}>
               Accedi

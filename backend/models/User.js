@@ -23,10 +23,13 @@ const UserSchema = new mongoose.Schema(
 
     passwordHash: {
       type: String,
-      required: [true, 'Password obbligatoria'],
+      required: false,
       minlength: [8, 'Password minimo 8 caratteri'],
       select: false, // esclusa di default dalle query
     },
+
+    oauthProvider: { type: String, default: null },
+    oauthId:       { type: String, default: null, select: false },
 
     // Ruolo per controllo accessi
     role: {
@@ -80,9 +83,9 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-// Hash della password prima del salvataggio (solo se modificata)
+// Hash della password prima del salvataggio (solo se presente e modificata)
 UserSchema.pre('save', async function () {
-  if (!this.isModified('passwordHash')) return;
+  if (!this.passwordHash || !this.isModified('passwordHash')) return;
   const salt = await bcrypt.genSalt(12);
   this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
 });
