@@ -430,16 +430,24 @@ export default function CTFArena() {
     setFlagStatus('submitting');
     try {
       const { data } = await challengesAPI.submitFlag(modal._id, { flag: flagInput.trim() });
+
+      // Il backend risponde 200 sia per flag corretta che errata — controlla il campo correct
+      if (!data.correct) {
+        setFlagStatus('wrong');
+        setFlagShakeKey(k => k + 1);
+        setTimeout(() => setFlagStatus('idle'), 2500);
+        return;
+      }
+
       const earnedPts = data.points ?? data.pointsEarned ?? modal.points;
       setEarnedPts(earnedPts);
       setFlagStatus('correct');
       setSolvedIds(prev => new Set([...prev, String(modal._id)]));
       aggiungiNotifica({ icon: '🚩', testo: `Flag catturata: ${modal.title}`, sub: `+${earnedPts} pts` });
-      console.log('[CTF] submitFlag OK – punti API:', earnedPts, '| user prima:', user?.points);
-      aggiornaUser().then(updated => {
-        console.log('[CTF] aggiornaUser risposta:', updated ? { points: updated.points, solved: updated.solvedChallenges?.length } : 'null');
-        if (updated) setProfile(updated);
-      });
+
+      // Ri-fetcha /api/users/me, aggiorna AuthContext e il profilo locale con i punti freschi dal DB
+      const updated = await aggiornaUser();
+      if (updated) setProfile(updated);
     } catch {
       setFlagStatus('wrong');
       setFlagShakeKey(k => k + 1);

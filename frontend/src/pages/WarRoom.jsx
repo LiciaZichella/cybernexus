@@ -177,6 +177,16 @@ export default function WarRoom() {
   const [tempoElapsedMin, setTempoElapsedMin] = useState(0);
   const ptsCounterRef = useRef(null);
 
+  // Typing indicator
+  const [utenteCheScrive, setUtenteCheScrive] = useState('');
+  const typingTimerRef   = useRef(null);
+  const typingDebounceRef = useRef(null);
+
+  // Stato sala chiusa da terzi (evento room-resolved ricevuto da altri)
+  const [salaChiusaDaAltri, setSalaChiusaDaAltri] = useState(false);
+  const [risolutore,        setRisolutore]        = useState('');
+  const [uiBloccata,        setUiBloccata]        = useState(false);
+
   // Membri online (aggiornati via socket)
   const [membriOnline, setMembriOnline] = useState([
     { iniziali: 'AL', gradiente: 'linear-gradient(135deg,var(--violet),var(--fuchsia))', username: 'alex_l' },
@@ -235,44 +245,67 @@ export default function WarRoom() {
 
     socket.emit('join-room', { roomId: id });
 
+    // Messaggio chat ricevuto — payload: { _id, content, type, createdAt, author: { username, avatar } }
     socket.on('chat-message', (msg) => {
-      const myUsername = user?.username;
-      if (msg.username === myUsername) return; // già mostrato in optimistic update
+      // Il backend fa broadcast a tutti incluso mittente — scarta i propri (già mostrati in optimistic update)
+      if (msg.author?.username === user?.username) return;
       setMessaggiChat(prev => [...prev, {
-        av: msg.iniziali || (msg.username ?? '??').slice(0, 2).toUpperCase(),
-        colore: msg.colore || 'var(--text2)',
-        testo: msg.testo,
-        me: false,
+        av:    (msg.author?.username ?? '??').slice(0, 2).toUpperCase(),
+        colore: 'var(--text2)',
+        testo:  msg.content,
+        me:    false,
       }]);
     });
 
-    socket.on('step-completed', ({ stepIdx, username }) => {
-      setPassiCompletati(prev => new Set([...prev, stepIdx]));
-      aggiungiLog(`${username} ✓ passo completato`, 'var(--mint)');
+    // Step completato da un altro membro — payload: { challengeId, solvedBy, solvedAt }
+    socket.on('step-completed', ({ solvedBy }) => {
+      aggiungiLog(`${solvedBy} ✓ passo completato`, 'var(--mint)');
     });
 
-    socket.on('log-event', ({ testo, colore }) => {
-      aggiungiLog(testo, colore || 'var(--text2)');
+    // Evento di log o typing indicator — payload: { content, createdAt, author }
+    socket.on('log-event', ({ content, author }) => {
+      if (content === 'sta scrivendo...') {
+        // Typing indicator: mostra per 2 secondi poi nasconde automaticamente
+        setUtenteCheScrive(author);
+        clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = setTimeout(() => setUtenteCheScrive(''), 2000);
+        return;
+      }
+      aggiungiLog(`${author ? author + ': ' : ''}${content}`, 'var(--text2)');
     });
 
-    socket.on('user-joined', ({ iniziali, username }) => {
+    // Nuovo membro entrato — payload: { username, avatar }
+    socket.on('user-joined', ({ username }) => {
+      const iniziali = username.slice(0, 2).toUpperCase();
       setMembriOnline(prev => {
         if (prev.find(m => m.username === username)) return prev;
-        return [...prev, { iniziali: iniziali || username.slice(0, 2).toUpperCase(), username, gradiente: 'linear-gradient(135deg,var(--cyan),var(--violet))' }];
+        return [...prev, { iniziali, username, gradiente: 'linear-gradient(135deg,var(--cyan),var(--violet))' }];
       });
       aggiungiLog(`${username} si è unito`, 'var(--violet)');
       setMessaggiChat(prev => [...prev, { tipo: 'sys', testo: `${username} è entrato nella War Room` }]);
+      aggiungiNotifica({ icon: '👥', testo: `${username} è entrato nella sala` });
     });
 
+    // Membro uscito — payload: { username }
     socket.on('user-left', ({ username }) => {
       setMembriOnline(prev => prev.filter(m => m.username !== username));
       aggiungiLog(`${username} ha lasciato`, 'var(--text3)');
       setMessaggiChat(prev => [...prev, { tipo: 'sys', testo: `${username} ha lasciato la War Room` }]);
+      aggiungiNotifica({ icon: '👋', testo: `${username} ha lasciato la sala` });
     });
 
-    socket.on('room-resolved', () => {
-      setRisolviAperto(true);
-      aggiungiNotifica({ icon: '🏆', testo: `War Room risolta: ${sala?.title || 'Incidente'}`, sub: 'Incidente completato' });
+    // Sala risolta — payload: { roomId, resolvedBy, resolvedAt }
+    socket.on('room-resolved', ({ resolvedBy }) => {
+      setUiBloccata(true);
+      aggiungiNotifica({ icon: '🏆', testo: `Incidente risolto da ${resolvedBy}` });
+      if (resolvedBy === user?.username) {
+        // L'utente corrente ha appena risolto — apri il modal di riepilogo
+        setRisolviAperto(true);
+      } else {
+        // Un altro membro ha risolto — mostra il modal informativo "sala chiusa"
+        setRisolutore(resolvedBy || 'Il team');
+        setSalaChiusaDaAltri(true);
+      }
     });
 
     socket.on('connect_error', (err) => {
@@ -284,7 +317,7 @@ export default function WarRoom() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [id, aggiungiLog, user?.username]);
+  }, [id, aggiungiLog, aggiungiNotifica, user?.username]);
 
   // ── Countdown timer ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -361,10 +394,12 @@ export default function WarRoom() {
   };
 
   const segnaFatto = () => {
-    if (timerScaduto || passiCompletati.has(passoAttivo)) return;
+    if (timerScaduto || uiBloccata || passiCompletati.has(passoAttivo)) return;
     setPassiCompletati(prev => new Set([...prev, passoAttivo]));
     setDettagliAperto(false);
-    socketRef.current?.emit('step-completed', { roomId: id, stepIdx: passoAttivo, username: user?.username });
+    // Emette step-completed (challengeId = indice step come stringa) + log per gli altri
+    socketRef.current?.emit('step-completed', { roomId: id, challengeId: String(passoAttivo) });
+    socketRef.current?.emit('log-event', { roomId: id, content: `✓ ${PASSI[passoAttivo].titolo.slice(0, 40)}` });
     aggiungiLog(`${user?.username || 'Tu'} ✓ ${PASSI[passoAttivo].titolo.slice(0, 30)}...`, 'var(--mint)');
     setRigheTerminale(prev => [...prev,
       { tipo: 'sep-active', testo: `── Passo: ${PASSI[passoAttivo].titolo.slice(0, 40)}... completato ──` },
@@ -372,8 +407,12 @@ export default function WarRoom() {
   };
 
   const apriRisolvi = () => {
-    if (timerScaduto) return;
-    setTempoElapsedMin(90 - Math.floor(tempoRimanente / 60));
+    if (timerScaduto || uiBloccata) return;
+    // Calcola durata reale da createdAt della sala, o stima dal timer
+    const durataMin = sala?.createdAt
+      ? Math.round((Date.now() - new Date(sala.createdAt).getTime()) / 60000)
+      : 90 - Math.floor(tempoRimanente / 60);
+    setTempoElapsedMin(durataMin);
     setRisolviAperto(true);
   };
 
@@ -391,8 +430,35 @@ export default function WarRoom() {
     setTimeout(() => { setWebhookInvio(false); setWebhookInviato(true); }, 1400);
   };
 
+  // Genera e scarica il post-incident report come file JSON
+  const scaricaReport = () => {
+    const now = new Date();
+    const report = {
+      incidente:       titoloSala,
+      tipo:            sala?.type || 'Incident Response',
+      severita:        severita,
+      dataRisoluzione: now.toISOString(),
+      durataMinuti:    tempoElapsedMin,
+      team:            membriOnline.map(m => ({ username: m.username })),
+      stepCompletati:  completati,
+      stepTotali:      PASSI.length,
+      passi:           PASSI.map((p, i) => ({ titolo: p.titolo, completato: passiCompletati.has(i) })),
+      puntiGuadagnati: sala?.points || 1850,
+      ioc:             IOC_DEFAULT.map(({ tipo, valore, stato }) => ({ tipo, valore, stato })),
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `report_warroom_${id}_${now.toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const eseguiComando = () => {
-    if (timerScaduto) return;
+    if (timerScaduto || uiBloccata) return;
     const set = CMD_SETS[cmdIdxRef.current % CMD_SETS.length];
     cmdIdxRef.current++;
     const cmd = comandoInput.trim() || set.cmd;
@@ -401,16 +467,20 @@ export default function WarRoom() {
     set.out.forEach(([tipo, testo], i) => {
       setTimeout(() => setRigheTerminale(prev => [...prev, { tipo, testo }]), (i + 1) * 280);
     });
-    socketRef.current?.emit('log-event', { roomId: id, testo: `$ ${cmd}`, colore: 'var(--text2)' });
+    // Emette log-event col formato atteso dal backend: { roomId, content }
+    socketRef.current?.emit('log-event', { roomId: id, content: `$ ${cmd}` });
   };
 
   const inviaChat = () => {
-    if (timerScaduto || !inputChat.trim()) return;
+    if (timerScaduto || uiBloccata || !inputChat.trim()) return;
     const testo = inputChat.trim();
     setInputChat('');
+    clearTimeout(typingDebounceRef.current);
     const meAv = user?.username?.slice(0, 2).toUpperCase() || 'TU';
+    // Optimistic update: il messaggio appare subito; il backend lo echeggerà a tutti
     setMessaggiChat(prev => [...prev, { av: meAv, colore: 'linear-gradient(135deg,var(--violet),var(--fuchsia))', testo, me: true }]);
-    socketRef.current?.emit('chat-message', { roomId: id, testo, username: user?.username, iniziali: meAv });
+    // Emette col formato atteso dal backend: { roomId, content }
+    socketRef.current?.emit('chat-message', { roomId: id, content: testo });
   };
 
   const toggleObiettivo = (passoIdx, objIdx) => {
@@ -658,6 +728,30 @@ export default function WarRoom() {
         </div>
       )}
 
+      {/* ── Modale sala chiusa da un altro membro ── */}
+      {salaChiusaDaAltri && (
+        <div className="resolve-overlay">
+          <div className="rm">
+            <div className="rm-bar" />
+            <div className="rm-in" style={{ textAlign: 'center' }}>
+              <span className="rm-emoji">🔒</span>
+              <div className="rm-title">Sala chiusa</div>
+              <div className="rm-sub">
+                <strong>{risolutore}</strong> ha risolto l'incidente e chiuso la sala.
+              </div>
+              <div className="rm-grid" style={{ marginBottom: 20 }}>
+                <div className="rm-stat"><div className="rms-v" style={{ color: 'var(--mint)' }}>{completati}/{PASSI.length}</div><div className="rms-l">Step</div></div>
+                <div className="rm-stat"><div className="rms-v" style={{ color: 'var(--violet)' }}>{membriOnline.length}</div><div className="rms-l">Analisti</div></div>
+                <div className="rm-stat"><div className="rms-v" style={{ color: 'var(--amber)' }}>{tempoElapsedMin || '—'}m</div><div className="rms-l">Durata</div></div>
+                <div className="rm-stat"><div className="rms-v" style={{ color: 'var(--coral)', fontSize: 12 }}>{severita}</div><div className="rms-l">Severità</div></div>
+              </div>
+              <button className="rm-download-btn" onClick={scaricaReport}>⬇ Scarica report JSON</button>
+              <button className="rm-close" onClick={() => navigate('/dashboard')}>← Torna alla dashboard</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Resolve modal ── */}
       {risolviAperto && (
         <div className="resolve-overlay" onClick={(e) => e.target === e.currentTarget && setRisolviAperto(false)}>
@@ -720,6 +814,7 @@ export default function WarRoom() {
                   )}
                 </div>
               </div>
+              <button className="rm-download-btn" onClick={scaricaReport}>⬇ Scarica report JSON</button>
               <button className="rm-close" onClick={confermaRisolvi}>✓ Torna alla dashboard</button>
             </div>
           </div>
@@ -775,7 +870,7 @@ export default function WarRoom() {
             <div className="pb-rem">· {PASSI.length - completati} rimanenti</div>
           </div>
         </div>
-        <button className="resolve-btn" disabled={timerScaduto} onClick={apriRisolvi}>
+        <button className="resolve-btn" disabled={timerScaduto || uiBloccata} onClick={apriRisolvi}>
           <span>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             Risolvi incidente
@@ -903,7 +998,7 @@ export default function WarRoom() {
               </button>
               <button
                 className="sh-done-btn"
-                disabled={timerScaduto || passiCompletati.has(passoAttivo)}
+                disabled={timerScaduto || uiBloccata || passiCompletati.has(passoAttivo)}
                 onClick={segnaFatto}
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -934,9 +1029,9 @@ export default function WarRoom() {
                   onChange={e => setComandoInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && eseguiComando()}
                   placeholder="inserisci comando..."
-                  disabled={timerScaduto}
+                  disabled={timerScaduto || uiBloccata}
                 />
-                <button className="t-run" onClick={eseguiComando} disabled={timerScaduto}>RUN ↵</button>
+                <button className="t-run" onClick={eseguiComando} disabled={timerScaduto || uiBloccata}>RUN ↵</button>
               </div>
             </div>
           </div>
@@ -1041,16 +1136,29 @@ export default function WarRoom() {
                 );
               })}
             </div>
+            {/* Indicatore di digitazione: appare quando un altro membro sta scrivendo */}
+            {utenteCheScrive && (
+              <div className="chat-typing">{utenteCheScrive} sta scrivendo...</div>
+            )}
             <div className="chat-inp-row">
               <input
                 className="chat-inp"
                 value={inputChat}
-                onChange={e => setInputChat(e.target.value)}
+                onChange={e => {
+                  setInputChat(e.target.value);
+                  // Debounce 1s: emette typing indicator solo se l'input non è vuoto
+                  clearTimeout(typingDebounceRef.current);
+                  if (e.target.value.trim()) {
+                    typingDebounceRef.current = setTimeout(() => {
+                      socketRef.current?.emit('log-event', { roomId: id, content: 'sta scrivendo...' });
+                    }, 1000);
+                  }
+                }}
                 onKeyDown={e => e.key === 'Enter' && inviaChat()}
-                placeholder="Scrivi al team..."
-                disabled={timerScaduto}
+                placeholder={uiBloccata ? 'Sala chiusa' : 'Scrivi al team...'}
+                disabled={timerScaduto || uiBloccata}
               />
-              <button className="chat-send" onClick={inviaChat} disabled={timerScaduto}>
+              <button className="chat-send" onClick={inviaChat} disabled={timerScaduto || uiBloccata}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13"/>
                   <polygon points="22 2 15 22 11 13 2 9 22 2"/>

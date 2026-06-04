@@ -730,3 +730,18 @@
   transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;
 }
 .warroom-app .rm-close:hover { transform:translateY(-2px);box-shadow:0 8px 22px rgba(92,206,138,.35) }
+
+/* Bottone download report */
+.warroom-app .rm-download-btn {
+  width:100%;padding:10px;border-radius:9px;margin-bottom:8px;
+  border:0.5px solid rgba(246,198,82,.35);background:var(--amber-bg);
+  color:var(--amber);font-size:12px;font-weight:600;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all .2s;
+}
+.warroom-app .rm-download-btn:hover { background:rgba(246,198,82,.15);transform:translateY(-1px) }
+
+/* Typing indicator nella chat */
+.warroom-app .chat-typing {
+  padding:3px 12px 3px;font-size:10px;color:var(--text3);
+  font-family:'DM Sans',sans-serif;font-style:italic;animation:wr-fadeIn .2s ease;
+}
