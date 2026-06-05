@@ -745,3 +745,76 @@
   padding:3px 12px 3px;font-size:10px;color:var(--text3);
   font-family:'DM Sans',sans-serif;font-style:italic;animation:wr-fadeIn .2s ease;
 }
+
+/* ── PREVIEW MODALE (lista sale) ── */
+.warroom-app .wr-preview-overlay {
+  position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:rgba(7,9,15,.8);backdrop-filter:blur(14px);animation:wr-fadeIn .2s ease;
+}
+[data-theme="light"] .warroom-app .wr-preview-overlay { background:rgba(240,242,248,.8) }
+.warroom-app .wr-preview-modal {
+  width:100%;max-width:460px;background:var(--bg2);border:0.5px solid var(--border2);
+  border-radius:16px;overflow:hidden;position:relative;
+  animation:wr-scaleIn .25s cubic-bezier(.34,1.56,.64,1);
+}
+[data-theme="light"] .warroom-app .wr-preview-modal { background:#fff }
+.warroom-app .wr-preview-close {
+  position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;
+  border:0.5px solid var(--border2);background:var(--bg);color:var(--text2);
+  cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;
+  line-height:1;transition:all .15s;z-index:2;
+}
+.warroom-app .wr-preview-close:hover { color:var(--text1);transform:scale(1.08) }
+.warroom-app .wr-preview-hdr {
+  padding:20px 20px 14px;border-bottom:0.5px solid var(--border);
+}
+.warroom-app .wr-preview-name {
+  font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--text1);margin-bottom:5px;
+}
+.warroom-app .wr-preview-badge {
+  font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;
+  font-family:'JetBrains Mono',monospace;
+}
+.warroom-app .wr-preview-body { padding:16px 20px }
+.warroom-app .wr-preview-desc {
+  font-size:12px;color:var(--text2);line-height:1.65;margin-bottom:14px;
+  padding:10px 12px;background:var(--bg3);border-radius:8px;border:0.5px solid var(--border);
+}
+[data-theme="light"] .warroom-app .wr-preview-desc { background:var(--bg4) }
+.warroom-app .wr-preview-stats { display:flex;gap:8px;margin-bottom:14px }
+.warroom-app .wr-preview-stat {
+  flex:1;background:var(--bg3);border:0.5px solid var(--border);border-radius:9px;
+  padding:10px 8px;text-align:center;display:flex;flex-direction:column;gap:3px;
+}
+[data-theme="light"] .warroom-app .wr-preview-stat { background:var(--bg4) }
+.warroom-app .wr-ps-v { font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--violet) }
+.warroom-app .wr-ps-l { font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em }
+.warroom-app .wr-preview-steps-lbl {
+  font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;
+  font-family:'JetBrains Mono',monospace;margin-bottom:6px;
+}
+.warroom-app .wr-preview-steps {
+  display:flex;flex-direction:column;gap:4px;margin-bottom:4px;
+}
+.warroom-app .wr-preview-step {
+  display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;
+  background:var(--bg3);border:0.5px solid var(--border);font-size:11px;color:var(--text2);
+}
+[data-theme="light"] .warroom-app .wr-preview-step { background:var(--bg4) }
+.warroom-app .wr-preview-footer {
+  padding:14px 20px;border-top:0.5px solid var(--border);display:flex;gap:10px;
+}
+.warroom-app .wr-preview-cancel {
+  flex:1;padding:10px;border-radius:9px;border:0.5px solid var(--border2);
+  background:transparent;color:var(--text2);font-size:13px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all .15s;
+}
+.warroom-app .wr-preview-cancel:hover { background:var(--bg3);color:var(--text1) }
+.warroom-app .wr-preview-entra {
+  flex:2;padding:10px;border-radius:9px;border:none;
+  background:linear-gradient(135deg,var(--violet),var(--fuchsia));color:#fff;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;
+  transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.warroom-app .wr-preview-entra:hover { transform:translateY(-1px);box-shadow:0 6px 16px rgba(124,111,234,.35) }
+.warroom-app .wr-preview-entra:disabled { opacity:.45;cursor:not-allowed;transform:none;box-shadow:none }

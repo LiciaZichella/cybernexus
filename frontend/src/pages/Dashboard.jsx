@@ -91,11 +91,6 @@ const STATIC_SMALL = [
   { _id: 's4', title: 'Ghost Identity',   category: 'OSINT',        difficulty: 'Medium', points: 300 },
 ];
 
-const WARROOMS_DATA = [
-  { id:1, title:'Ransomware Attack #005',     type:'Enterprise Breach',    sev:'Critical', sc:'coral', dc:'var(--coral)',  pp:[{i:'AL',c:'var(--violet)'},{i:'MR',c:'var(--cyan)'},{i:'GB',c:'var(--mint)'}] },
-  { id:2, title:'DDoS Mitigation Drill #012', type:'Infrastructure Attack',sev:'High',    sc:'amber', dc:'var(--amber)',  pp:[{i:'SK',c:'var(--fuchsia)'},{i:'ZR',c:'var(--amber)'}] },
-  { id:3, title:'Phishing Campaign #008',     type:'Email Security',       sev:'Medium',  sc:'cyan',  dc:'var(--cyan)',   pp:[{i:'GB',c:'var(--violet)'}] },
-];
 
 
 
@@ -872,25 +867,30 @@ export default function Dashboard() {
               <Link className="view-all" to="/warroom">Vedi tutte →</Link>
             </div>
             <div className="inc-list">
-              {(warrooms.length > 0 ? warrooms : WARROOMS_DATA.map(wr => ({ _id: wr.id, title: wr.title, type: wr.type, severity: wr.sev, participants: wr.pp.map(p => ({ username: p.i })) }))).map(wr => {
-                const sev = wr.severity ?? 'Critical';
-                const sc  = sev === 'High' ? 'amber' : sev === 'Medium' ? 'cyan' : sev === 'Low' ? 'mint' : 'coral';
-                const dc  = `var(--${sc})`;
-                const participants = wr.participants ?? wr.members ?? [];
+              {warrooms.length === 0 ? (
+                <div style={{ padding: '20px 0', textAlign: 'center', fontSize: 12, color: 'var(--text3)' }}>
+                  Nessuna War Room attiva al momento
+                </div>
+              ) : warrooms.map(wr => {
+                // Usa i campi reali del modello WARRoom (name, members, status)
+                const nome = wr.name || wr.title || 'War Room';
+                const nMembri = wr.memberCount ?? wr.members?.length ?? 0;
                 return (
-                  <div key={wr._id ?? wr.id} className={`incident-card ${sc === 'amber' ? 'high' : sc === 'cyan' ? 'medium' : ''}`}
-                    onClick={() => navigate(`/warroom/${wr._id ?? wr.id}`)} style={{cursor:'pointer'}}>
+                  <div key={wr._id} className="incident-card"
+                    onClick={() => navigate(`/warroom/${wr._id}`)} style={{cursor:'pointer'}}>
                     <div className="inc-header">
-                      <div className="inc-dot" style={{background: dc}}/>
-                      <div className="inc-title">{wr.title}</div>
-                      <div className="inc-badge" style={{background:`var(--${sc}-bg)`,color:dc}}>{sev}</div>
+                      <div className="inc-dot" style={{background:'var(--coral)'}}/>
+                      <div className="inc-title">{nome}</div>
+                      <div className="inc-badge" style={{background:'var(--coral-bg)',color:'var(--coral)'}}>
+                        {wr.status === 'closed' ? 'Chiusa' : 'Attiva'}
+                      </div>
                     </div>
                     <div className="inc-meta">
-                      {wr.type ?? 'Incident'} · {participants.length} {participants.length === 1 ? 'analista' : 'analisti'} connessi
+                      {wr.description ? wr.description.slice(0, 60) : 'Incident Response'} · {nMembri} {nMembri === 1 ? 'membro' : 'membri'}
                       <div className="inc-participants">
-                        {participants.slice(0, 4).map((p, pi) => (
+                        {(wr.members || []).slice(0, 4).map((m, pi) => (
                           <div key={pi} className="part-av" style={{background:`var(--${['violet','cyan','mint','fuchsia'][pi % 4]})`}}>
-                            {getInitials(p.username ?? String(p))}
+                            {getInitials(m.user?.username ?? m.username ?? '?')}
                           </div>
                         ))}
                       </div>

@@ -70,6 +70,7 @@ const createWARRoom = async (req, res) => {
     const room = await WARRoom.create(roomData);
     res.status(201).json({ room, inviteCode: room.inviteCode || null });
   } catch (err) {
+    console.error('Errore createWARRoom:', err);
     res.status(500).json({ error: err.message });
   }
 };

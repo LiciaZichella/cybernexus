@@ -308,9 +308,11 @@ export default function Admin() {
     setInvioWR(true);
     try {
       await warroomAPI.create({
-        title: formWR.nome, type: formWR.tipo, severity: formWR.severita,
-        points: Number(formWR.punti), briefing: formWR.briefing,
-        playbook: formWR.playbook.split('\n').filter(Boolean),
+        name:        formWR.nome,
+        description: formWR.briefing,
+        isPrivate:   false,
+        maxMembers:  20,
+        challenges:  [],
       });
       mostraToast('War Room creata! Playbook generato ✓', 'tok');
       setFormWR({ nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '' });
