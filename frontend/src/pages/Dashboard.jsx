@@ -113,6 +113,18 @@ function ChIcon({ category, color, size = 15 }) {
   }
 }
 
+/* ─── Descrizioni achievement ─────────────────────────────────────────────── */
+const BADGE_DESCRIZIONI = {
+  'First Blood':  'Risolvi la tua prima sfida CTF.',
+  'Cryptolord':   'Risolvi 3 sfide di categoria Crypto.',
+  'Streak 7':     'Accedi e risolvi sfide per 7 giorni consecutivi.',
+  'OSINT Pro':    'Risolvi 3 sfide di categoria OSINT.',
+  'War Hero':     'Completa 5 War Room come membro del team.',
+  'Analyst':      'Raggiungi 500 punti totali sulla piattaforma.',
+  'Top 10':       'Entra nella top 10 della classifica globale.',
+  '???':          'Continua a esplorare per scoprire altri achievement segreti...',
+};
+
 /* ─── CSS ─────────────────────────────────────────────────────────────────── */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -334,6 +346,26 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .badge-card.locked .bc-name{opacity:.5}
 .unlocked-check{position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--mint);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700}
 
+/* ACHIEVEMENT MODAL */
+.ach-overlay{position:fixed;inset:0;z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(7,9,15,.75);backdrop-filter:blur(14px);animation:fadeIn .2s ease}
+[data-theme="light"] .ach-overlay{background:rgba(240,242,248,.75)}
+.ach-modal{width:100%;max-width:380px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r14);padding:28px 24px 24px;position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;animation:scaleIn .25s cubic-bezier(.34,1.56,.64,1)}
+.ach-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:13px;transition:all .15s;line-height:1}
+.ach-close:hover{color:var(--text1);transform:scale(1.08)}
+.ach-icon-big{width:72px;height:72px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:2px;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.ach-modal-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text1);line-height:1.2}
+.ach-modal-desc{font-size:12px;color:var(--text2);line-height:1.65;max-width:280px}
+.ach-progress-wrap{width:100%;margin-top:4px}
+.ach-progress-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:6px}
+.ach-progress-row strong{color:var(--text1);font-weight:600}
+.ach-bar{height:6px;border-radius:4px;background:var(--border2);overflow:hidden;width:100%}
+.ach-bar-fill{height:6px;border-radius:4px;transition:width 1s .1s ease}
+.ach-bar-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);background-size:200%;animation:shimmer 2s linear infinite}
+.ach-bar-fill{position:relative;overflow:hidden}
+.ach-status{margin-top:4px;font-size:12px;font-weight:600;padding:6px 16px;border-radius:20px}
+.ach-status.ok{color:var(--mint);background:var(--mint-bg);border:0.5px solid rgba(92,206,138,.25)}
+.ach-status.wip{color:var(--text2);background:var(--bg3);border:0.5px solid var(--border)}
+
 /* ADMIN */
 .admin-pill{font-size:11px;font-weight:600;padding:5px 11px;border-radius:var(--r8);background:var(--coral-bg);color:var(--coral);border:0.5px solid rgba(240,112,96,.3);text-decoration:none;transition:all .2s;display:flex;align-items:center;gap:5px;white-space:nowrap}
 .admin-pill:hover{background:rgba(240,112,96,.18);transform:translateY(-1px)}
@@ -401,10 +433,18 @@ export default function Dashboard() {
   const [progressWidth, setProgressWidth] = useState(0);
   const [attivita,      setAttivita]      = useState([]);  // { date, count } × 60 giorni
   const [submissions,   setSubmissions]   = useState([]);  // { createdAt, pointsAwarded }
+  const [badgeModal,    setBadgeModal]    = useState(null); // achievement aperto nel modale
 
   const userRef = useRef(user);
 
   useEffect(() => { userRef.current = user; }, [user]);
+
+  // Chiude il modale achievement con Escape
+  useEffect(() => {
+    const h = (e) => { if (e.key === 'Escape') setBadgeModal(null); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, []);
 
   const loadAllData = useCallback(async () => {
     try {
@@ -885,17 +925,21 @@ export default function Dashboard() {
         </div>
 
         {/* ── BADGES ── */}
-        <div className="animate-in delay-6" style={{marginBottom:'24px'}}>
+        <div id="achievements" className="animate-in delay-6" style={{marginBottom:'24px'}}>
           <div className="section-header">
             <div className="section-title">🏅 Achievement</div>
-            <Link className="view-all" to="/dashboard">Vedi tutti (24) →</Link>
           </div>
           <div className="badge-grid">
             {badges.map((b, i) => {
               const pctBar = b.total > 0 ? Math.round((b.progress / b.total) * 100) : 0;
               const lbl    = b.total === 0 ? '?' : b.unlocked ? '' : `${b.progress}/${b.total}`;
               return (
-                <div key={i} className={`badge-card ${b.unlocked ? 'unlocked' : 'locked'}`}>
+                <div
+                  key={i}
+                  className={`badge-card ${b.unlocked ? 'unlocked' : 'locked'}`}
+                  onClick={() => setBadgeModal(b)}
+                  title={b.name}
+                >
                   {b.unlocked && <div className="unlocked-check">✓</div>}
                   <div className="bc-icon" style={{background: b.bg}}>{b.icon}</div>
                   <div className="bc-name">{b.name}</div>
@@ -908,6 +952,50 @@ export default function Dashboard() {
             })}
           </div>
         </div>
+
+        {/* ── MODALE DETTAGLIO ACHIEVEMENT ── */}
+        {badgeModal && (
+          <div className="ach-overlay" onClick={() => setBadgeModal(null)}>
+            <div className="ach-modal" onClick={e => e.stopPropagation()}>
+              <button className="ach-close" onClick={() => setBadgeModal(null)}>✕</button>
+
+              {/* Icona grande */}
+              <div className="ach-icon-big" style={{background: badgeModal.bg}}>
+                {badgeModal.icon}
+              </div>
+
+              {/* Nome e descrizione */}
+              <div className="ach-modal-name">{badgeModal.name}</div>
+              <div className="ach-modal-desc">
+                {BADGE_DESCRIZIONI[badgeModal.name] ?? ''}
+              </div>
+
+              {/* Barra di progresso */}
+              {badgeModal.total > 0 && (
+                <div className="ach-progress-wrap">
+                  <div className="ach-progress-row">
+                    <span>Progresso</span>
+                    <strong>{badgeModal.progress}/{badgeModal.total}</strong>
+                  </div>
+                  <div className="ach-bar">
+                    <div
+                      className="ach-bar-fill"
+                      style={{
+                        width: `${badgeModal.unlocked ? 100 : Math.round((badgeModal.progress / badgeModal.total) * 100)}%`,
+                        background: badgeModal.fc,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Stato */}
+              <div className={`ach-status ${badgeModal.unlocked ? 'ok' : 'wip'}`}>
+                {badgeModal.unlocked ? 'Sbloccato ✓' : 'In corso...'}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── TOP LEADERBOARD ── */}
         <div className="lb-card animate-in delay-6">

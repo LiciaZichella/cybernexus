@@ -824,39 +824,54 @@ export default function Landing() {
             </div>
             <div style={{ padding: '20px 24px', overflowY: 'auto', fontSize: 13, color: '#8a96b0', lineHeight: 1.75 }}>
               {modalLegale === 'privacy' ? (
+                /* ── Privacy Policy ── */
                 <>
                   <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>CyberNexus</strong> raccoglie i dati strettamente necessari al funzionamento della piattaforma: indirizzo email, username scelto dall'utente e hash della password. Non vengono raccolti dati sensibili, né le password in chiaro.
+                    <strong style={{ color: '#f0f4ff' }}>Dati raccolti.</strong>{' '}
+                    CyberNexus raccoglie esclusivamente i dati necessari al funzionamento della piattaforma educativa: indirizzo email, username, progressi nelle sfide CTF e punti accumulati. Le password non vengono mai memorizzate in chiaro — viene conservato unicamente l'hash bcrypt.
                   </p>
                   <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>Utilizzo dei dati.</strong> I dati personali sono utilizzati esclusivamente per autenticare l'utente, visualizzare il profilo pubblico in classifica e inviare comunicazioni strettamente legate all'account.
+                    <strong style={{ color: '#f0f4ff' }}>Utilizzo dei dati.</strong>{' '}
+                    I dati sono usati esclusivamente per autenticare l'utente, calcolare la classifica e mostrare i progressi personali. I dati <strong style={{ color: '#f0f4ff' }}>non vengono venduti né ceduti a terzi</strong> in alcuna forma. Non è presente pubblicità né tracciamento a scopo commerciale.
                   </p>
                   <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>Cookie e storage.</strong> La piattaforma utilizza <code>localStorage</code> per conservare il refresh token di sessione. Non vengono utilizzati cookie di profilazione o tracker di terze parti.
+                    <strong style={{ color: '#f0f4ff' }}>Autenticazione (JWT).</strong>{' '}
+                    La piattaforma utilizza token JWT per gestire le sessioni: l'access token ha scadenza di 15 minuti, il refresh token di 7 giorni e viene conservato in <code>localStorage</code>. Non vengono usati cookie di profilazione né tracker di terze parti.
                   </p>
                   <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>Sicurezza.</strong> Tutte le password sono memorizzate esclusivamente come hash bcrypt. Le comunicazioni avvengono tramite HTTPS. I token JWT hanno scadenza breve (15 minuti).
+                    <strong style={{ color: '#f0f4ff' }}>Archiviazione.</strong>{' '}
+                    I dati sono archiviati su <strong style={{ color: '#f0f4ff' }}>MongoDB Atlas</strong>, servizio cloud con crittografia a riposo. Non vengono archiviati dati bancari, di pagamento o documenti d'identità — la piattaforma è completamente gratuita.
                   </p>
                   <p style={{ color: '#4a5568', fontSize: 11, marginTop: 18 }}>
-                    Ultimo aggiornamento: Giugno 2026 · CyberNexus è un progetto didattico — Fondamenti del Web.
+                    Ultimo aggiornamento: Giugno 2026 · CyberNexus — Ingegneria Informatica.
+                  </p>
+                  <p style={{ marginTop: 8, fontSize: 12, color: '#7a8aaa' }}>
+                    Per informazioni: <strong style={{ color: '#f0f4ff' }}>info@cybernexus.io</strong>
                   </p>
                 </>
               ) : (
+                /* ── Termini di servizio ── */
                 <>
                   <p style={{ marginBottom: 14 }}>
-                    Utilizzando <strong style={{ color: '#f0f4ff' }}>CyberNexus</strong> accetti di impiegare la piattaforma esclusivamente per scopi educativi e di formazione nel campo della cybersecurity. È vietato utilizzare le competenze acquisite per danneggiare sistemi reali o violare la privacy altrui.
+                    Utilizzando <strong style={{ color: '#f0f4ff' }}>CyberNexus</strong> accetti di impiegare la piattaforma esclusivamente per scopi educativi e di formazione nel campo della cybersecurity. È vietato usare le competenze acquisite per danneggiare sistemi reali o violare la privacy altrui.
                   </p>
                   <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>Condotta.</strong> Gli utenti si impegnano a mantenere un comportamento rispettoso all'interno delle War Room e nelle interazioni con la community. Comportamenti abusivi comportano la sospensione dell'account.
+                    <strong style={{ color: '#f0f4ff' }}>Condotta.</strong>{' '}
+                    Gli utenti si impegnano a mantenere un comportamento rispettoso all'interno delle War Room e nella community. Comportamenti abusivi, tentativi di cheating o sabotaggio delle sfide comportano la sospensione dell'account.
                   </p>
                   <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>Contenuti.</strong> Le sfide CTF presenti sulla piattaforma sono progettate e validate dal team di CyberNexus. È vietato pubblicare soluzioni o flag al di fuori del contesto della piattaforma.
+                    <strong style={{ color: '#f0f4ff' }}>Contenuti CTF.</strong>{' '}
+                    Le sfide CTF sono progettate a scopo didattico. È vietato condividere soluzioni, flag o walkthrough al di fuori della piattaforma, per rispetto degli altri partecipanti.
                   </p>
                   <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>Account.</strong> Ogni utente è responsabile della sicurezza del proprio account. In caso di violazione segnalare immediatamente all'amministrazione.
+                    <strong style={{ color: '#f0f4ff' }}>Account e gratuità.</strong>{' '}
+                    Ogni utente è responsabile della sicurezza del proprio account. La piattaforma è <strong style={{ color: '#f0f4ff' }}>completamente gratuita</strong> e non prevede pagamenti, abbonamenti o transazioni di alcun tipo.
                   </p>
                   <p style={{ color: '#4a5568', fontSize: 11, marginTop: 18 }}>
-                    Ultimo aggiornamento: Giugno 2026 · CyberNexus è un progetto didattico — Fondamenti del Web.
+                    Ultimo aggiornamento: Giugno 2026 · CyberNexus — Ingegneria Informatica.
+                  </p>
+                  <p style={{ marginTop: 8, fontSize: 12, color: '#7a8aaa' }}>
+                    Per informazioni: <strong style={{ color: '#f0f4ff' }}>info@cybernexus.io</strong>
                   </p>
                 </>
               )}
@@ -887,11 +902,10 @@ export default function Landing() {
         <div className="foot-links">
           <a className="foot-lnk" href="#" onClick={(e) => { e.preventDefault(); setModalLegale('privacy'); }}>Privacy</a>
           <a className="foot-lnk" href="#" onClick={(e) => { e.preventDefault(); setModalLegale('termini'); }}>Termini</a>
-          <a className="foot-lnk" href="#">API Swagger</a>
-          <a className="foot-lnk" href="#">GitHub</a>
-          <a className="foot-lnk" href="#">Swagger</a>
+          <a className="foot-lnk" href="http://localhost:5005/api/docs" target="_blank" rel="noreferrer">API Swagger</a>
+          <a className="foot-lnk" href="http://localhost:5005/api/docs" target="_blank" rel="noreferrer">Swagger</a>
         </div>
-        <div className="foot-copy">© 2026 CyberNexus · Prof. A. Ferrara · Fondamenti del Web</div>
+        <div className="foot-copy">© 2026 CyberNexus · Ingegneria Informatica</div>
       </footer>
     </>
   );
