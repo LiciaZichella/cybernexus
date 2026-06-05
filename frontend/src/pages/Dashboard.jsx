@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
-import NavDropdown from '../components/NavDropdown';
+import Navbar from '../components/Navbar';
 import { usersAPI, challengesAPI, warroomAPI, leaderboardAPI } from '../services/api';
 
 /* ─── Counter ─────────────────────────────────────────────────────────────── */
@@ -50,31 +50,24 @@ function getRankInfo(pts = 0) {
   return { next: null, pct: 100, remaining: 0, max: pts };
 }
 
-function genHeatmap() {
-  const c = [
-    'var(--border2)',
-    'rgba(124,111,234,0.18)',
-    'rgba(124,111,234,0.35)',
-    'rgba(124,111,234,0.6)',
-    'var(--violet)',
-  ];
-  return Array.from({ length: 60 }, (_, i) => ({
-    id: i,
-    bg: c[Math.random() < 0.3 ? 0 : Math.floor(Math.random() * 5)],
-    delay: `${(i * 0.008).toFixed(3)}s`,
-  }));
-}
-
 /* ─── Static data ─────────────────────────────────────────────────────────── */
-const WEEK_LABELS = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
-const BAR_H       = [35, 55, 42, 70, 58, 80, 95];
+// Colori livelli attività heatmap (0 = inattivo, 4 = massima attività)
+const HEATMAP_COLORS = [
+  'var(--border2)',
+  'rgba(124,111,234,0.18)',
+  'rgba(124,111,234,0.35)',
+  'rgba(124,111,234,0.6)',
+  'var(--violet)',
+];
 
-const CAT_BARS = [
-  { name: 'Cryptography',  c: 'var(--violet)',  pct: 35, w: '100%' },
-  { name: 'Web Exploit',   c: 'var(--fuchsia)', pct: 25, w: '71%'  },
-  { name: 'OSINT',         c: 'var(--cyan)',    pct: 20, w: '57%'  },
-  { name: 'Steganography', c: 'var(--mint)',    pct: 12, w: '34%'  },
-  { name: 'Forensics',     c: 'var(--amber)',   pct:  8, w: '23%'  },
+// Categorie challenge con colori associati (ordine di visualizzazione)
+const CAT_CONFIG = [
+  { name: 'Cryptography', alt: 'Crypto', c: 'var(--violet)'  },
+  { name: 'Web',          alt: null,     c: 'var(--fuchsia)' },
+  { name: 'OSINT',        alt: null,     c: 'var(--cyan)'    },
+  { name: 'Forensics',    alt: null,     c: 'var(--amber)'   },
+  { name: 'Reverse',      alt: null,     c: 'var(--coral)'   },
+  { name: 'Misc',         alt: null,     c: 'var(--text2)'   },
 ];
 
 const CAT_STYLE = {
@@ -105,16 +98,6 @@ const WARROOMS_DATA = [
 ];
 
 
-const BADGES_DATA = [
-  { icon:'🔥', name:'First Blood',  st:'unlocked', bg:'var(--amber-bg)',   fc:'var(--mint)',    pct:100, lbl:''        },
-  { icon:'🔐', name:'Cryptolord',   st:'unlocked', bg:'var(--violet-bg)',  fc:'var(--mint)',    pct:100, lbl:''        },
-  { icon:'⚡', name:'Streak 7',     st:'unlocked', bg:'var(--mint-bg)',    fc:'var(--mint)',    pct:100, lbl:''        },
-  { icon:'🔍', name:'OSINT Pro',    st:'unlocked', bg:'var(--cyan-bg)',    fc:'var(--mint)',    pct:100, lbl:''        },
-  { icon:'🚨', name:'War Hero',     st:'locked',   bg:'var(--coral-bg)',   fc:'var(--coral)',   pct: 40, lbl:'2/5'     },
-  { icon:'🎯', name:'Analyst',      st:'locked',   bg:'var(--amber-bg)',   fc:'var(--amber)',   pct: 56, lbl:'280/500' },
-  { icon:'📊', name:'Top 10',       st:'locked',   bg:'var(--fuchsia-bg)',fc:'var(--fuchsia)', pct: 25, lbl:'#42→#10' },
-  { icon:'🔒', name:'???',          st:'locked',   bg:'var(--border2)',    fc:'transparent',    pct:  0, lbl:'?'       },
-];
 
 
 /* ─── Challenge icon by category ─────────────────────────────────────────── */
@@ -408,7 +391,6 @@ export default function Dashboard() {
   const navigate   = useNavigate();
   const { notifiche, segnaLetta, segnaLetteTutte, nonLette } = useNotifications();
 
-  const [theme,         setTheme]         = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
   const [profile,       setProfile]       = useState(null);
   const [challenges,    setChallenges]    = useState([]);
   const [rankUtente,    setRankUtente]    = useState(0);
@@ -417,34 +399,30 @@ export default function Dashboard() {
   const [topClassifica, setTopClassifica] = useState([]);
   const [chartFilter,   setChartFilter]   = useState('7g');
   const [progressWidth, setProgressWidth] = useState(0);
-  const [bellOpen,      setBellOpen]      = useState(false);
+  const [attivita,      setAttivita]      = useState([]);  // { date, count } × 60 giorni
+  const [submissions,   setSubmissions]   = useState([]);  // { createdAt, pointsAwarded }
 
-  const bellRef  = useRef(null);
-  const userRef  = useRef(user);
-  const heatmap  = useMemo(genHeatmap, []);
+  const userRef = useRef(user);
 
   useEffect(() => { userRef.current = user; }, [user]);
 
   const loadAllData = useCallback(async () => {
-    console.log('[Dashboard] loadAllData chiamata – visibilityState:', document.visibilityState);
     try {
-      const [profRes, chRes, wrRes, lbRes] = await Promise.allSettled([
+      const [profRes, chRes, wrRes, lbRes, actRes, subRes] = await Promise.allSettled([
         usersAPI.getMe(),
-        challengesAPI.getAll({ limit: 5 }),
+        challengesAPI.getAll({}),          // tutte le challenge (per analisi categorie)
         warroomAPI.getAll(),
         leaderboardAPI.get({ page: 1, limit: 100 }),
+        usersAPI.getActivity(),            // heatmap 60 giorni
+        usersAPI.getSubmissions(),         // grafico progressione punti
       ]);
       if (profRes.status === 'fulfilled') {
         const prof = profRes.value.data;
-        const parsed = prof.user ?? prof;
-        console.log('[Dashboard] profilo ricevuto – points:', parsed.points, '| solvedChallenges:', parsed.solvedChallenges?.length);
-        setProfile(parsed);
-      } else {
-        console.warn('[Dashboard] profRes fallito:', profRes.reason?.message);
+        setProfile(prof.user ?? prof);
       }
       if (chRes.status === 'fulfilled') {
         const chData = chRes.value.data;
-        setChallenges((chData.challenges || chData || []).slice(0, 5));
+        setChallenges(chData.challenges || chData || []);
       }
       if (wrRes.status === 'fulfilled') {
         const rooms = wrRes.value.data?.rooms ?? wrRes.value.data ?? [];
@@ -460,6 +438,8 @@ export default function Dashboard() {
         if (idx >= 0) setRankUtente(idx + 1);
         setTopClassifica(classifica.slice(0, 3));
       }
+      if (actRes.status === 'fulfilled') setAttivita(actRes.value.data?.activity ?? []);
+      if (subRes.status === 'fulfilled') setSubmissions(subRes.value.data?.submissions ?? []);
     } catch (err) {
       console.error('Dashboard load error:', err);
     }
@@ -479,16 +459,6 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, [profile]);
 
-  // Bell outside-click
-  useEffect(() => {
-    if (!bellOpen) return;
-    const handler = (e) => {
-      if (bellRef.current && !bellRef.current.contains(e.target)) setBellOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [bellOpen]);
-
   // Re-fetch all data when returning to this tab
   useEffect(() => {
     const onVisible = () => {
@@ -499,13 +469,97 @@ export default function Dashboard() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [loadAllData]);
 
-  const toggleTheme = () => {
-    setTheme(t => {
-      const next = t === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      return next;
+  // ── Heatmap 60 giorni ─────────────────────────────────────────────────────────
+  const heatmap = useMemo(() =>
+    attivita.length
+      ? attivita.map((a, i) => ({ id: i, bg: HEATMAP_COLORS[Math.min(a.count, 4)], delay: `${(i * 0.008).toFixed(3)}s` }))
+      : Array.from({ length: 60 }, (_, i) => ({ id: i, bg: HEATMAP_COLORS[0], delay: `${(i * 0.008).toFixed(3)}s` })),
+  [attivita]);
+  const oggiCount = attivita.length ? attivita[attivita.length - 1].count : 0;
+  const bestCount = attivita.length ? Math.max(...attivita.map(a => a.count)) : 0;
+
+  // ── Categorie risolte ─────────────────────────────────────────────────────────
+  const catBars = useMemo(() => {
+    if (!challenges.length) return [];
+    const solvedSet = new Set((profile?.solvedChallenges || []).map(String));
+    return CAT_CONFIG
+      .map(cat => {
+        const chCat   = challenges.filter(ch => ch.category === cat.name || ch.category === cat.alt);
+        const total   = chCat.length;
+        const risolte = chCat.filter(ch => solvedSet.has(String(ch._id))).length;
+        const pct     = total > 0 ? Math.round((risolte / total) * 100) : 0;
+        return { name: cat.name, c: cat.c, pct, w: `${pct}%`, risolte, total };
+      })
+      .filter(c => c.total > 0);
+  }, [challenges, profile]);
+
+  // ── Achievement dinamici ──────────────────────────────────────────────────────
+  const badges = useMemo(() => {
+    const solvedSet     = new Set((profile?.solvedChallenges || []).map(String));
+    const solved        = profile?.solvedChallenges?.length || 0;
+    const points        = profile?.points || 0;
+    const streak        = profile?.streak || 0;
+    const cryptoRisolte = challenges.filter(ch => ['Crypto','Cryptography'].includes(ch.category) && solvedSet.has(String(ch._id))).length;
+    const osintRisolte  = challenges.filter(ch => ch.category === 'OSINT' && solvedSet.has(String(ch._id))).length;
+    const isTop10       = rankUtente > 0 && rankUtente <= 10;
+    const mk = (icon, name, unlocked, progress, total, bg, fc) => ({ icon, name, unlocked, progress, total, bg, fc });
+    return [
+      mk('🔥','First Blood',  solved >= 1,          Math.min(solved, 1),         1,   'var(--amber-bg)',         'var(--amber)'   ),
+      mk('🔐','Cryptolord',   cryptoRisolte >= 3,   Math.min(cryptoRisolte, 3),  3,   'var(--violet-bg)',        'var(--violet)'  ),
+      mk('⚡','Streak 7',     streak >= 7,           Math.min(streak, 7),         7,   'var(--mint-bg)',          'var(--mint)'    ),
+      mk('🔍','OSINT Pro',    osintRisolte >= 3,     Math.min(osintRisolte, 3),   3,   'var(--cyan-bg)',          'var(--cyan)'    ),
+      mk('🚨','War Hero',     false,                 0,                           5,   'var(--coral-bg)',         'var(--coral)'   ),
+      mk('🎯','Analyst',      points >= 500,         Math.min(points, 500),       500, 'var(--amber-bg)',         'var(--amber)'   ),
+      mk('📊','Top 10',       isTop10,               Math.max(0, 11 - Math.max(rankUtente,1)), 10, 'var(--fuchsia-bg)', 'var(--fuchsia)' ),
+      mk('🔒','???',           false,                 0,                           0,   'rgba(255,255,255,0.03)', 'transparent'    ),
+    ];
+  }, [profile, challenges, rankUtente]);
+
+  // ── Grafico progressione punti ────────────────────────────────────────────────
+  const barData = useMemo(() => {
+    const FALLBACK = { labels: ['L','M','M','G','V','S','D'], heights: [10,15,10,20,15,25,30] };
+    const oggi = new Date();
+    const DN   = ['D','L','M','M','G','V','S'];
+
+    if (chartFilter === '7g') {
+      const giorni = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(oggi.getTime() - (6 - i) * 86400000);
+        return d.toISOString().slice(0, 10);
+      });
+      const vals = giorni.map(dt =>
+        submissions.filter(s => s.createdAt.slice(0, 10) === dt)
+                   .reduce((sum, s) => sum + (s.pointsAwarded || 0), 0)
+      );
+      const max = Math.max(...vals, 1);
+      return { labels: giorni.map(d => DN[new Date(d).getDay()]), heights: vals.map(v => Math.max(3, Math.round((v / max) * 95))) };
+    }
+
+    if (chartFilter === '30g') {
+      // Aggrega le ultime 4 settimane
+      const settimane = [3,2,1,0].map(w => {
+        const fine   = new Date(oggi.getTime() - w * 7 * 86400000);
+        const inizio = new Date(fine.getTime() - 7 * 86400000);
+        const pts    = submissions.filter(s => { const d = new Date(s.createdAt); return d > inizio && d <= fine; }).reduce((sum, s) => sum + (s.pointsAwarded || 0), 0);
+        return { label: `S-${4 - w}`, pts };
+      });
+      const max = Math.max(...settimane.map(s => s.pts), 1);
+      return { labels: settimane.map(s => s.label), heights: settimane.map(s => Math.max(3, Math.round((s.pts / max) * 95))) };
+    }
+
+    // 'tutto' — raggruppa per mese, ultimi 7 mesi
+    if (!submissions.length) return FALLBACK;
+    const mesiMap = {};
+    submissions.forEach(s => {
+      const d = new Date(s.createdAt);
+      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      mesiMap[k] = (mesiMap[k] || 0) + (s.pointsAwarded || 0);
     });
-  };
+    const ultimi7 = Object.entries(mesiMap).sort(([a],[b]) => a.localeCompare(b)).slice(-7);
+    if (!ultimi7.length) return FALLBACK;
+    const max = Math.max(...ultimi7.map(([,v]) => v), 1);
+    const NM  = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+    return { labels: ultimi7.map(([k]) => NM[parseInt(k.slice(5)) - 1]), heights: ultimi7.map(([,v]) => Math.max(3, Math.round((v / max) * 95))) };
+  }, [submissions, chartFilter]);
 
   const rank      = getRankInfo(profile?.points || 0);
   const initials  = getInitials(profile?.username || '');
@@ -524,79 +578,7 @@ export default function Dashboard() {
       <div className="orb orb-1" />
       <div className="orb orb-2" />
 
-      {/* Navbar */}
-      <nav className="navbar">
-        <Link className="nav-logo" to="/">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
-            <defs><linearGradient id="nlg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#7C6FEA"/><stop offset="100%" stopColor="#5BC4D4"/></linearGradient></defs>
-            <path d="M12 3a12 12 0 0 0 8.5 3A12 12 0 0 1 12 21 12 12 0 0 1 3.5 6 12 12 0 0 0 12 3" fill="rgba(124,111,234,0.15)" stroke="url(#nlg)" strokeWidth="1.5"/>
-          </svg>
-          CyberNexus
-        </Link>
-        <div className="nav-items">
-          <Link className="nav-item active" to="/dashboard">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            Dashboard
-          </Link>
-          <Link className="nav-item" to="/ctf">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 5a5 5 0 017 0 5 5 0 007 0v9a5 5 0 01-7 0 5 5 0 00-7 0V5z"/><line x1="5" y1="21" x2="5" y2="14"/></svg>
-            CTF Arena
-          </Link>
-          <Link className="nav-item" to="/warroom">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a12 12 0 008.5 3A12 12 0 0112 21 12 12 0 013.5 6 12 12 0 0012 3"/></svg>
-            War Room
-          </Link>
-          <Link className="nav-item" to="/leaderboard">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-            Leaderboard
-          </Link>
-        </div>
-        <div className="nav-right">
-          <button className="burger"><span/><span/><span/></button>
-          <div className="mode-toggle" onClick={toggleTheme}>
-            <div className="toggle-track"><div className="toggle-thumb"/></div>
-            <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
-          </div>
-          <div className="bell-wrap" ref={bellRef}>
-            <div className="notif-btn" onClick={() => setBellOpen(o => !o)}>
-              {nonLette > 0 && <div className="bell-badge">{nonLette > 9 ? '9+' : nonLette}</div>}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-            </div>
-            {bellOpen && (
-              <div className="bell-drop">
-                <div className="bell-drop-header">
-                  <div className="bell-drop-title">Notifiche {nonLette > 0 && `(${nonLette})`}</div>
-                  {nonLette > 0 && (
-                    <button className="bell-mark-all" onClick={segnaLetteTutte}>Segna tutte lette</button>
-                  )}
-                </div>
-                <div className="bell-items">
-                  {notifiche.length === 0 ? (
-                    <div className="bell-empty">Nessuna notifica</div>
-                  ) : notifiche.map(n => (
-                    <div key={n.id} className={`bell-item${n.letta ? '' : ' unread'}`} onClick={() => segnaLetta(n.id)}>
-                      <div className="bell-item-icon">{n.icon || '🔔'}</div>
-                      <div className="bell-item-body">
-                        <div className="bell-item-text">{n.testo}</div>
-                        {n.sub && <div className="bell-item-sub">{n.sub}</div>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-          {user?.role === 'Admin' && (
-            <Link to="/admin" className="admin-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-              Admin
-            </Link>
-          )}
-          <NavDropdown user={profile ?? user} initials={initials} />
-        </div>
-      </nav>
-
-      <div className="grad-strip"/>
+      <Navbar />
 
       <div className="page">
 
@@ -643,8 +625,8 @@ export default function Dashboard() {
               ))}
             </div>
             <div className="hm-mini-info">
-              <span>Oggi: <strong>4 contributi</strong></span>
-              <span>Best: <strong>9</strong></span>
+              <span>Oggi: <strong>{oggiCount} {oggiCount === 1 ? 'flag' : 'flag'}</strong></span>
+              <span>Best: <strong>{bestCount}</strong></span>
             </div>
           </div>
         </div>
@@ -741,10 +723,12 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="bar-chart">
-              {WEEK_LABELS.map((day, i) => (
+              {barData.labels.map((day, i) => (
                 <div key={i} className="bar-wrap">
-                  <div className={`bar${i === 6 ? ' today' : ''}`} style={{ height: `${BAR_H[i]}%`, animationDelay: `${0.5 + i * 0.1}s` }}/>
-                  <div className="bar-label" style={i === 6 ? {color:'var(--violet)',fontWeight:600} : {}}>{day}</div>
+                  <div className={`bar${i === barData.labels.length - 1 ? ' today' : ''}`}
+                    style={{ height: `${barData.heights[i]}%`, animationDelay: `${0.5 + i * 0.1}s` }}
+                  />
+                  <div className="bar-label" style={i === barData.labels.length - 1 ? {color:'var(--violet)',fontWeight:600} : {}}>{day}</div>
                 </div>
               ))}
             </div>
@@ -754,7 +738,7 @@ export default function Dashboard() {
             <div className="card-title-row">
               <div>
                 <div className="card-title">Categorie risolte</div>
-                <div className="card-sub">{solved} sfide · {CAT_BARS.length} categorie</div>
+                <div className="card-sub">{solved} sfide · {catBars.length} categorie</div>
               </div>
             </div>
             <div className="cat-card-content">
@@ -768,7 +752,7 @@ export default function Dashboard() {
                 <text x="40" y="44" textAnchor="middle" fontFamily="Syne,sans-serif" fontSize="13" fontWeight="700" fill="var(--text1)">{solved || 17}</text>
               </svg>
               <div className="cat-bars">
-                {CAT_BARS.map(cat => (
+                {(catBars.length ? catBars : CAT_CONFIG.slice(0, 5).map(c => ({ name: c.name, c: c.c, pct: 0, w: '0%' }))).map(cat => (
                   <div key={cat.name} className="cat-bar-row">
                     <div className="cat-bar-dot" style={{background: cat.c}}/>
                     <div className="cat-bar-name">{cat.name}</div>
@@ -907,17 +891,21 @@ export default function Dashboard() {
             <Link className="view-all" to="/dashboard">Vedi tutti (24) →</Link>
           </div>
           <div className="badge-grid">
-            {BADGES_DATA.map((b, i) => (
-              <div key={i} className={`badge-card ${b.st}`}>
-                {b.st === 'unlocked' && <div className="unlocked-check">✓</div>}
-                <div className="bc-icon" style={{background: b.bg}}>{b.icon}</div>
-                <div className="bc-name">{b.name}</div>
-                <div className="bc-progress">
-                  <div className="bc-fill" style={{width:`${b.pct}%`, background: b.fc}}/>
+            {badges.map((b, i) => {
+              const pctBar = b.total > 0 ? Math.round((b.progress / b.total) * 100) : 0;
+              const lbl    = b.total === 0 ? '?' : b.unlocked ? '' : `${b.progress}/${b.total}`;
+              return (
+                <div key={i} className={`badge-card ${b.unlocked ? 'unlocked' : 'locked'}`}>
+                  {b.unlocked && <div className="unlocked-check">✓</div>}
+                  <div className="bc-icon" style={{background: b.bg}}>{b.icon}</div>
+                  <div className="bc-name">{b.name}</div>
+                  <div className="bc-progress">
+                    <div className="bc-fill" style={{width:`${b.unlocked ? 100 : pctBar}%`, background: b.fc}}/>
+                  </div>
+                  {lbl && <div className="bc-pct">{lbl}</div>}
                 </div>
-                {b.lbl && <div className="bc-pct">{b.lbl}</div>}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

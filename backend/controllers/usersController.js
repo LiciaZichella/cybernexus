@@ -1,4 +1,5 @@
-const User = require('../models/User');
+const User       = require('../models/User');
+const Submission = require('../models/Submission');
 
 // GET /api/users/me — profilo completo dell'utente autenticato (sempre fresco dal DB)
 const getMe = async (req, res) => {
@@ -114,4 +115,53 @@ const changeUserRole = async (req, res) => {
   }
 };
 
-module.exports = { getMe, updateMe, getUserById, getAllUsers, changeUserRole };
+// GET /api/users/me/activity — submission corrette raggruppate per giorno (ultimi 60 giorni)
+const getMeActivity = async (req, res) => {
+  try {
+    const sessantaGiorniFa = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+
+    const submissions = await Submission.find({
+      user:      req.user._id,
+      isCorrect: true,
+      createdAt: { $gte: sessantaGiorniFa },
+    }).select('createdAt').lean();
+
+    // Raggruppa per data YYYY-MM-DD
+    const contaPerGiorno = {};
+    submissions.forEach(s => {
+      const giorno = new Date(s.createdAt).toISOString().slice(0, 10);
+      contaPerGiorno[giorno] = (contaPerGiorno[giorno] || 0) + 1;
+    });
+
+    // Array di 60 elementi (dal più vecchio al più recente)
+    const oggi = new Date();
+    const attivita = Array.from({ length: 60 }, (_, i) => {
+      const data   = new Date(oggi.getTime() - (59 - i) * 24 * 60 * 60 * 1000);
+      const chiave = data.toISOString().slice(0, 10);
+      return { date: chiave, count: contaPerGiorno[chiave] || 0 };
+    });
+
+    res.json({ activity: attivita });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET /api/users/me/submissions — submission corrette con data e punti (grafico progressione)
+const getMeSubmissions = async (req, res) => {
+  try {
+    const submissions = await Submission.find({
+      user:      req.user._id,
+      isCorrect: true,
+    })
+      .select('createdAt pointsAwarded')
+      .sort({ createdAt: 1 })
+      .lean();
+
+    res.json({ submissions });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { getMe, updateMe, getUserById, getAllUsers, changeUserRole, getMeActivity, getMeSubmissions };

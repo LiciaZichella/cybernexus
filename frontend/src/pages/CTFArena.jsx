@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
-import NavDropdown from '../components/NavDropdown';
+import Navbar from '../components/Navbar';
 import { usersAPI, challengesAPI } from '../services/api';
 
 /* ─── Config ──────────────────────────────────────────────────────────────── */
@@ -305,7 +305,6 @@ export default function CTFArena() {
   const { aggiungiNotifica } = useNotifications();
   const navigate = useNavigate();
 
-  const [theme,   setTheme]   = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
   const [profile, setProfile] = useState(null);
 
   const [challenges, setChallenges] = useState([]);
@@ -391,13 +390,6 @@ export default function CTFArena() {
     }
   }, [modal]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const toggleTheme = () => {
-    setTheme(t => {
-      const next = t === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      return next;
-    });
-  };
 
   const openModal = (ch) => {
     setModal(ch);
@@ -707,30 +699,7 @@ export default function CTFArena() {
         </div>
       )}
 
-      {/* ── Navbar ── */}
-      <nav className="navbar">
-        <Link className="nav-logo" to="/">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <defs><linearGradient id="nlg-ctf" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#7C6FEA"/><stop offset="100%" stopColor="#5BC4D4"/></linearGradient></defs>
-            <path d="M12 3a12 12 0 0 0 8.5 3A12 12 0 0 1 12 21 12 12 0 0 1 3.5 6 12 12 0 0 0 12 3" fill="rgba(124,111,234,0.15)" stroke="url(#nlg-ctf)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          CyberNexus
-        </Link>
-        <div className="nav-items">
-          <Link className="nav-item" to="/dashboard">Dashboard</Link>
-          <Link className="nav-item active" to="/ctf">CTF Arena</Link>
-          <Link className="nav-item" to="/warroom">War Room</Link>
-          <Link className="nav-item" to="/leaderboard">Leaderboard</Link>
-        </div>
-        <div className="nav-right">
-          <div className="mode-toggle" onClick={toggleTheme}>
-            <div className="toggle-track"><div className="toggle-thumb"/></div>
-            <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
-          </div>
-          <NavDropdown user={profile ?? user} initials={initials} />
-        </div>
-      </nav>
-      <div className="grad-strip"/>
+      <Navbar />
 
       <div className="page">
 

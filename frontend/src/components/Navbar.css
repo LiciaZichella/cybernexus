@@ -1,0 +1,267 @@
+/* Navbar.css — stili del componente condiviso, prefix cn- per evitare conflitti */
+
+/* ── Barra di navigazione ── */
+.cn-navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 500;
+  height: 58px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(17,24,39,0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 0.5px solid rgba(255,255,255,0.10);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+}
+[data-theme="light"] .cn-navbar {
+  background: rgba(248,249,252,0.95);
+  border-bottom-color: rgba(0,0,0,0.08);
+}
+
+/* ── Logo ── */
+.cn-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #f0f4ff;
+  text-decoration: none;
+  margin-right: 24px;
+  transition: transform .2s;
+  flex-shrink: 0;
+}
+[data-theme="light"] .cn-logo { color: #0f1623; }
+.cn-logo:hover { transform: translateY(-1px); }
+
+/* ── Lista voci ── */
+.cn-items {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+
+/* ── Singola voce ── */
+.cn-item {
+  font-size: 13px;
+  color: #8a96b0;
+  padding: 6px 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .15s;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+[data-theme="light"] .cn-item { color: #5a6480; }
+.cn-item:hover {
+  color: #f0f4ff;
+  background: rgba(255,255,255,0.05);
+}
+[data-theme="light"] .cn-item:hover {
+  color: #0f1623;
+  background: rgba(0,0,0,0.04);
+}
+.cn-item.active {
+  color: #7C6FEA;
+  background: rgba(124,111,234,0.10);
+  font-weight: 500;
+}
+/* Bottone Accedi con bordo */
+.cn-item.cn-accedi {
+  border: 0.5px solid rgba(255,255,255,0.13);
+}
+[data-theme="light"] .cn-item.cn-accedi { border-color: rgba(0,0,0,0.12); }
+
+/* ── Centro opzionale (War Room incident info) ── */
+.cn-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* ── Lato destro ── */
+.cn-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ── Toggle dark/light ── */
+.cn-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px 5px 7px;
+  border-radius: 30px;
+  border: 0.5px solid rgba(255,255,255,0.13);
+  background: #1a2235;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: #8a96b0;
+  transition: all .2s;
+  user-select: none;
+  flex-shrink: 0;
+}
+[data-theme="light"] .cn-toggle {
+  background: #fff;
+  border-color: rgba(0,0,0,0.12);
+  color: #5a6480;
+}
+.cn-toggle:hover { background: #1e2a3a; }
+[data-theme="light"] .cn-toggle:hover { background: #f1f3f8; }
+.cn-track {
+  width: 26px; height: 15px;
+  border-radius: 8px;
+  background: #7C6FEA;
+  position: relative;
+  flex-shrink: 0;
+  transition: background .3s;
+}
+.cn-thumb {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .25s cubic-bezier(.5,0,.5,1.4);
+}
+.cn-thumb.light { transform: translateX(11px); }
+
+/* ── Campanella notifiche ── */
+.cn-bell-wrap { position: relative; flex-shrink: 0; }
+.cn-bell-btn {
+  position: relative;
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  border: 0.5px solid rgba(255,255,255,0.13);
+  background: #1a2235;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all .2s;
+  color: #8a96b0;
+}
+[data-theme="light"] .cn-bell-btn { background: #fff; border-color: rgba(0,0,0,0.12); color: #5a6480; }
+.cn-bell-btn:hover { background: #1e2a3a; transform: translateY(-1px); }
+[data-theme="light"] .cn-bell-btn:hover { background: #f1f3f8; }
+.cn-bell-badge {
+  position: absolute;
+  top: 4px; right: 5px;
+  min-width: 15px; height: 15px;
+  border-radius: 8px;
+  background: #F07060;
+  border: 1.5px solid #111827;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 700; color: #fff;
+  line-height: 1; padding: 0 2px;
+}
+[data-theme="light"] .cn-bell-badge { border-color: #f8f9fc; }
+
+/* Dropdown campanella */
+@keyframes cn-fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cn-bell-drop {
+  position: absolute;
+  top: calc(100% + 10px); right: 0;
+  width: 300px;
+  background: #1a2235;
+  border: 0.5px solid rgba(255,255,255,0.13);
+  border-radius: 14px;
+  box-shadow: 0 20px 48px rgba(0,0,0,.45);
+  z-index: 600;
+  overflow: hidden;
+  animation: cn-fadeIn .15s ease both;
+}
+[data-theme="light"] .cn-bell-drop {
+  background: #fff;
+  border-color: rgba(0,0,0,0.12);
+  box-shadow: 0 20px 48px rgba(0,0,0,.12);
+}
+.cn-bell-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.06);
+}
+[data-theme="light"] .cn-bell-hdr { border-bottom-color: rgba(0,0,0,0.07); }
+.cn-bell-title { font-size: 13px; font-weight: 600; color: #f0f4ff; }
+[data-theme="light"] .cn-bell-title { color: #0f1623; }
+.cn-bell-mark {
+  font-size: 11px; color: #7C6FEA;
+  cursor: pointer; font-weight: 500;
+  background: none; border: none; padding: 0;
+}
+.cn-bell-mark:hover { text-decoration: underline; }
+.cn-bell-items { max-height: 280px; overflow-y: auto; }
+.cn-bell-items::-webkit-scrollbar { width: 3px; }
+.cn-bell-items::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.13); border-radius: 2px; }
+.cn-bell-item {
+  display: flex; gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  cursor: pointer;
+  transition: background .15s;
+}
+[data-theme="light"] .cn-bell-item { border-bottom-color: rgba(0,0,0,0.07); }
+.cn-bell-item:hover { background: #1e2a3a; }
+[data-theme="light"] .cn-bell-item:hover { background: #f1f3f8; }
+.cn-bell-item.unread { background: rgba(124,111,234,0.08); }
+.cn-bell-item:last-child { border: none; }
+.cn-bell-ico { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+.cn-bell-body { flex: 1; min-width: 0; }
+.cn-bell-text { font-size: 12px; color: #f0f4ff; line-height: 1.4; }
+[data-theme="light"] .cn-bell-text { color: #0f1623; }
+.cn-bell-sub { font-size: 10px; color: #4a5568; margin-top: 2px; }
+.cn-bell-empty {
+  padding: 28px 14px;
+  text-align: center;
+  font-size: 12px;
+  color: #4a5568;
+}
+
+/* ── Admin pill ── */
+.cn-admin-pill {
+  font-size: 11px; font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 8px;
+  background: rgba(240,112,96,0.18);
+  color: #F07060;
+  border: 0.5px solid rgba(240,112,96,0.3);
+  text-decoration: none;
+  transition: all .2s;
+  display: flex; align-items: center; gap: 5px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.cn-admin-pill:hover {
+  background: rgba(240,112,96,0.28);
+  transform: translateY(-1px);
+}
+
+/* ── Striscia cromatica ── */
+.cn-grad-strip {
+  position: fixed;
+  top: 58px; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #7C6FEA, #E870B8, #5BC4D4, #5CCE8A, #F6C652);
+  z-index: 499;
+  pointer-events: none;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .cn-navbar { padding: 0 16px; }
+  .cn-items .cn-item span:not(svg):not(.cn-item) { display: none; }
+  .cn-logo { margin-right: 12px; }
+}

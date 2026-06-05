@@ -57,10 +57,12 @@ export const authAPI = {
 // ─── Utenti ───────────────────────────────────────────────────────────────────
 
 export const usersAPI = {
-  getMe:    ()           => api.get('/users/me'),
-  updateMe: (data)       => api.put('/users/me', data),
-  getById:  (id)         => api.get(`/users/${id}`),
-  getAll:   (params)     => api.get('/users', { params }),
+  getMe:          ()       => api.get('/users/me'),
+  updateMe:       (data)   => api.put('/users/me', data),
+  getById:        (id)     => api.get(`/users/${id}`),
+  getAll:         (params) => api.get('/users', { params }),
+  getActivity:    ()       => api.get('/users/me/activity'),
+  getSubmissions: ()       => api.get('/users/me/submissions'),
 };
 
 // ─── Challenge ────────────────────────────────────────────────────────────────

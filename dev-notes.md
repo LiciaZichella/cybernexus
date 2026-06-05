@@ -139,6 +139,10 @@ VITE_SOCKET_URL=http://localhost:5000
 - swagger.yaml — documentazione API
 - config/passport.js — strategie OAuth Google e GitHub
 - routes/auth.js aggiornato con /google e /github
+- GET /api/users/me/activity — submission corrette 
+  raggruppate per giorno, ultimi 60 giorni
+- GET /api/users/me/submissions — submission corrette 
+  con punti e date per grafico progressione
 
 ### Completato — Frontend
 - React Router v6 setup (App.jsx + main.jsx)
@@ -163,12 +167,26 @@ VITE_SOCKET_URL=http://localhost:5000
 - Notifiche reali via NotificationsContext (rimossi tutti i dati falsi NOTIF_TPL e ACTIVITY_ITEMS); bell dropdown con badge unread; feed live nella Dashboard
 - Aggiornamento punti e classifica real-time dopo submit flag: aggiornaUser() in AuthContext aggiorna lo stato globale; visibilitychange su Dashboard e Leaderboard per re-fetch al ritorno dalla CTF Arena
 - getMe ora fa query fresca dal DB (User.findById) invece di restituire il snapshot caricato dal middleware
+- Fix bug submit flag CTF — ora controlla data.correct 
+  prima di aggiornare punti
+- WarRoom.jsx Socket.IO reale completo — chat, log eventi, 
+  typing indicator, notifiche presenza, report JSON scaricabile
 - Modale Termini di servizio e Privacy Policy nella Landing.jsx
+- Navbar.jsx + Navbar.css — componente condiviso usato da tutte le pagine
+  (prefix `cn-`, props: centerContent, rightExtra)
+  WarRoom vista incidente mantiene wr-navbar specializzata (timer + severità)
+- Navbar.jsx — componente condiviso con logo, voci menu, 
+  toggle dark/light, notifiche, admin pill, dropdown profilo; 
+  usata in tutte le pagine al posto delle navbar inline
+- Dashboard.jsx — tutte le sezioni ora dinamiche: heatmap 
+  60 giorni da API activity, progressione punti da submissions, 
+  categorie risolte calcolate dal DB, achievement calcolati 
+  su dati reali (streak, punti, solve count, top 10)
 
 ### Da fare — Altro
 - Deploy Render (backend) + Vercel (frontend)
-- Documentazione finale
-- ZIP consegna
+- Test end-to-end completo
+- ZIP consegna per Teams
 
 ---
 

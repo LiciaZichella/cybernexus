@@ -1,13 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { authAPI } from '../services/api';
+import Navbar from '../components/Navbar';
 import './Landing.css';
 
 const FLAG_STR = 'FLAG{sql_1nj3ct10n_m4st3r}';
 
 export default function Landing() {
   const navigate = useNavigate();
-  const [theme, setTheme] = useState('dark');
   const [typedFlag, setTypedFlag] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [cursorVisible, setCursorVisible] = useState(true);
@@ -58,12 +58,6 @@ export default function Landing() {
     };
   }, []);
 
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-  };
-
   const handleRegister = async () => {
     if (!regForm.username || !regForm.email || !regForm.password) {
       setRegError('Tutti i campi sono obbligatori.');
@@ -92,49 +86,7 @@ export default function Landing() {
       <div className="orb orb-2" />
       <div className="orb orb-3" />
 
-      {/* ── NAVBAR ── */}
-      <nav className="navbar">
-        <a className="nav-logo" href="#">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
-            <defs>
-              <linearGradient id="lg-nav" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#7C6FEA" />
-                <stop offset="100%" stopColor="#5BC4D4" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M12 3a12 12 0 0 0 8.5 3A12 12 0 0 1 12 21 12 12 0 0 1 3.5 6 12 12 0 0 0 12 3"
-              fill="rgba(124,111,234,0.15)"
-              stroke="url(#lg-nav)"
-              strokeWidth="1.5"
-            />
-          </svg>
-          CyberNexus
-        </a>
-
-        <div className="nav-links">
-          <a className="nav-lnk" href="#how">Come funziona</a>
-          <a className="nav-lnk" href="#ctf">CTF Arena</a>
-          <a className="nav-lnk" href="#warroom">War Room</a>
-          <a className="nav-lnk" href="#login">Registrati</a>
-        </div>
-
-        <div className="nav-right">
-          {/* Toggle dark/light */}
-          <div className="mode-toggle" onClick={toggleTheme}>
-            <div className="toggle-track">
-              <div className="toggle-thumb" />
-            </div>
-            <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
-          </div>
-          <button className="btn-nav-ghost" onClick={() => navigate('/login')}>
-            Accedi
-          </button>
-          <button className="btn-nav-primary" onClick={() => navigate('/login')}>
-            Inizia ora →
-          </button>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* ── HERO ── */}
       <section className="hero">

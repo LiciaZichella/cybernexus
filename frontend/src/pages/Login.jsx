@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
+import Navbar from '../components/Navbar';
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
@@ -307,7 +308,8 @@ export default function Login() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="login-page">
+      <Navbar />
+      <div className="login-page" style={{ paddingTop: '60px' }}>
 
         {/* ── LEFT PANEL ── */}
         <div className="lp">
@@ -386,12 +388,7 @@ export default function Login() {
 
         {/* ── RIGHT PANEL ── */}
         <div className="rp">
-          <div className="rp-top">
-            <div className="mode-toggle" onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}>
-              <div className="toggle-track"><div className="toggle-thumb" /></div>
-              <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
-            </div>
-          </div>
+          <div className="rp-top" />
 
           {!success ? (
             <div className="rp-form">

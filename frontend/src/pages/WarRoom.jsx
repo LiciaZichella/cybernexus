@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
 import NavDropdown from '../components/NavDropdown';
 import { warroomAPI, getMemoryToken } from '../services/api';
+import Navbar from '../components/Navbar';
 import './WarRoom.css';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5005';
@@ -532,37 +533,13 @@ export default function WarRoom() {
   if (!id) {
     const canCreate = user?.role === 'Admin' || user?.role === 'Manager';
     return (
-      <div className="warroom-app">
-        <nav className="wr-navbar">
-          <Link className="nav-logo" to="/">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <defs>
-                <linearGradient id="nlg-wr" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#7C6FEA"/>
-                  <stop offset="100%" stopColor="#5BC4D4"/>
-                </linearGradient>
-              </defs>
-              <path d="M12 3a12 12 0 0 0 8.5 3A12 12 0 0 1 12 21 12 12 0 0 1 3.5 6 12 12 0 0 0 12 3"
-                fill="rgba(124,111,234,0.15)" stroke="url(#nlg-wr)"
-                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            CyberNexus
-          </Link>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <Link to="/"            className="nav-back">🏠 Home</Link>
-            <Link to="/leaderboard" className="nav-back">🏆 Classifica</Link>
-            <Link to="/ctf"         className="nav-back">⚑ CTF Arena</Link>
-            {user && <Link to="/dashboard" className="nav-back">📊 Dashboard</Link>}
-          </div>
-          <div className="nav-right">
-            {user && <NavDropdown user={user} initials={user.username?.slice(0, 2).toUpperCase() || 'US'} />}
-          </div>
-        </nav>
+      <div className="warroom-app" style={{ height: 'auto', overflow: 'visible' }}>
+        <Navbar />
 
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', minHeight: 'calc(100vh - 52px)',
-          gap: 14, textAlign: 'center', padding: 24,
+          justifyContent: 'center', minHeight: 'calc(100vh - 60px)',
+          gap: 14, textAlign: 'center', padding: 24, paddingTop: 80,
         }}>
           {saleLoading ? (
             <div className="wr-loading">

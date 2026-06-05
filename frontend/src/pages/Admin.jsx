@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api, usersAPI, challengesAPI, warroomAPI, leaderboardAPI } from '../services/api';
+import Navbar from '../components/Navbar';
 import './Admin.css';
 
 // ── Helper: SHA-256 via Web Crypto API ───────────────────────────────────────
@@ -1003,8 +1004,11 @@ export default function Admin() {
         </div>
       )}
 
+      {/* Navbar condivisa — fissa in cima */}
+      <Navbar />
+
       {/* ── Layout app ── */}
-      <div className="app">
+      <div className="app" style={{ paddingTop: '60px' }}>
 
         {/* Sidebar */}
         <aside className="sidebar">

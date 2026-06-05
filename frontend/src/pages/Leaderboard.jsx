@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import NavDropdown from '../components/NavDropdown';
+import Navbar from '../components/Navbar';
 import { leaderboardAPI, usersAPI } from '../services/api';
 import './Leaderboard.css';
 
@@ -109,7 +109,6 @@ export default function Leaderboard() {
   // UI
   const [filterAttivo, setFilterAttivo] = useState('global');
   const [ricerca, setRicerca]           = useState('');
-  const [theme, setTheme]               = useState('dark');
   const [compareIdx, setCompareIdx]     = useState(0);
 
   const heatmapCells = generaHeatmap();
@@ -188,12 +187,6 @@ export default function Leaderboard() {
   };
 
   // ── Tema ────────────────────────────────────────────────────────────────────
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-  };
 
   // ── Dati derivati ───────────────────────────────────────────────────────────
 
@@ -398,56 +391,7 @@ export default function Leaderboard() {
         </div>
       )}
 
-      {/* ── Navbar ── */}
-      <nav className="navbar">
-        <Link to="/" className="nav-logo">
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <defs>
-              <linearGradient id="lg-lb" x1="0" y1="0" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#7C6FEA" />
-                <stop offset="1" stopColor="#E870B8" />
-              </linearGradient>
-            </defs>
-            <polygon
-              points="11,2 20,7 20,15 11,20 2,15 2,7"
-              fill="none" stroke="url(#lg-lb)" strokeWidth="1.5"
-            />
-            <polygon
-              points="11,6 16,9 16,13 11,16 6,13 6,9"
-              fill="url(#lg-lb)" opacity=".35"
-            />
-            <circle cx="11" cy="11" r="2.5" fill="url(#lg-lb)" />
-          </svg>
-          CyberNexus
-        </Link>
-
-        <div className="nav-items">
-          <Link to="/"           className="nav-item">🏠 Home</Link>
-          <Link to="/leaderboard" className="nav-item active">🏆 Classifica</Link>
-          <Link to="/ctf"        className="nav-item">⚑ CTF Arena</Link>
-          <Link to="/warroom"    className="nav-item">⚔ War Room</Link>
-          {user && <Link to="/dashboard" className="nav-item">📊 Dashboard</Link>}
-        </div>
-
-        <div className="nav-right">
-          <button className="mode-toggle" onClick={toggleTheme}>
-            <div className="toggle-track">
-              <div className="toggle-thumb" />
-            </div>
-            {theme === 'dark' ? 'Dark' : 'Light'}
-          </button>
-          {user ? (
-            <NavDropdown user={user} initials={getInitials(user.username)} />
-          ) : (
-            <button className="nav-item" onClick={() => navigate('/login')}>
-              Accedi
-            </button>
-          )}
-        </div>
-      </nav>
-
-      {/* Striscia gradiente sotto la navbar */}
-      <div className="grad-strip" />
+      <Navbar />
 
       {/* ── Corpo pagina ── */}
       <main className="page">
