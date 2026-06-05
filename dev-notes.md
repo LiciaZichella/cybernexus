@@ -167,6 +167,13 @@ VITE_SOCKET_URL=http://localhost:5000
 - Notifiche reali via NotificationsContext (rimossi tutti i dati falsi NOTIF_TPL e ACTIVITY_ITEMS); bell dropdown con badge unread; feed live nella Dashboard
 - Aggiornamento punti e classifica real-time dopo submit flag: aggiornaUser() in AuthContext aggiorna lo stato globale; visibilitychange su Dashboard e Leaderboard per re-fetch al ritorno dalla CTF Arena
 - getMe ora fa query fresca dal DB (User.findById) invece di restituire il snapshot caricato dal middleware
+- War Room fix completo: passi/utenti/log/chat reali,
+  step sincronizzati via Socket.IO, terminale tematico,
+  preview sala prima di entrare, report PDF con grafica
+  CyberNexus, punti coerenti nel modal di risoluzione,
+  webhook info reale
+- Dashboard: solo War Room reali dal DB, nessun dato
+  hardcoded
 - Fix bug submit flag CTF — ora controlla data.correct 
   prima di aggiornare punti
 - WarRoom.jsx Socket.IO reale completo — chat, log eventi, 
@@ -185,9 +192,8 @@ VITE_SOCKET_URL=http://localhost:5000
 
 ### Da fare — Altro
 - Deploy Render (backend) + Vercel (frontend)
-- Test end-to-end completo
+- Test end-to-end completo War Room con 2 utenti
 - ZIP consegna per Teams
-
 ---
 
 ## Note importanti per la collega

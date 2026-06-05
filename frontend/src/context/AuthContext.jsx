@@ -80,6 +80,25 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
+  // Login tramite OAuth: riceve i token direttamente dal callback senza round-trip di refresh
+  const loginWithOAuth = useCallback(async (at, rt) => {
+    try {
+      impostaToken(at);
+      salvaRefreshToken(rt);
+      // Recupera il profilo usando il nuovo accessToken appena settato
+      const { data: me } = await api.get('/users/me');
+      setUser(me.user ?? me);
+      return true;
+    } catch {
+      impostaToken(null);
+      cancellaRefreshToken();
+      setUser(null);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Ricarica il profilo utente dal backend e aggiorna lo stato
   const aggiornaUser = useCallback(async () => {
     try {
@@ -106,7 +125,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, loading, login, logout, refreshToken, aggiornaUser }}>
+    <AuthContext.Provider value={{ user, accessToken, loading, login, logout, refreshToken, aggiornaUser, loginWithOAuth }}>
       {children}
     </AuthContext.Provider>
   );

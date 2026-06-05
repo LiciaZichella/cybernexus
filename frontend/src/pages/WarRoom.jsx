@@ -378,6 +378,11 @@ export default function WarRoom() {
     return () => document.removeEventListener('keydown', handler);
   }, []);
 
+  // Punti coerenti: dichiarati qui perché usati nel useEffect dell'animazione counter
+  const puntiBase     = sala?.points || (passiCompletati.size * 150);
+  const bonusVelocita = tempoElapsedMin > 0 && tempoElapsedMin < 30 ? 350 : 0;
+  const puntiTotali   = puntiBase + bonusVelocita;
+
   // ── Animazione counter punti nel resolve modal ───────────────────────────────
   useEffect(() => {
     if (!risolviAperto || !ptsCounterRef.current) return;
@@ -672,11 +677,6 @@ export default function WarRoom() {
   const timerWarning = tempoRimanente <= 600 && tempoRimanente > 0;
   const titoloSala = sala?.name || sala?.title || 'Incident Response';
   const severita   = sala?.severity || 'CRITICAL';
-
-  // Punti coerenti con il backend: punti base + bonus velocità (Bug 5)
-  const puntiBase      = sala?.points || (completati * 150);
-  const bonusVelocita  = tempoElapsedMin > 0 && tempoElapsedMin < 30 ? 350 : 0;
-  const puntiTotali    = puntiBase + bonusVelocita;
 
   // ── Render riga terminale ────────────────────────────────────────────────────
   const renderRiga = (r, i) => {

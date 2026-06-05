@@ -31,7 +31,8 @@ router.get('/google/callback',
       const User = require('../models/User');
       const { accessToken, refreshToken } = generateTokens(req.user._id);
       await User.findByIdAndUpdate(req.user._id, { refreshToken });
-      res.redirect(`${CLIENT_ORIGIN}/oauth/callback?refreshToken=${refreshToken}`);
+      // Invia entrambi i token al frontend così non serve un round-trip di refresh
+      res.redirect(`${CLIENT_ORIGIN}/oauth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`);
     } catch {
       res.redirect(`${CLIENT_ORIGIN}/login?error=oauth`);
     }
@@ -50,7 +51,7 @@ router.get('/github/callback',
       const User = require('../models/User');
       const { accessToken, refreshToken } = generateTokens(req.user._id);
       await User.findByIdAndUpdate(req.user._id, { refreshToken });
-      res.redirect(`${CLIENT_ORIGIN}/oauth/callback?refreshToken=${refreshToken}`);
+      res.redirect(`${CLIENT_ORIGIN}/oauth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`);
     } catch {
       res.redirect(`${CLIENT_ORIGIN}/login?error=oauth`);
     }

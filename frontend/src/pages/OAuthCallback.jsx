@@ -5,13 +5,21 @@ import { useAuth } from '../context/AuthContext';
 export default function OAuthCallback() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { refreshToken: doRefresh } = useAuth();
+  const { loginWithOAuth } = useAuth();
 
   useEffect(() => {
+    // Legge entrambi i token dai query param del redirect OAuth
+    const at = searchParams.get('accessToken');
     const rt = searchParams.get('refreshToken');
-    if (!rt) { navigate('/login'); return; }
-    localStorage.setItem('refreshToken', rt);
-    doRefresh().then(ok => navigate(ok ? '/dashboard' : '/login'));
+
+    if (!at || !rt) {
+      // Token mancanti: redirect a login con messaggio di errore
+      navigate('/login?error=oauth');
+      return;
+    }
+
+    // Completa l'autenticazione OAuth direttamente senza round-trip extra
+    loginWithOAuth(at, rt).then(ok => navigate(ok ? '/dashboard' : '/login?error=oauth'));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
