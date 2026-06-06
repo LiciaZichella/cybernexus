@@ -8,9 +8,10 @@ const rateLimit   = require('express-rate-limit');
 const { Server }  = require('socket.io');
 const swaggerUi   = require('swagger-ui-express');
 const YAML        = require('yamljs');
-const connectDB      = require('./config/db');
-const passport       = require('./config/passport');
-const warroomSocket  = require('./sockets/warroom');
+const connectDB           = require('./config/db');
+const passport            = require('./config/passport');
+const warroomSocket       = require('./sockets/warroom');
+const warroomController   = require('./controllers/warroomController');
 
 const app        = express();
 const httpServer = http.createServer(app);
@@ -23,6 +24,7 @@ const io = new Server(httpServer, {
   },
 });
 warroomSocket(io);
+warroomController.setIo(io);   // inietta io nel controller per task:update
 
 // Connessione al database
 connectDB();

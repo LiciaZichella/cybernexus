@@ -2,6 +2,40 @@ const jwt     = require('jsonwebtoken');
 const User    = require('../models/User');
 const WARRoom = require('../models/WARRoom');
 
+// Sequenze di eventi automatici per ogni tipo di scenario
+const EVENTI_SCENARIO = {
+  ransomware: [
+    { minuto: 0,  messaggio: '🔴 Rilevata firma ransomware su server-prod-01',        tipo: 'critico' },
+    { minuto: 3,  messaggio: '🟡 Hash identificato: 4a7b9f2c → LockBit 3.0',          tipo: 'warning' },
+    { minuto: 7,  messaggio: '🔴 Secondo server compromesso: server-prod-03',          tipo: 'critico' },
+    { minuto: 12, messaggio: "🟡 CVE-2024-3400 confermato come vettore d'ingresso",   tipo: 'warning' },
+    { minuto: 18, messaggio: '🟢 IP C2 185.220.101.48 identificato',                  tipo: 'info' },
+  ],
+  data_breach: [
+    { minuto: 0,  messaggio: '🔴 Traffico anomalo dal database clienti',              tipo: 'critico' },
+    { minuto: 4,  messaggio: '🟡 Esfiltrazione dati in corso verso IP esterno',       tipo: 'warning' },
+    { minuto: 9,  messaggio: '🔴 Credenziali admin compromesse',                      tipo: 'critico' },
+    { minuto: 15, messaggio: '🟡 Volume dati esfiltrati: ~2.3GB',                    tipo: 'warning' },
+  ],
+  ddos: [
+    { minuto: 0,  messaggio: '🔴 Flood di connessioni rilevato: 50k req/sec',        tipo: 'critico' },
+    { minuto: 5,  messaggio: '🟡 Botnet identificata: 1200 IP sorgente',             tipo: 'warning' },
+    { minuto: 10, messaggio: '🟢 Rate limiting attivato sul load balancer',          tipo: 'info' },
+  ],
+};
+
+// Normalizza il tipo di sala verso la chiave EVENTI_SCENARIO
+const normalizzaTipo = (tipo) => {
+  if (!tipo) return 'ransomware';
+  const t = tipo.toLowerCase();
+  if (t.includes('breach') || t.includes('data')) return 'data_breach';
+  if (t.includes('ddos') || t.includes('dos'))    return 'ddos';
+  return 'ransomware';
+};
+
+// Mappa roomId → array di setTimeout attivi (per cancellazione alla chiusura sala)
+const timeoutScenario = new Map();
+
 // Middleware Socket.IO: verifica JWT nell'handshake prima di accettare la connessione
 const autenticaSocket = async (socket, next) => {
   try {
@@ -51,6 +85,24 @@ const warroomSocket = (io) => {
           username: user.username,
           avatar:   user.avatar,
         });
+
+        // Avvia eventi automatici scenario solo per il primo utente nella stanza
+        const stanza = warNS.adapter.rooms.get(roomId);
+        if (stanza && stanza.size === 1 && !timeoutScenario.has(roomId)) {
+          const chiave = normalizzaTipo(room.tipo || '');
+          const eventi = EVENTI_SCENARIO[chiave] || EVENTI_SCENARIO.ransomware;
+          const timers = eventi.map(({ minuto, messaggio, tipo }) =>
+            setTimeout(() => {
+              warNS.to(roomId).emit('log-event', {
+                content:   messaggio,
+                tipo,
+                createdAt: new Date(),
+                author:    null,
+              });
+            }, minuto * 60 * 1000)
+          );
+          timeoutScenario.set(roomId, timers);
+        }
 
         ack?.({ ok: true });
       } catch (err) {
@@ -179,6 +231,13 @@ const warroomSocket = (io) => {
           resolvedBy: user.username,
           resolvedAt: new Date(),
         });
+
+        // Cancella i timer degli eventi automatici scenario
+        const timers = timeoutScenario.get(roomId);
+        if (timers) {
+          timers.forEach(clearTimeout);
+          timeoutScenario.delete(roomId);
+        }
 
         ack?.({ ok: true });
       } catch (err) {

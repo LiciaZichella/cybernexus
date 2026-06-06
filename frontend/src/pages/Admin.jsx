@@ -84,7 +84,7 @@ export default function Admin() {
 
   // Form crea War Room
   const [formWR, setFormWR] = useState({
-    nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '', comandiTerminale: '',
+    nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '', comandiTerminale: '', tasks: '',
   });
   const [invioWR, setInvioWR] = useState(false);
 
@@ -318,16 +318,25 @@ export default function Admin() {
         })
         .filter(c => c.comando && c.risposta);
 
+      // Parsa task iniziali (una riga = un task)
+      const tasksParsati = formWR.tasks
+        .split('\n')
+        .map(r => r.trim())
+        .filter(r => r.length > 0)
+        .map(titolo => ({ titolo, stato: 'todo' }));
+
       await warroomAPI.create({
         name:             formWR.nome,
+        tipo:             formWR.tipo,
         description:      formWR.briefing,
         isPrivate:        false,
         maxMembers:       20,
         challenges:       [],
         comandiTerminale: comandiParsati,
+        tasks:            tasksParsati,
       });
       mostraToast('War Room creata! Playbook generato ✓', 'tok');
-      setFormWR({ nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '', comandiTerminale: '' });
+      setFormWR({ nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '', comandiTerminale: '', tasks: '' });
       caricaWarrooms();
     } catch (err) {
       mostraToast(err.response?.data?.message ?? 'Errore nella creazione della War Room', 'terr');
@@ -775,6 +784,13 @@ export default function Admin() {
                   placeholder={'ps|PID 1234 lockbit3.exe MALWARE RILEVATO\nscan 185.x.x.x|C2 server identificato\nnetstat|ESTABLISHED 185.x.x.x:8443 C2 SERVER\nwhoami|analyst@corp · privilegi: SYSTEM'}
                   value={formWR.comandiTerminale} onChange={(e) => setFormWR((f) => ({ ...f, comandiTerminale: e.target.value }))} />
                 <div className="fg-note">Formato: comando|risposta (uno per riga) — questi comandi saranno disponibili nel terminale della sala</div>
+              </div>
+              <div className="fg full">
+                <div className="fg-lbl">Task iniziali (uno per riga)</div>
+                <textarea className="fg-input" rows="5"
+                  placeholder={'Isolare il server compromesso\nAnalizzare il dump di memoria\nBloccare IP C2 sul firewall\nRipristinare i sistemi da backup'}
+                  value={formWR.tasks} onChange={(e) => setFormWR((f) => ({ ...f, tasks: e.target.value }))} />
+                <div className="fg-note">Ogni riga diventa un task nella Kanban board della sala (stato iniziale: TODO)</div>
               </div>
             </div>
           </div>

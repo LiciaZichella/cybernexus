@@ -6,6 +6,7 @@ import { useNotifications } from '../context/NotificationsContext';
 import NavDropdown from '../components/NavDropdown';
 import { warroomAPI, getMemoryToken } from '../services/api';
 import Navbar from '../components/Navbar';
+import KanbanBoard from '../components/KanbanBoard';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import './WarRoom.css';
@@ -159,6 +160,12 @@ export default function WarRoom() {
   const [tempoElapsedMin, setTempoElapsedMin] = useState(0);
   const ptsCounterRef = useRef(null);
 
+  // Vista centrale: terminale o kanban
+  const [vistaCentro, setVistaCentro] = useState('terminale');
+
+  // Task Kanban — inizializzati da sala.tasks al caricamento
+  const [tasks, setTasks] = useState([]);
+
   // Typing indicator
   const [utenteCheScrive, setUtenteCheScrive] = useState('');
   const typingTimerRef   = useRef(null);
@@ -247,16 +254,25 @@ export default function WarRoom() {
       aggiungiLog(`${solvedBy} ✓ ${titolo}... completato`, 'var(--mint)');
     });
 
-    // Evento di log o typing indicator — payload: { content, createdAt, author }
-    socket.on('log-event', ({ content, author }) => {
+    // Evento di log o typing indicator — payload: { content, createdAt, author, tipo? }
+    socket.on('log-event', ({ content, author, tipo }) => {
       if (content === 'sta scrivendo...') {
-        // Typing indicator: mostra per 2 secondi poi nasconde automaticamente
         setUtenteCheScrive(author);
         clearTimeout(typingTimerRef.current);
         typingTimerRef.current = setTimeout(() => setUtenteCheScrive(''), 2000);
         return;
       }
-      aggiungiLog(`${author ? author + ': ' : ''}${content}`, 'var(--text2)');
+      // Colore basato sul tipo dell'evento (per eventi automatici scenario)
+      const colore = tipo === 'critico' ? 'var(--coral)'
+        : tipo === 'warning'            ? 'var(--amber)'
+        : tipo === 'info'               ? 'var(--mint)'
+        : 'var(--text2)';
+      aggiungiLog(`${author ? author + ': ' : ''}${content}`, colore);
+    });
+
+    // Aggiornamento task Kanban da un altro membro
+    socket.on('task:update', ({ taskId, nuovoStato }) => {
+      setTasks(prev => prev.map(t => t._id === taskId ? { ...t, stato: nuovoStato } : t));
     });
 
     // Nuovo membro entrato — payload: { username, avatar }
@@ -342,6 +358,9 @@ export default function WarRoom() {
       gradiente: 'linear-gradient(135deg,var(--violet),var(--fuchsia))',
     }]);
 
+    // Task Kanban: carica dal DB
+    if (sala.tasks?.length) setTasks(sala.tasks);
+
     // Chat: carica la storia dei messaggi salvati nel DB
     if (sala.messages?.length) {
       const storico = sala.messages.slice(-30).map(msg => {
@@ -414,6 +433,17 @@ export default function WarRoom() {
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
+  // Sposta un task Kanban: aggiornamento ottimistico + chiamata API
+  const spostaTask = async (taskId, nuovoStato) => {
+    setTasks(prev => prev.map(t => t._id === taskId ? { ...t, stato: nuovoStato } : t));
+    try {
+      await warroomAPI.patchTask(id, taskId, { stato: nuovoStato });
+    } catch {
+      // Rollback allo stato DB in caso di errore
+      setTasks(sala?.tasks || []);
+    }
+  };
+
   const toggleTema = () => {
     const nuovoTema = tema === 'dark' ? 'light' : 'dark';
     setTema(nuovoTema);
@@ -469,11 +499,18 @@ export default function WarRoom() {
     setTimeout(() => { setWebhookInvio(false); setWebhookInviato(true); }, 1400);
   };
 
-  // Genera e scarica il report come PDF professionale
-  const scaricaReport = () => {
+  // Genera e scarica il report come PDF professionale — dati reali dal backend
+  const scaricaReport = async () => {
+    // Recupera dati aggregati dal backend
+    let datiAPI = null;
+    try {
+      const { data } = await warroomAPI.getReport(id);
+      datiAPI = data;
+    } catch { /* usa dati locali come fallback */ }
+
     const doc = new jsPDF();
     const now  = new Date();
-    const nome = titoloSala.replace(/\s+/g, '_').slice(0, 30);
+    const nome = (datiAPI?.nome || titoloSala).replace(/\s+/g, '_').slice(0, 30);
 
     // Palette colori CyberNexus
     const C = { violet: [124, 111, 234], dark: [17, 24, 39], gray: [90, 100, 128], white: [240, 244, 255], mint: [92, 206, 138], amber: [246, 198, 82], coral: [240, 112, 96] };
@@ -520,22 +557,26 @@ export default function WarRoom() {
 
     // ── 1. Riepilogo incidente ────────────────────────────────────────────────────
     addSectionTitle('1.  RIEPILOGO INCIDENTE');
-    addField('Nome sala', titoloSala);
-    addField('Severità', severita);
-    addField('Stato', sala?.status === 'closed' ? 'Risolto ✓' : 'Attivo');
+    addField('Nome sala', datiAPI?.nome || titoloSala);
+    addField('Tipo scenario', datiAPI?.tipo || severita);
+    addField('Stato', datiAPI?.esito === 'contenuto' ? 'Risolto ✓' : (sala?.status === 'closed' ? 'Risolto ✓' : 'Attivo'));
     addField('Data apertura', sala?.createdAt ? new Date(sala.createdAt).toLocaleString('it-IT') : '–');
     addField('Data risoluzione', now.toLocaleString('it-IT'));
-    addField('Durata totale', `${tempoElapsedMin} minuti`);
+    addField('Durata totale', datiAPI?.durata || `${tempoElapsedMin} minuti`);
+    addField('Log eventi', datiAPI?.eventiLog != null ? String(datiAPI.eventiLog) : '—');
     y += 4;
 
     // ── 2. Team ───────────────────────────────────────────────────────────────────
     addSectionTitle('2.  TEAM');
+    const teamBody = datiAPI?.membriCoinvolti?.length
+      ? datiAPI.membriCoinvolti.map(m => [m.username, m.ruolo])
+      : membriOnline.length
+        ? membriOnline.map(m => [m.username, m.role || 'Analista'])
+        : [['–', '–']];
     doc.autoTable({
       startY: y,
       head: [['Username', 'Ruolo']],
-      body: membriOnline.length
-        ? membriOnline.map(m => [m.username, m.role || 'Analista'])
-        : [['–', '–']],
+      body: teamBody,
       styles: { fontSize: 9, cellPadding: 3 },
       headStyles: { fillColor: C.violet, textColor: [255, 255, 255] },
       alternateRowStyles: { fillColor: [248, 250, 255] },
@@ -568,17 +609,47 @@ export default function WarRoom() {
     });
     y = doc.lastAutoTable.finalY + 8;
 
-    // ── 4. Statistiche ────────────────────────────────────────────────────────────
-    addSectionTitle('4.  STATISTICHE');
-    addField('Passi completati', `${completati} / ${PASSI.length} (${pct}%)`);
-    addField('Punti base', `${puntiBase.toLocaleString()} pts  (${completati} passi × 150)`);
-    addField('Bonus velocità', bonusVelocita > 0 ? `+${bonusVelocita} pts (completata in meno di 30 min)` : 'Nessuno');
+    // ── 4. Task Kanban (solo se la sala ha task configurati) ──────────────────────
+    if (tasks.length > 0) {
+      addSectionTitle('4.  TASK KANBAN');
+      const STATI_LABEL = { todo: 'TODO', in_corso: 'IN CORSO', in_review: 'IN REVIEW', fatto: 'FATTO ✓' };
+      doc.autoTable({
+        startY: y,
+        head: [['#', 'Task', 'Stato']],
+        body: tasks.map((t, i) => [
+          String(i + 1),
+          t.titolo,
+          STATI_LABEL[t.stato] || t.stato,
+        ]),
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: C.violet, textColor: [255, 255, 255] },
+        columnStyles: { 0: { cellWidth: 10 }, 2: { cellWidth: 28 } },
+        didParseCell: (d) => {
+          if (d.column.index === 2 && d.section === 'body') {
+            if (d.cell.raw === 'FATTO ✓') d.cell.styles.textColor = C.mint;
+            else if (d.cell.raw === 'IN CORSO') d.cell.styles.textColor = C.amber;
+          }
+        },
+        alternateRowStyles: { fillColor: [248, 250, 255] },
+        margin: { left: 14, right: 14 },
+      });
+      y = doc.lastAutoTable.finalY + 8;
+    }
+
+    // ── 5. Statistiche ────────────────────────────────────────────────────────────
+    addSectionTitle('5.  STATISTICHE');
+    if (datiAPI?.taskTotali > 0) {
+      addField('Task completati', `${datiAPI.taskCompletati} / ${datiAPI.taskTotali}`);
+    }
+    addField('Passi playbook', `${completati} / ${PASSI.length} (${pct}%)`);
+    addField('Punti base', `${puntiBase.toLocaleString()} pts`);
+    addField('Bonus velocità', bonusVelocita > 0 ? `+${bonusVelocita} pts` : 'Nessuno');
     addField('Punti totali', `${puntiTotali.toLocaleString()} pts`);
     y += 4;
 
-    // ── 5. Timeline eventi ────────────────────────────────────────────────────────
+    // ── 6. Timeline eventi ────────────────────────────────────────────────────────
     if (logFeed.length > 0) {
-      addSectionTitle('5.  TIMELINE EVENTI');
+      addSectionTitle('6.  TIMELINE EVENTI');
       doc.autoTable({
         startY: y,
         head: [['Ora', 'Evento']],
@@ -706,6 +777,16 @@ export default function WarRoom() {
   const titoloSala = sala?.name || sala?.title || 'Incident Response';
   const severita   = sala?.severity || 'CRITICAL';
 
+  // Ruolo dell'utente corrente nella sala (Lead / Member / Observer)
+  const mioRuolo = sala?.members?.find(
+    m => String(m.user?._id || m.user) === String(user?._id || user?.id)
+  )?.role ?? 'Member';
+  const isObserver = mioRuolo === 'Observer';
+
+  // Progresso task Kanban (visualizzato nel banner quando ci sono task nel DB)
+  const taskFatti  = tasks.filter(t => t.stato === 'fatto').length;
+  const taskTotali = tasks.length;
+
   // ── Render riga terminale ────────────────────────────────────────────────────
   const renderRiga = (r, i) => {
     if (r.tipo === 'cmd') return (
@@ -812,6 +893,17 @@ export default function WarRoom() {
                 {/* Footer azioni */}
                 <div className="wr-preview-footer">
                   <button className="wr-preview-cancel" onClick={() => setPreviewSala(null)}>Annulla</button>
+                  <button
+                    className="wr-preview-observe"
+                    disabled={previewSala.status === 'closed'}
+                    onClick={async () => {
+                      try { await warroomAPI.observe(previewSala._id); } catch { /* già membro */ }
+                      setPreviewSala(null);
+                      navigate(`/warroom/${previewSala._id}`);
+                    }}
+                  >
+                    👁 Osserva
+                  </button>
                   <button
                     className="wr-preview-entra"
                     disabled={previewSala.status === 'closed'}
@@ -1093,6 +1185,11 @@ export default function WarRoom() {
           <div className="ni-dot" />
           <div className="ni-title">{titoloSala}</div>
           <div className="ni-badge">{severita}</div>
+          {isObserver && (
+            <div className="ni-badge" style={{ background: 'rgba(91,196,212,0.15)', color: 'var(--cyan)', border: '0.5px solid rgba(91,196,212,0.3)', marginLeft: 4 }}>
+              👁 OBSERVER
+            </div>
+          )}
           <div className="ni-sep" />
           <div className="ni-timer-wrap">
             <div className={`ni-timer ${timerWarning ? 'warning' : ''}`}>{formatTime(tempoRimanente)}</div>
@@ -1120,12 +1217,25 @@ export default function WarRoom() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--coral)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a12 12 0 008.5 3A12 12 0 0112 21 12 12 0 013.5 6 12 12 0 0012 3"/></svg>
         </div>
         <div className="pb-info">
-          <div className="pb-lbl">Playbook: {sala?.type || 'Ransomware Enterprise'}</div>
+          <div className="pb-lbl">
+            {taskTotali > 0 ? `Kanban: ${sala?.tipo || 'Scenario'}` : `Playbook: ${sala?.tipo || 'Ransomware Enterprise'}`}
+          </div>
           <div className="pb-row">
-            <div className="pb-title">{completati} di {PASSI.length} passi completati</div>
-            <div className="pb-bar"><div className="pb-fill" style={{ width: `${pct}%` }} /></div>
-            <div className="pb-pct">{pct}%</div>
-            <div className="pb-rem">· {PASSI.length - completati} rimanenti</div>
+            {taskTotali > 0 ? (
+              <>
+                <div className="pb-title">{taskFatti} di {taskTotali} task completati</div>
+                <div className="pb-bar"><div className="pb-fill" style={{ width: `${Math.round(taskFatti / taskTotali * 100)}%` }} /></div>
+                <div className="pb-pct">{Math.round(taskFatti / taskTotali * 100)}%</div>
+                <div className="pb-rem">· {taskTotali - taskFatti} rimanenti</div>
+              </>
+            ) : (
+              <>
+                <div className="pb-title">{completati} di {PASSI.length} passi completati</div>
+                <div className="pb-bar"><div className="pb-fill" style={{ width: `${pct}%` }} /></div>
+                <div className="pb-pct">{pct}%</div>
+                <div className="pb-rem">· {PASSI.length - completati} rimanenti</div>
+              </>
+            )}
           </div>
         </div>
         <button className="resolve-btn" disabled={timerScaduto || uiBloccata} onClick={apriRisolvi}>
@@ -1240,59 +1350,89 @@ export default function WarRoom() {
         {/* ── Centro ── */}
         <div className="col-center">
 
-          {/* Step header */}
-          <div className="step-hdr">
-            <div className="sh-ico">{passoCorr.icon}</div>
-            <div className="sh-info">
-              <div className="sh-badge">
-                {passoCorr.categoria}{!passiCompletati.has(passoAttivo) ? ' · attivo' : ''}
-              </div>
-              <div className="sh-title">{passoCorr.titolo}</div>
-              <div className="sh-desc">{passoCorr.desc}</div>
-            </div>
-            <div className="sh-btn-group">
-              <button className="sh-guide-btn" onClick={() => setDettagliAperto(true)}>
-                📋 Guida e obiettivi
-              </button>
-              <button
-                className="sh-done-btn"
-                disabled={timerScaduto || uiBloccata || passiCompletati.has(passoAttivo)}
-                onClick={segnaFatto}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                {passiCompletati.has(passoAttivo) ? 'Completato ✓' : 'Segna fatto'}
-              </button>
-            </div>
+          {/* Tab toggle Terminale / Kanban */}
+          <div className="center-tabs">
+            <button
+              className={`center-tab ${vistaCentro === 'terminale' ? 'active' : ''}`}
+              onClick={() => setVistaCentro('terminale')}
+            >
+              💻 Terminale
+            </button>
+            <button
+              className={`center-tab ${vistaCentro === 'kanban' ? 'active' : ''}`}
+              onClick={() => setVistaCentro('kanban')}
+            >
+              📋 Kanban {taskTotali > 0 && <span className="center-tab-ct">{taskFatti}/{taskTotali}</span>}
+            </button>
           </div>
 
-          {/* Terminale */}
-          <div className="center-scroll">
-            <div className="terminal-card">
-              <div className="term-hdr">
-                <div className="term-dot" style={{ background: '#ff5f57' }} />
-                <div className="term-dot" style={{ background: '#ffbd2e' }} />
-                <div className="term-dot" style={{ background: '#28ca41' }} />
-                <div className="term-title">analyst@cybernexus — incident-console #{id?.slice(-3) || '005'}</div>
-                <div className="term-live"><div className="tld" />LIVE</div>
-              </div>
-              <div className="term-body" ref={termBodyRef}>
-                {righeTerminale.map((r, i) => renderRiga(r, i))}
-                <span className="t-line"><span className="t-p">[NOW]  </span><span className="t-cur" /></span>
-              </div>
-              <div className="term-inp-row">
-                <span className="t-prompt">$</span>
-                <input
-                  className="t-inp"
-                  value={comandoInput}
-                  onChange={e => setComandoInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && eseguiComando()}
-                  placeholder="inserisci comando..."
-                  disabled={timerScaduto || uiBloccata}
-                />
-                <button className="t-run" onClick={eseguiComando} disabled={timerScaduto || uiBloccata}>RUN ↵</button>
-              </div>
+          {/* Vista Kanban */}
+          {vistaCentro === 'kanban' && (
+            <div className="kanban-wrap">
+              <KanbanBoard
+                tasks={tasks}
+                isObserver={isObserver}
+                onTaskMoved={spostaTask}
+              />
             </div>
-          </div>
+          )}
+
+          {/* Vista Terminale: step header + terminale */}
+          {vistaCentro === 'terminale' && (
+            <>
+              <div className="step-hdr">
+                <div className="sh-ico">{passoCorr.icon}</div>
+                <div className="sh-info">
+                  <div className="sh-badge">
+                    {passoCorr.categoria}{!passiCompletati.has(passoAttivo) ? ' · attivo' : ''}
+                  </div>
+                  <div className="sh-title">{passoCorr.titolo}</div>
+                  <div className="sh-desc">{passoCorr.desc}</div>
+                </div>
+                <div className="sh-btn-group">
+                  <button className="sh-guide-btn" onClick={() => setDettagliAperto(true)}>
+                    📋 Guida e obiettivi
+                  </button>
+                  <button
+                    className="sh-done-btn"
+                    disabled={timerScaduto || uiBloccata || isObserver || passiCompletati.has(passoAttivo)}
+                    onClick={segnaFatto}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    {passiCompletati.has(passoAttivo) ? 'Completato ✓' : 'Segna fatto'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="center-scroll">
+                <div className="terminal-card">
+                  <div className="term-hdr">
+                    <div className="term-dot" style={{ background: '#ff5f57' }} />
+                    <div className="term-dot" style={{ background: '#ffbd2e' }} />
+                    <div className="term-dot" style={{ background: '#28ca41' }} />
+                    <div className="term-title">analyst@cybernexus — incident-console #{id?.slice(-3) || '005'}</div>
+                    <div className="term-live"><div className="tld" />LIVE</div>
+                  </div>
+                  <div className="term-body" ref={termBodyRef}>
+                    {righeTerminale.map((r, i) => renderRiga(r, i))}
+                    <span className="t-line"><span className="t-p">[NOW]  </span><span className="t-cur" /></span>
+                  </div>
+                  <div className="term-inp-row">
+                    <span className="t-prompt">$</span>
+                    <input
+                      className="t-inp"
+                      value={comandoInput}
+                      onChange={e => setComandoInput(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && eseguiComando()}
+                      placeholder={isObserver ? 'Modalità observer — solo lettura' : 'inserisci comando...'}
+                      disabled={timerScaduto || uiBloccata || isObserver}
+                    />
+                    <button className="t-run" onClick={eseguiComando} disabled={timerScaduto || uiBloccata || isObserver}>RUN ↵</button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* ── Sidebar destra ── */}
@@ -1404,19 +1544,18 @@ export default function WarRoom() {
                 value={inputChat}
                 onChange={e => {
                   setInputChat(e.target.value);
-                  // Debounce 1s: emette typing indicator solo se l'input non è vuoto
                   clearTimeout(typingDebounceRef.current);
-                  if (e.target.value.trim()) {
+                  if (e.target.value.trim() && !isObserver) {
                     typingDebounceRef.current = setTimeout(() => {
                       socketRef.current?.emit('log-event', { roomId: id, content: 'sta scrivendo...' });
                     }, 1000);
                   }
                 }}
                 onKeyDown={e => e.key === 'Enter' && inviaChat()}
-                placeholder={uiBloccata ? 'Sala chiusa' : 'Scrivi al team...'}
-                disabled={timerScaduto || uiBloccata}
+                placeholder={uiBloccata ? 'Sala chiusa' : isObserver ? 'Modalità observer — solo lettura' : 'Scrivi al team...'}
+                disabled={timerScaduto || uiBloccata || isObserver}
               />
-              <button className="chat-send" onClick={inviaChat} disabled={timerScaduto || uiBloccata}>
+              <button className="chat-send" onClick={inviaChat} disabled={timerScaduto || uiBloccata || isObserver}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13"/>
                   <polygon points="22 2 15 22 11 13 2 9 22 2"/>

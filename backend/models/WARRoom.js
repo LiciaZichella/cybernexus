@@ -1,5 +1,17 @@
 const mongoose = require('mongoose');
 
+// Schema task per la Kanban board
+const TaskSchema = new mongoose.Schema(
+  {
+    titolo:      { type: String, required: true, trim: true },
+    descrizione: { type: String, default: '' },
+    stato:       { type: String, enum: ['todo', 'in_corso', 'in_review', 'fatto'], default: 'todo' },
+    assegnatoA:  { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    creatoIl:    { type: Date, default: Date.now },
+  },
+  { _id: true }
+);
+
 // Singolo messaggio della chat di sala
 const MessageSchema = new mongoose.Schema(
   {
@@ -42,11 +54,11 @@ const WARRoomSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Membri con ruolo interno alla sala
+    // Membri con ruolo interno alla sala (Observer = sola lettura, non conta in maxMembers)
     members: [
       {
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        role: { type: String, enum: ['Lead', 'Member'], default: 'Member' },
+        role: { type: String, enum: ['Lead', 'Member', 'Observer'], default: 'Member' },
         joinedAt: { type: Date, default: Date.now },
       },
     ],
@@ -79,6 +91,13 @@ const WARRoomSchema = new mongoose.Schema(
       default: false,
     },
 
+    // Tipo di scenario — usato per selezionare gli eventi automatici nel socket
+    tipo: {
+      type: String,
+      enum: ['Ransomware', 'DDoS', 'Phishing', 'Data Breach', 'Supply Chain', 'Zero-Day'],
+      default: 'Ransomware',
+    },
+
     // Stato operativo della sala
     status: {
       type: String,
@@ -92,6 +111,9 @@ const WARRoomSchema = new mongoose.Schema(
       min: [2, 'Minimo 2 membri'],
       max: [50, 'Massimo 50 membri'],
     },
+
+    // Task Kanban board
+    tasks: [TaskSchema],
 
     // Comandi terminale personalizzati per questo scenario
     comandiTerminale: [
@@ -112,9 +134,10 @@ WARRoomSchema.virtual('memberCount').get(function () {
   return this.members.length;
 });
 
-// Virtual: sala piena o no
+// Virtual: sala piena o no (gli Observer non contano nel limite)
 WARRoomSchema.virtual('isFull').get(function () {
-  return this.members.length >= this.maxMembers;
+  const membriAttivi = this.members.filter(m => m.role !== 'Observer').length;
+  return membriAttivi >= this.maxMembers;
 });
 
 // Metodo d'istanza: verifica se un utente è già membro

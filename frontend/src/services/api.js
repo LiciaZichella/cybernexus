@@ -78,11 +78,14 @@ export const challengesAPI = {
 // ─── War Room ─────────────────────────────────────────────────────────────────
 
 export const warroomAPI = {
-  getAll:   ()            => api.get('/warroom'),
-  getById:  (id)          => api.get(`/warroom/${id}`),
-  create:   (data)        => api.post('/warroom', data),
-  join:     (id, data)    => api.post(`/warroom/${id}/join`, data),
-  resolve:  (id)          => api.post(`/warroom/${id}/resolve`),
+  getAll:    ()                   => api.get('/warroom'),
+  getById:   (id)                 => api.get(`/warroom/${id}`),
+  create:    (data)               => api.post('/warroom', data),
+  join:      (id, data)           => api.post(`/warroom/${id}/join`, data),
+  resolve:   (id)                 => api.post(`/warroom/${id}/resolve`),
+  patchTask: (id, taskId, data)   => api.patch(`/warroom/${id}/task/${taskId}`, data),
+  observe:   (id)                 => api.post(`/warroom/${id}/observe`),
+  getReport: (id)                 => api.get(`/warroom/${id}/report`),
 };
 
 // ─── Leaderboard ──────────────────────────────────────────────────────────────

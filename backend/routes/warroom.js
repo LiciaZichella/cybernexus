@@ -5,6 +5,9 @@ const {
   createWARRoom,
   joinWARRoom,
   resolveWARRoom,
+  patchTask,
+  joinAsObserver,
+  getReport,
 } = require('../controllers/warroomController');
 const { protect, authorize } = require('../middleware/verificaUtenti');
 
@@ -16,8 +19,11 @@ router.use(protect);
 router.get('/',    getWARRooms);
 router.post('/',   authorize('Admin', 'Manager'), createWARRoom);
 
-router.get('/:id',          getWARRoomById);
-router.post('/:id/join',    joinWARRoom);
-router.post('/:id/resolve', resolveWARRoom);
+router.get('/:id',                getWARRoomById);
+router.get('/:id/report',         getReport);
+router.post('/:id/join',          joinWARRoom);
+router.post('/:id/observe',       joinAsObserver);
+router.post('/:id/resolve',       resolveWARRoom);
+router.patch('/:id/task/:taskId', patchTask);
 
 module.exports = router;

@@ -818,3 +818,41 @@
 }
 .warroom-app .wr-preview-entra:hover { transform:translateY(-1px);box-shadow:0 6px 16px rgba(124,111,234,.35) }
 .warroom-app .wr-preview-entra:disabled { opacity:.45;cursor:not-allowed;transform:none;box-shadow:none }
+
+/* Bottone Osserva nel preview modal */
+.warroom-app .wr-preview-observe {
+  padding:10px 18px;border-radius:8px;border:0.5px solid rgba(91,196,212,.4);
+  background:rgba(91,196,212,.1);color:var(--cyan);
+  font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;
+  transition:all .2s;
+}
+.warroom-app .wr-preview-observe:hover { background:rgba(91,196,212,.18) }
+.warroom-app .wr-preview-observe:disabled { opacity:.45;cursor:not-allowed }
+
+/* Tab toggle Terminale / Kanban */
+.warroom-app .center-tabs {
+  display:flex;gap:4px;padding:8px 12px 0;flex-shrink:0;
+  border-bottom:0.5px solid var(--border);background:var(--bg2);
+}
+.warroom-app .center-tab {
+  display:flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:6px 6px 0 0;border:none;
+  background:transparent;color:var(--text2);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;
+}
+.warroom-app .center-tab:hover { color:var(--text1);background:var(--bg3) }
+.warroom-app .center-tab.active {
+  color:var(--violet);background:var(--bg);
+  border:0.5px solid var(--border2);border-bottom-color:var(--bg);
+}
+.warroom-app .center-tab-ct {
+  font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:700;
+  padding:1px 6px;border-radius:20px;
+  background:var(--mint-bg);color:var(--mint);
+}
+
+/* Contenitore Kanban nella colonna centrale */
+.warroom-app .kanban-wrap {
+  flex:1;overflow:hidden;padding:10px 12px;
+  display:flex;flex-direction:column;
+}

@@ -1,0 +1,173 @@
+/* KanbanBoard.css — scoped via .kanban-board dentro .warroom-app */
+
+.kanban-board {
+  display: flex;
+  gap: 10px;
+  height: 100%;
+  overflow-x: auto;
+  padding: 0 4px 4px;
+}
+
+.kb-col {
+  flex: 1;
+  min-width: 160px;
+  max-width: 240px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg2);
+  border: 0.5px solid var(--border2);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.kb-col-target {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 1px var(--violet);
+}
+
+.kb-col-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+}
+
+.kb-col-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.kb-col-ct {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 1px 7px;
+  border-radius: 20px;
+}
+
+.kb-col-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.kb-card {
+  background: var(--bg3);
+  border: 0.5px solid var(--border2);
+  border-radius: 8px;
+  padding: 10px 11px;
+  cursor: grab;
+  transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  user-select: none;
+}
+
+.kb-card:hover {
+  border-color: var(--border2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transform: translateY(-1px);
+}
+
+.kb-card-dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+.kb-card-readonly {
+  cursor: default;
+}
+
+.kb-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text1);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.kb-card-desc {
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.kb-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.kb-card-user {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--text2);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.kb-card-av {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.kb-card-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.kb-drop-hint {
+  border: 1.5px dashed var(--violet);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--violet);
+  font-family: 'JetBrains Mono', monospace;
+  animation: kbPulse 1s ease-in-out infinite;
+}
+
+@keyframes kbPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.kb-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 8px;
+  color: var(--text2);
+  font-size: 13px;
+  text-align: center;
+}
+
+.kb-empty-ico {
+  font-size: 32px;
+  margin-bottom: 4px;
+}
