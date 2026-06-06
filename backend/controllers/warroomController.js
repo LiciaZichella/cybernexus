@@ -28,7 +28,8 @@ const getWARRoomById = async (req, res) => {
     const room = await WARRoom.findById(req.params.id)
       .populate('owner', 'username avatar')
       .populate('members.user', 'username avatar')
-      .populate('challenges.challenge', 'title category difficulty points');
+      .populate('challenges.challenge', 'title category difficulty points')
+      .populate('messages.author', 'username');
 
     if (!room) return res.status(404).json({ error: 'War Room non trovata.' });
 
@@ -49,7 +50,7 @@ const getWARRoomById = async (req, res) => {
 // POST /api/warroom — crea War Room (solo Admin o Manager)
 const createWARRoom = async (req, res) => {
   try {
-    const { name, description, isPrivate, maxMembers, challenges } = req.body;
+    const { name, description, isPrivate, maxMembers, challenges, comandiTerminale } = req.body;
 
     const roomData = {
       name,
@@ -60,6 +61,8 @@ const createWARRoom = async (req, res) => {
       owner: req.user._id,
       // Il creatore entra automaticamente come Lead
       members: [{ user: req.user._id, role: 'Lead' }],
+      // Comandi terminale personalizzati: array di { comando, risposta }
+      comandiTerminale: Array.isArray(comandiTerminale) ? comandiTerminale : [],
     };
 
     // Sala privata: genera codice invito univoco

@@ -327,11 +327,12 @@ export default function WarRoom() {
   useEffect(() => {
     if (!sala || !user) return;
 
-    // Terminale: messaggi fissi con il nome reale della sala (Bug 3)
+    // Terminale: intestazione con il nome reale della sala
     const nomeSala = sala.name || sala.title || 'Incident Response';
     setRigheTerminale([
       { tipo: 'ok',  testo: `CyberNexus IR Console — ${nomeSala}` },
       { tipo: 'sep', testo: '━━━ Connessione stabilita — in attesa di eventi ━━━' },
+      { tipo: 'out', testo: "Digita 'help' per vedere i comandi disponibili" },
     ]);
 
     // Membri online: solo l'utente corrente all'apertura (Bug 2)
@@ -341,11 +342,22 @@ export default function WarRoom() {
       gradiente: 'linear-gradient(135deg,var(--violet),var(--fuchsia))',
     }]);
 
-    // Chat: carica la storia dei messaggi salvati nel DB (Bug 4)
+    // Chat: carica la storia dei messaggi salvati nel DB
     if (sala.messages?.length) {
       const storico = sala.messages.slice(-30).map(msg => {
         if (msg.type === 'system') return { tipo: 'sys', testo: msg.content };
-        return { tipo: 'sys', testo: msg.content }; // autore non popolato, mostra come sistema
+        const autore = msg.author?.username;
+        if (autore) {
+          return {
+            av:     autore.slice(0, 2).toUpperCase(),
+            colore: autore === user?.username
+              ? 'linear-gradient(135deg,var(--violet),var(--fuchsia))'
+              : 'var(--text2)',
+            testo:  msg.content,
+            me:     autore === user?.username,
+          };
+        }
+        return { tipo: 'sys', testo: msg.content };
       });
       setMessaggiChat(storico);
     }
@@ -609,13 +621,21 @@ export default function WarRoom() {
     let output;
 
     if (lower === 'help') {
+      const cmdSala = sala?.comandiTerminale || [];
       output = [
         ['out', 'Comandi disponibili:'],
-        ['out', '  ls / dir   → lista file scenario corrente'],
         ['out', '  whoami     → mostra utente connesso'],
         ['out', '  status     → stato corrente della War Room'],
+        ['out', '  ls / dir   → lista file scenario corrente'],
         ['out', '  help       → mostra questo messaggio'],
       ];
+      if (cmdSala.length) {
+        output.push(['sep', '─── Comandi scenario ───']);
+        cmdSala.forEach(c => {
+          const pad = c.comando.length < 10 ? c.comando.padEnd(10) : c.comando;
+          output.push(['out', `  ${pad} → ${c.risposta.slice(0, 55)}`]);
+        });
+      }
     } else if (lower === 'ls' || lower === 'dir') {
       output = [
         ['out', `[${titoloSala}] /incident/`],
@@ -640,7 +660,15 @@ export default function WarRoom() {
             : `⏳ Passo ${passoAttivo + 1}: ${PASSI[passoAttivo]?.titolo?.slice(0, 35) || '–'}`],
       ];
     } else {
-      output = [['out', 'Comando registrato. In attesa di risposta...']];
+      // Cerca tra i comandi personalizzati configurati per questo scenario
+      const cmdPersonalizzato = sala?.comandiTerminale?.find(
+        c => c.comando.toLowerCase().trim() === lower
+      );
+      if (cmdPersonalizzato) {
+        output = [['ok', cmdPersonalizzato.risposta]];
+      } else {
+        output = [['out', "Comando non riconosciuto. Digita 'help' per i comandi disponibili."]];
+      }
     }
 
     output.forEach(([tipo, testo], i) => {

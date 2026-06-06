@@ -84,7 +84,7 @@ export default function Admin() {
 
   // Form crea War Room
   const [formWR, setFormWR] = useState({
-    nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '',
+    nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '', comandiTerminale: '',
   });
   const [invioWR, setInvioWR] = useState(false);
 
@@ -307,15 +307,27 @@ export default function Admin() {
     if (!formWR.nome) { mostraToast('Nome incidente obbligatorio', 'terr'); return; }
     setInvioWR(true);
     try {
+      // Parsa il testo "comando|risposta" in array di oggetti
+      const comandiParsati = formWR.comandiTerminale
+        .split('\n')
+        .map(r => r.trim())
+        .filter(r => r.includes('|'))
+        .map(r => {
+          const sep = r.indexOf('|');
+          return { comando: r.slice(0, sep).trim(), risposta: r.slice(sep + 1).trim() };
+        })
+        .filter(c => c.comando && c.risposta);
+
       await warroomAPI.create({
-        name:        formWR.nome,
-        description: formWR.briefing,
-        isPrivate:   false,
-        maxMembers:  20,
-        challenges:  [],
+        name:             formWR.nome,
+        description:      formWR.briefing,
+        isPrivate:        false,
+        maxMembers:       20,
+        challenges:       [],
+        comandiTerminale: comandiParsati,
       });
       mostraToast('War Room creata! Playbook generato ✓', 'tok');
-      setFormWR({ nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '' });
+      setFormWR({ nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '', comandiTerminale: '' });
       caricaWarrooms();
     } catch (err) {
       mostraToast(err.response?.data?.message ?? 'Errore nella creazione della War Room', 'terr');
@@ -756,6 +768,13 @@ export default function Admin() {
                   placeholder={'Analizzare alert SIEM\nAprire War Room e assegnare ruoli\nDump memoria sistemi affetti\nIsolare sistemi dalla rete'}
                   value={formWR.playbook} onChange={(e) => setFormWR((f) => ({ ...f, playbook: e.target.value }))} />
                 <div className="fg-note">Ogni riga = un passo del playbook. Generati automaticamente come obiettivi.</div>
+              </div>
+              <div className="fg full">
+                <div className="fg-lbl">Comandi terminale</div>
+                <textarea className="fg-input" rows="5"
+                  placeholder={'ps|PID 1234 lockbit3.exe MALWARE RILEVATO\nscan 185.x.x.x|C2 server identificato\nnetstat|ESTABLISHED 185.x.x.x:8443 C2 SERVER\nwhoami|analyst@corp · privilegi: SYSTEM'}
+                  value={formWR.comandiTerminale} onChange={(e) => setFormWR((f) => ({ ...f, comandiTerminale: e.target.value }))} />
+                <div className="fg-note">Formato: comando|risposta (uno per riga) — questi comandi saranno disponibili nel terminale della sala</div>
               </div>
             </div>
           </div>

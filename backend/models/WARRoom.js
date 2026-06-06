@@ -92,6 +92,14 @@ const WARRoomSchema = new mongoose.Schema(
       min: [2, 'Minimo 2 membri'],
       max: [50, 'Massimo 50 membri'],
     },
+
+    // Comandi terminale personalizzati per questo scenario
+    comandiTerminale: [
+      {
+        comando:  { type: String, required: true, trim: true },
+        risposta: { type: String, required: true },
+      },
+    ],
   },
   {
     timestamps: true,
