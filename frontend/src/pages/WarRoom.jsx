@@ -215,11 +215,15 @@ export default function WarRoom() {
         // Il backend risponde con { room: {...} }
         const room = data.room ?? data;
         setSala(room);
-        if (room.status === 'closed') setVistaChiusa(true);
+        // Sala già chiusa: mostra subito la vista chiusa, non avviare socket né timer
+        if (room.status === 'closed') {
+          setVistaChiusa(true);
+          return;
+        }
         // Timer sincronizzato: calcolato da createdAt, non da 90 min fissi
-        const durataSec     = (room.durataMinuti || 90) * 60;
-        const inizioSala    = new Date(room.createdAt).getTime();
-        const secTrascorsi  = Math.floor((Date.now() - inizioSala) / 1000);
+        const durataSec    = (room.durataMinuti || 90) * 60;
+        const inizioSala   = new Date(room.createdAt).getTime();
+        const secTrascorsi = Math.floor((Date.now() - inizioSala) / 1000);
         setTempoRimanente(Math.max(0, durataSec - secTrascorsi));
         warroomAPI.join(id).catch(() => {});
       })
@@ -315,8 +319,12 @@ export default function WarRoom() {
 
     // Sala risolta — payload: { roomId, resolvedBy, resolvedAt }
     socket.on('room-resolved', async ({ resolvedBy }) => {
-      // Ferma il timer e ricarica i dati utente aggiornati (punti, rank)
-      clearInterval(timerRef.current);
+      // Ferma il timer PRIMA di tutto — nullifica il ref per evitare doppio clearInterval
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      // Aggiorna i punti utente nel contesto auth
       if (typeof aggiornaUser === 'function') await aggiornaUser();
       setUiBloccata(true);
       aggiungiNotifica({ icon: '🏆', testo: `Incidente risolto da ${resolvedBy}` });
@@ -324,9 +332,8 @@ export default function WarRoom() {
         // L'utente corrente ha appena risolto — apri il modal di riepilogo
         setRisolviAperto(true);
       } else {
-        // Un altro membro ha risolto — mostra il modal informativo "sala chiusa"
-        setRisolutore(resolvedBy || 'Il team');
-        setSalaChiusaDaAltri(true);
+        // Un altro membro ha risolto — mostra la vista sala chiusa
+        setVistaChiusa(true);
       }
     });
 
@@ -343,11 +350,20 @@ export default function WarRoom() {
 
   // ── Countdown timer ──────────────────────────────────────────────────────────
   useEffect(() => {
+    // Ferma subito il timer se la sala è chiusa o l'UI è bloccata (risoluzione ricevuta)
+    if (vistaChiusa || uiBloccata) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
     if (loading || timerScaduto) return;
     timerRef.current = setInterval(() => {
       setTempoRimanente(prev => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
+          timerRef.current = null;
           setTimerScaduto(true);
           return 0;
         }
@@ -356,8 +372,13 @@ export default function WarRoom() {
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(timerRef.current);
-  }, [loading, timerScaduto, aggiungiLog]);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [loading, timerScaduto, vistaChiusa, uiBloccata, aggiungiLog]);
 
   // ── Inizializzazione dopo il caricamento della sala (Bug 1-4) ──────────────────
   // Eseguito una sola volta quando sala e user sono disponibili
@@ -817,15 +838,15 @@ export default function WarRoom() {
     </div>
   );
 
-  // ── Vista sala già chiusa ────────────────────────────────────────────────────
+  // ── Vista sala già chiusa (status closed al caricamento o room-resolved ricevuto) ──
   if (vistaChiusa && sala) return (
     <div className="warroom-app">
       <Navbar />
       <div className="wr-chiusa-wrap">
         <div className="wr-chiusa-card">
-          <div className="wr-chiusa-ico">🔒</div>
-          <div className="wr-chiusa-title">Questa War Room è stata chiusa</div>
-          <div className="wr-chiusa-sub">L'incidente è stato risolto</div>
+          <div className="wr-chiusa-ico">🏁</div>
+          <div className="wr-chiusa-title">Questa War Room è stata risolta</div>
+          <div className="wr-chiusa-sub">{sala.name || titoloSala}</div>
           {sala.updatedAt && (
             <div className="wr-chiusa-data">
               {new Date(sala.updatedAt).toLocaleString('it-IT')}
@@ -833,10 +854,10 @@ export default function WarRoom() {
           )}
           <div className="wr-chiusa-btns">
             <button className="wr-chiusa-back" onClick={() => navigate('/warroom')}>
-              ← Torna alla lista
+              ← Torna alla lista War Room
             </button>
             <button className="wr-chiusa-report" onClick={scaricaReport}>
-              ⬇ Scarica report
+              ⬇ Scarica report PDF
             </button>
           </div>
         </div>
