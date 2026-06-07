@@ -134,6 +134,23 @@ const WARRoomSchema = new mongoose.Schema(
         risposta: { type: String, required: true },
       },
     ],
+
+    // Passi del playbook personalizzato per questo scenario (opzionale)
+    playbook: [
+      {
+        step:        { type: String, required: true, trim: true },
+        description: { type: String, default: '' },
+      },
+    ],
+
+    // IOC (Indicators of Compromise) specifici per questo scenario (opzionale)
+    iocs: [
+      {
+        tipo:   { type: String, required: true },
+        valore: { type: String, required: true },
+        stato:  { type: String, default: '⚠ Attivo' },
+      },
+    ],
   },
   {
     timestamps: true,
