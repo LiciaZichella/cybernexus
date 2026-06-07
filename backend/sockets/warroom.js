@@ -152,32 +152,17 @@ const warroomSocket = (io) => {
       }
     });
 
-    // step-completed — aggiorna lo status di una challenge nella War Room
-    socket.on('step-completed', async ({ roomId, challengeId }, ack) => {
+    // step-completed — broadcast a TUTTI i client (warNS.to include il mittente)
+    socket.on('step-completed', async ({ roomId, stepIndex }, ack) => {
       try {
         const room = await WARRoom.findById(roomId);
         if (!room) return ack?.({ error: 'War Room non trovata.' });
         if (!room.hasMember(user._id)) return ack?.({ error: 'Accesso negato.' });
 
-        const entry = room.challenges.find((c) => c.challenge.equals(challengeId));
-        if (!entry) return ack?.({ error: 'Challenge non presente in questa sala.' });
-
-        entry.status    = 'solved';
-        entry.solvedAt  = new Date();
-
-        // Messaggio di sistema automatico nella chat
-        room.messages.push({
-          author:  user._id,
-          content: `${user.username} ha completato uno step.`,
-          type:    'system',
-        });
-
-        await room.save();
-
         warNS.to(roomId).emit('step-completed', {
-          challengeId,
+          stepIndex,
           solvedBy:  user.username,
-          solvedAt:  entry.solvedAt,
+          solvedAt:  new Date(),
         });
 
         ack?.({ ok: true });
@@ -186,8 +171,8 @@ const warroomSocket = (io) => {
       }
     });
 
-    // log-event — registra un evento di sistema nella chat della stanza
-    socket.on('log-event', async ({ roomId, content }, ack) => {
+    // log-event — registra un evento di sistema; tipo='terminal' per output terminale
+    socket.on('log-event', async ({ roomId, content, tipo }, ack) => {
       try {
         if (!content?.trim()) return ack?.({ error: 'Contenuto evento vuoto.' });
 
@@ -195,9 +180,14 @@ const warroomSocket = (io) => {
         if (!room) return ack?.({ error: 'War Room non trovata.' });
         if (!room.hasMember(user._id)) return ack?.({ error: 'Accesso negato.' });
 
+        // Per gli eventi terminale il content è JSON — salviamo una stringa leggibile
+        const testoDB = tipo === 'terminal'
+          ? `[terminale] ${user.username}: ${content.slice(0, 100)}`
+          : content.trim();
+
         room.messages.push({
           author:  user._id,
-          content: content.trim(),
+          content: testoDB,
           type:    'system',
         });
         await room.save();
@@ -206,6 +196,7 @@ const warroomSocket = (io) => {
           content:   content.trim(),
           createdAt: new Date(),
           author:    user.username,
+          tipo,
         });
 
         ack?.({ ok: true });

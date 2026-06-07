@@ -75,7 +75,9 @@ export default function Admin() {
 
   // Form crea War Room
   const [formWR, setFormWR] = useState({
-    nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '', comandiTerminale: '', tasks: '',
+    nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500,
+    briefing: '', playbook: '', comandiTerminale: '', tasks: '',
+    accessoLibero: true,
   });
   const [invioWR, setInvioWR] = useState(false);
 
@@ -373,17 +375,50 @@ export default function Admin() {
         name:             formWR.nome,
         tipo:             formWR.tipo,
         description:      formWR.briefing,
-        isPrivate:        false,
+        isPrivate:        !formWR.accessoLibero,
+        accessoLibero:    formWR.accessoLibero,
         maxMembers:       20,
         challenges:       [],
         comandiTerminale: comandiParsati,
         tasks:            tasksParsati,
       });
       mostraToast('War Room creata! Playbook generato ✓', 'tok');
-      setFormWR({ nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '', comandiTerminale: '', tasks: '' });
+      setFormWR({ nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '', comandiTerminale: '', tasks: '', accessoLibero: true });
       caricaWarrooms();
     } catch (err) {
       mostraToast(err.response?.data?.message ?? 'Errore nella creazione della War Room', 'terr');
+    } finally {
+      setInvioWR(false);
+    }
+  };
+
+  const handleSalvaBozza = async () => {
+    if (!formWR.nome) { mostraToast('Nome incidente obbligatorio', 'terr'); return; }
+    setInvioWR(true);
+    try {
+      const comandiParsati = formWR.comandiTerminale
+        .split('\n').map(r => r.trim()).filter(r => r.includes('|'))
+        .map(r => { const sep = r.indexOf('|'); return { comando: r.slice(0, sep).trim(), risposta: r.slice(sep + 1).trim() }; })
+        .filter(c => c.comando && c.risposta);
+      const tasksParsati = formWR.tasks
+        .split('\n').map(r => r.trim()).filter(r => r.length > 0)
+        .map(titolo => ({ titolo, stato: 'todo' }));
+      await warroomAPI.saveDraft({
+        name:             formWR.nome,
+        tipo:             formWR.tipo,
+        description:      formWR.briefing,
+        isPrivate:        !formWR.accessoLibero,
+        accessoLibero:    formWR.accessoLibero,
+        maxMembers:       20,
+        challenges:       [],
+        comandiTerminale: comandiParsati,
+        tasks:            tasksParsati,
+      });
+      mostraToast('Bozza salvata ✓', 'tok');
+      setFormWR({ nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '', comandiTerminale: '', tasks: '', accessoLibero: true });
+      caricaWarrooms();
+    } catch (err) {
+      mostraToast(err.response?.data?.message ?? 'Errore nel salvataggio bozza', 'terr');
     } finally {
       setInvioWR(false);
     }
@@ -848,6 +883,20 @@ export default function Admin() {
               </div>
             </div>
           </div>
+          <div style={{ padding: '0 24px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text2)' }}>
+              <input
+                type="checkbox"
+                checked={formWR.accessoLibero}
+                onChange={e => setFormWR(f => ({ ...f, accessoLibero: e.target.checked }))}
+                style={{ width: 15, height: 15, accentColor: 'var(--violet)' }}
+              />
+              Accesso libero
+              <span style={{ fontSize: 11, color: formWR.accessoLibero ? 'var(--mint)' : 'var(--amber)', fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }}>
+                {formWR.accessoLibero ? '(aperta a tutti)' : '(richiede codice invito)'}
+              </span>
+            </label>
+          </div>
           <div className="form-actions">
             <button className="tb-btn tb-primary" onClick={handleCreaWarRoom} disabled={invioWR}>
               <span>
@@ -855,7 +904,7 @@ export default function Admin() {
                 {invioWR ? 'Creazione…' : 'Crea War Room'}
               </span>
             </button>
-            <button className="tb-btn tb-ghost" onClick={() => mostraToast('Salva bozza — funzionalità in sviluppo', '')}>Salva bozza</button>
+            <button className="tb-btn tb-ghost" onClick={handleSalvaBozza} disabled={invioWR}>Salva bozza</button>
           </div>
         </div>
 
@@ -869,24 +918,59 @@ export default function Admin() {
             </div>
             <div className="tbl-wrap">
               <table>
-                <thead><tr><th>Nome</th><th>Tipo</th><th>Stato</th><th>Partecipanti</th><th>Azioni</th></tr></thead>
+                <thead><tr><th>Nome</th><th>Tipo</th><th>Stato</th><th>Partecipanti</th><th>Codice invito</th><th>Azioni</th></tr></thead>
                 <tbody>
                   {warrooms.map((wr) => {
-                    const isLive = wr.status === 'active';
+                    const isLive  = wr.status === 'active';
+                    const isDraft = wr.status === 'draft';
                     return (
-                      <tr key={wr._id ?? wr.id} style={{ opacity: !isLive ? 0.6 : 1 }}>
-                        <td style={{ color: 'var(--text1)', fontWeight: 500 }}>{wr.name}</td>
+                      <tr key={wr._id ?? wr.id} style={{ opacity: isDraft ? 0.75 : !isLive ? 0.6 : 1 }}>
+                        <td style={{ color: 'var(--text1)', fontWeight: 500 }}>
+                          {wr.name}
+                          {isDraft && (
+                            <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: 'rgba(90,100,128,0.15)', color: 'var(--text3)', border: '0.5px solid var(--border2)', fontFamily: "'JetBrains Mono',monospace" }}>BOZZA</span>
+                          )}
+                        </td>
                         <td><span className="text-sm">{wr.tipo ?? '—'}</span></td>
                         <td>
                           <div className="wr-status">
-                            <div className="wr-dot" style={{ background: isLive ? '#F07060' : 'var(--text3)', animation: isLive ? 'liveBlip 1s infinite' : 'none' }} />
-                            <span style={{ color: isLive ? '#F07060' : 'var(--text2)', fontSize: 12 }}>{isLive ? 'Live' : 'Completata'}</span>
+                            <div className="wr-dot" style={{ background: isLive ? '#F07060' : isDraft ? 'var(--text3)' : 'var(--text3)', animation: isLive ? 'liveBlip 1s infinite' : 'none' }} />
+                            <span style={{ color: isLive ? '#F07060' : isDraft ? 'var(--text3)' : 'var(--text2)', fontSize: 12 }}>
+                              {isLive ? 'Live' : isDraft ? 'Bozza' : 'Completata'}
+                            </span>
                           </div>
                         </td>
                         <td><span style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--text2)' }}>{wr.members?.length ?? 0}</span></td>
                         <td>
+                          {wr.inviteCode ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: 'var(--text1)' }}>{wr.inviteCode}</span>
+                              <button
+                                style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, border: '0.5px solid var(--border2)', background: 'rgba(124,111,234,0.1)', color: 'var(--violet)', cursor: 'pointer', fontWeight: 600 }}
+                                onClick={() => navigator.clipboard.writeText(wr.inviteCode).then(() => mostraToast('Codice copiato!', 'tok'))}
+                              >
+                                Copia
+                              </button>
+                            </div>
+                          ) : (
+                            <span style={{ color: 'var(--text3)' }}>—</span>
+                          )}
+                        </td>
+                        <td>
                           <div className="act-btns">
-                            <button className="act-btn" onClick={() => isLive ? navigate(`/warroom/${wr._id ?? wr.id}`) : mostraToast('Report War Room — funzionalità in sviluppo', '')}>{isLive ? 'Osserva' : 'Report'}</button>
+                            {isDraft ? (
+                              <button
+                                className="act-btn"
+                                onClick={async () => {
+                                  try { await warroomAPI.publishWR(wr._id ?? wr.id); mostraToast('War Room pubblicata ✓', 'tok'); caricaWarrooms(); }
+                                  catch { mostraToast('Errore nella pubblicazione', 'terr'); }
+                                }}
+                              >
+                                Pubblica
+                              </button>
+                            ) : (
+                              <button className="act-btn" onClick={() => isLive ? navigate(`/warroom/${wr._id ?? wr.id}`) : mostraToast('Report War Room — funzionalità in sviluppo', '')}>{isLive ? 'Osserva' : 'Report'}</button>
+                            )}
                             {isLive && (
                               <button
                                 className="act-btn danger"

@@ -101,8 +101,20 @@ const WARRoomSchema = new mongoose.Schema(
     // Stato operativo della sala
     status: {
       type: String,
-      enum: ['active', 'closed'],
+      enum: ['draft', 'active', 'closed'],
       default: 'active',
+    },
+
+    // Accesso libero (true) o su invito con codice (false)
+    accessoLibero: {
+      type: Boolean,
+      default: true,
+    },
+
+    // Indici dei passi playbook completati (sincronizzazione multi-utente)
+    passiCompletati: {
+      type: [Number],
+      default: [],
     },
 
     maxMembers: {

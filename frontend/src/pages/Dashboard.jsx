@@ -414,7 +414,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
 export default function Dashboard() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, aggiornaUser } = useAuth();
   const navigate   = useNavigate();
   const { notifiche, segnaLetta, segnaLetteTutte, nonLette } = useNotifications();
 
@@ -461,8 +461,8 @@ export default function Dashboard() {
       }
       if (wrRes.status === 'fulfilled') {
         const rooms = wrRes.value.data?.rooms ?? wrRes.value.data ?? [];
-        const roomList = Array.isArray(rooms) ? rooms : [];
-        const activeRooms = roomList.filter(r => r.status === 'open' || r.isActive);
+        const roomList   = Array.isArray(rooms) ? rooms : [];
+        const activeRooms = roomList.filter(r => r.status === 'active');
         setWarroomCount(activeRooms.length);
         setWarrooms(activeRooms.slice(0, 3));
       }
@@ -494,15 +494,24 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, [profile]);
 
-  // Re-fetch all data when returning to this tab
+  // Re-fetch all data when returning to this tab (aggiorna anche user per punti e rank)
   useEffect(() => {
     const onVisible = () => {
-      console.log('[Dashboard] visibilitychange → stato:', document.visibilityState);
-      if (document.visibilityState === 'visible') loadAllData();
+      if (document.visibilityState === 'visible') {
+        loadAllData();
+        if (typeof aggiornaUser === 'function') aggiornaUser();
+      }
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [loadAllData]);
+  }, [loadAllData, aggiornaUser]);
+
+  // Aggiornamento automatico ogni 30 secondi per punti e war room attive
+  useEffect(() => {
+    if (authLoading) return;
+    const interval = setInterval(loadAllData, 30000);
+    return () => clearInterval(interval);
+  }, [authLoading, loadAllData]);
 
   // ── Heatmap 60 giorni ─────────────────────────────────────────────────────────
   const heatmap = useMemo(() =>

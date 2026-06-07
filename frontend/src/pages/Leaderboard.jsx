@@ -139,6 +139,13 @@ export default function Leaderboard() {
     caricaClassifica(pagina, filterAttivo);
   }, [pagina, caricaClassifica, authLoading, filterAttivo]);
 
+  // Aggiornamento automatico ogni 60 secondi
+  useEffect(() => {
+    if (authLoading) return;
+    const interval = setInterval(() => caricaClassifica(1, filterAttivo), 60000);
+    return () => clearInterval(interval);
+  }, [authLoading, caricaClassifica, filterAttivo]);
+
   // Re-fetch page 1 when returning to this tab (e.g. after a CTF solve)
   useEffect(() => {
     const onVisible = () => {

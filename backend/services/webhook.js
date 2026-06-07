@@ -11,6 +11,7 @@ const http  = require('http');
  */
 const inviaWebhook = (payload) => {
   const url = process.env.WEBHOOK_URL;
+  console.log('[webhook] WEBHOOK_URL:', url || 'NON CONFIGURATO');
   if (!url) return;
 
   try {

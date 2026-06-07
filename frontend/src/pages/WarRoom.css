@@ -750,14 +750,21 @@
 }
 
 /* ── PREVIEW MODALE (lista sale) ── */
+/* Overlay dietro il modal anteprima — copre tutto lo schermo */
 .warroom-app .wr-preview-overlay {
-  position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;
-  padding:20px;background:rgba(7,9,15,.8);backdrop-filter:blur(14px);animation:wr-fadeIn .2s ease;
+  position:fixed;inset:0;z-index:799;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;
+  animation:wr-fadeIn .2s ease;
 }
 [data-theme="light"] .warroom-app .wr-preview-overlay { background:rgba(240,242,248,.8) }
+/* Modal anteprima — centrato, scrollabile, visibile su qualsiasi altezza schermo */
 .warroom-app .wr-preview-modal {
-  width:100%;max-width:460px;background:var(--bg2);border:0.5px solid var(--border2);
-  border-radius:16px;overflow:hidden;position:relative;
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:90%;max-width:560px;
+  max-height:90vh;overflow-y:auto;padding-bottom:24px;
+  background:var(--bg2);border:0.5px solid var(--border2);
+  border-radius:14px;z-index:800;
   animation:wr-scaleIn .25s cubic-bezier(.34,1.56,.64,1);
 }
 [data-theme="light"] .warroom-app .wr-preview-modal { background:#fff }
@@ -859,3 +866,86 @@
   flex:1;overflow:hidden;padding:10px 12px;
   display:flex;flex-direction:column;
 }
+
+/* Lista obiettivi inline (sotto lo step-hdr) */
+.warroom-app .obj-list-inline {
+  display:flex;flex-direction:column;gap:4px;
+  padding:8px 12px;border-bottom:0.5px solid var(--border);
+  background:var(--bg2);flex-shrink:0;overflow-y:auto;max-height:160px;
+}
+.warroom-app .obj-list-inline .obj-item { font-size:11px;padding:6px 10px }
+
+/* Banner observer — solo lettura */
+.warroom-app .observer-banner {
+  background:rgba(246,198,82,0.12);
+  border-bottom:1.5px solid rgba(246,198,82,0.50);
+  color:var(--amber);
+  font-size:12px;font-weight:700;
+  padding:9px 20px;text-align:center;
+  font-family:'JetBrains Mono',monospace;letter-spacing:0.7px;
+  flex-shrink:0;
+  box-shadow:0 2px 12px rgba(246,198,82,0.10);
+}
+/* Outline giallo sull'intera app quando è in modalità observer */
+.warroom-app.observer-mode {
+  outline:1.5px solid rgba(246,198,82,0.35);
+  outline-offset:-1px;
+}
+
+/* Input codice invito nel modal anteprima */
+.warroom-app .wr-preview-invite {
+  padding:10px 0 4px;
+  display:flex;flex-direction:column;gap:6px;
+}
+.warroom-app .wr-preview-invite-lbl {
+  font-size:11px;color:var(--amber);font-weight:600;
+  font-family:'JetBrains Mono',monospace;
+}
+.warroom-app .wr-preview-invite-inp {
+  width:100%;padding:8px 12px;border-radius:8px;
+  border:1px solid rgba(246,198,82,0.4);background:var(--bg3);
+  color:var(--text1);font-size:13px;font-family:'JetBrains Mono',monospace;
+  outline:none;
+}
+.warroom-app .wr-preview-invite-inp:focus {
+  border-color:var(--amber);
+}
+
+/* Vista sala chiusa */
+.warroom-app .wr-chiusa-wrap {
+  display:flex;align-items:center;justify-content:center;
+  flex:1;padding:20px;
+}
+.warroom-app .wr-chiusa-card {
+  background:var(--bg2);border:0.5px solid var(--border2);
+  border-radius:16px;padding:40px 48px;text-align:center;max-width:420px;width:100%;
+}
+[data-theme="light"] .warroom-app .wr-chiusa-card { background:#fff }
+.warroom-app .wr-chiusa-ico { font-size:48px;margin-bottom:16px }
+.warroom-app .wr-chiusa-title {
+  font-size:22px;font-weight:700;color:var(--text1);margin-bottom:8px;
+}
+.warroom-app .wr-chiusa-sub {
+  font-size:14px;color:var(--text3);margin-bottom:10px;
+}
+.warroom-app .wr-chiusa-data {
+  font-size:11px;color:var(--text3);
+  font-family:'JetBrains Mono',monospace;margin-bottom:24px;
+}
+.warroom-app .wr-chiusa-btns {
+  display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
+}
+.warroom-app .wr-chiusa-back {
+  padding:10px 20px;border-radius:8px;
+  border:0.5px solid var(--border2);background:var(--bg3);
+  color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;
+  transition:background .15s;
+}
+.warroom-app .wr-chiusa-back:hover { background:var(--bg4) }
+.warroom-app .wr-chiusa-report {
+  padding:10px 20px;border-radius:8px;border:none;
+  background:linear-gradient(135deg,var(--violet),var(--fuchsia));
+  color:#fff;font-size:13px;font-weight:600;cursor:pointer;
+  transition:opacity .15s;
+}
+.warroom-app .wr-chiusa-report:hover { opacity:.88 }

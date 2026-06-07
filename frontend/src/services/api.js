@@ -78,15 +78,18 @@ export const challengesAPI = {
 // ─── War Room ─────────────────────────────────────────────────────────────────
 
 export const warroomAPI = {
-  getAll:    ()                   => api.get('/warroom'),
-  getById:   (id)                 => api.get(`/warroom/${id}`),
-  create:    (data)               => api.post('/warroom', data),
-  join:      (id, data)           => api.post(`/warroom/${id}/join`, data),
-  resolve:   (id)                 => api.post(`/warroom/${id}/resolve`),
-  patchTask: (id, taskId, data)   => api.patch(`/warroom/${id}/task/${taskId}`, data),
-  observe:   (id)                 => api.post(`/warroom/${id}/observe`),
-  getReport: (id)                 => api.get(`/warroom/${id}/report`),
-  deleteWR:  (id)                 => api.delete(`/warroom/${id}`),
+  getAll:     ()                   => api.get('/warroom'),
+  getById:    (id)                 => api.get(`/warroom/${id}`),
+  create:     (data)               => api.post('/warroom', data),
+  saveDraft:  (data)               => api.post('/warroom/draft', data),
+  publishWR:  (id)                 => api.patch(`/warroom/${id}/status`, { status: 'active' }),
+  join:       (id, data)           => api.post(`/warroom/${id}/join`, data),
+  resolve:    (id)                 => api.post(`/warroom/${id}/resolve`),
+  patchTask:  (id, taskId, data)   => api.patch(`/warroom/${id}/task/${taskId}`, data),
+  markStep:   (id, stepIndex)      => api.patch(`/warroom/${id}/step`, { stepIndex }),
+  observe:    (id)                 => api.post(`/warroom/${id}/observe`),
+  getReport:  (id)                 => api.get(`/warroom/${id}/report`),
+  deleteWR:   (id)                 => api.delete(`/warroom/${id}`),
 };
 
 // ─── Leaderboard ──────────────────────────────────────────────────────────────
