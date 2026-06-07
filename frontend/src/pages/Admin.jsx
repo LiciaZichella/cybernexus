@@ -12,19 +12,6 @@ const calcolaHash = async (testo) => {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
 };
 
-// Dati statici per il feed attività (nessun endpoint dedicato nel backend)
-const FEED_INIZIALE = [
-  { ico: '🚩', bg: 'var(--v1)',               testo: 'shadow_k1ng',  azione: 'ha catturato la flag di "Buffer Overflow 101"', tempo: '2 min fa · +500 pts' },
-  { ico: '🚨', bg: 'rgba(240,112,96,.1)',      testo: 'giulia_b',     azione: 'ha aperto War Room #006 — DDoS Mitigation',    tempo: '7 min fa' },
-  { ico: '👤', bg: 'var(--v1)',               testo: null,           azione: 'Nuovo utente: h4xx0r_99 registrato da Bari, IT', tempo: '14 min fa' },
-  { ico: '⚠️', bg: 'rgba(246,198,82,.1)',     testo: 'n3x7_g3n',    azione: 'ha raggiunto il rate limit su "Elliptic Curve Massacre"', tempo: '22 min fa · 8 tentativi' },
-  { ico: '🚩', bg: 'var(--v1)',               testo: 'm4tr1x',       azione: 'ha catturato "Ghost Identity" — First Blood!',  tempo: '31 min fa · +300 pts' },
-];
-const LIVE_POOL = [
-  { ico: '🚩', bg: 'var(--v1)',          testo: 'n3x7_g3n', azione: 'ha catturato "Dark Web Hunter"',     tempo: 'ora · +500 pts' },
-  { ico: '👤', bg: 'var(--v1)',          testo: null,        azione: 'Nuovo utente: cyb3r_w0lf da Milano, IT', tempo: 'ora' },
-  { ico: '🚨', bg: 'rgba(240,112,96,.1)', testo: 'alex_l',  azione: 'ha aperto War Room #007 — Zero-Day', tempo: 'ora' },
-];
 
 // Stato iniziale webhook
 const WEBHOOK_INIZIALE = {
@@ -75,6 +62,10 @@ export default function Admin() {
   // Statistiche dashboard
   const [dashStats, setDashStats] = useState({ utenti: 1248, flag: 847, warroom: 3, sfide: 380 });
 
+  // Dati grafici dashboard — inizializzati a zero, popolati dalle API
+  const [regUltimi7, setRegUltimi7]       = useState([0, 0, 0, 0, 0, 0, 0]);
+  const [flagCategorie, setFlagCategorie] = useState([]);
+
   // Form crea sfida
   const [formCTF, setFormCTF] = useState({
     titolo: '', categoria: 'Web', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '',
@@ -89,7 +80,7 @@ export default function Admin() {
   const [invioWR, setInvioWR] = useState(false);
 
   // Feed attività
-  const [feedAttivita, setFeedAttivita] = useState(FEED_INIZIALE);
+  const [feedAttivita, setFeedAttivita] = useState([]);
 
   // Webhook
   const [webhooks, setWebhooks]           = useState(WEBHOOK_INIZIALE);
@@ -110,7 +101,6 @@ export default function Admin() {
   const contatoriRef = useRef([]);
   const barreRef     = useRef([]);
   const sparkRef     = useRef([]);
-  const liveIdxRef   = useRef(0);
 
   // ── Overflow body: previene lo scroll esterno nel layout full-height ────────
   useEffect(() => {
@@ -132,7 +122,7 @@ export default function Admin() {
   // ── Caricamento dati al cambio sezione ──────────────────────────────────────
   useEffect(() => {
     if (authLoading) return;
-    if (sezione === 'stats')    caricaStats();
+    if (sezione === 'stats')    { caricaStats(); caricaFeed(); caricaCategorie(); }
     if (sezione === 'users')    caricaUtenti();
     if (sezione === 'ctf')      caricaSfide();
     if (sezione === 'warroom')  caricaWarrooms();
@@ -159,51 +149,105 @@ export default function Admin() {
       barreRef.current.forEach((el) => { if (el) el.style.width = el.dataset.w; });
     }, 200);
     return () => clearTimeout(timer);
-  }, [sezione, dashStats]);
+  }, [sezione, dashStats, flagCategorie]);
 
-  // ── Spark bars (animazione altezze) ─────────────────────────────────────────
+  // ── Spark bars (animazione altezze con dati reali) ───────────────────────────
   useEffect(() => {
     if (sezione !== 'stats') return;
-    const regData = [4, 8, 6, 12, 9, 15, 11];
-    const maxV = Math.max(...regData);
+    // Evita divisione per zero quando tutti i valori sono 0
+    const maxV = Math.max(...regUltimi7, 1);
     sparkRef.current.forEach((el, i) => {
       if (!el) return;
       el.style.height = '0%';
+      // L'ultima barra (oggi) è evidenziata in viola pieno
       el.style.background = i === 6 ? 'var(--v)' : 'rgba(124,111,234,0.4)';
-      setTimeout(() => { el.style.height = `${(regData[i] / maxV) * 100}%`; }, 300 + i * 70);
+      setTimeout(() => {
+        el.style.height = `${Math.round((regUltimi7[i] / maxV) * 100)}%`;
+      }, 300 + i * 70);
     });
-  }, [sezione]);
+  }, [sezione, regUltimi7]);
 
-  // ── Feed attività live ───────────────────────────────────────────────────────
+  // ── Aggiornamento feed ogni 30 secondi ──────────────────────────────────────
   useEffect(() => {
-    const intervallo = setInterval(() => {
-      const item = LIVE_POOL[liveIdxRef.current % LIVE_POOL.length];
-      liveIdxRef.current++;
-      setFeedAttivita((prev) => [{ ...item, fresh: true }, ...prev].slice(0, 8));
-    }, 8000);
+    if (sezione !== 'stats') return;
+    const intervallo = setInterval(caricaFeed, 30000);
     return () => clearInterval(intervallo);
-  }, []);
+  }, [sezione]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Chiamate API ─────────────────────────────────────────────────────────────
 
   const caricaStats = async () => {
     try {
-      const [lb, ch, wr] = await Promise.allSettled([
-        leaderboardAPI.get({ page: 1, limit: 1 }),
-        challengesAPI.getAll(),
-        warroomAPI.getAll(),
-      ]);
+      const { data } = await api.get('/admin/stats');
       setDashStats({
-        utenti:  lb.status === 'fulfilled' ? (lb.value.data.total ?? 1248) : 1248,
-        flag:    847,
-        warroom: wr.status === 'fulfilled'
-          ? (wr.value.data?.rooms ?? wr.value.data ?? []).filter((r) => r.status === 'open' || r.isActive).length
-          : 3,
-        sfide:   ch.status === 'fulfilled'
-          ? (ch.value.data?.challenges ?? ch.value.data ?? []).length
-          : 380,
+        utenti:  data.totalUtenti,
+        flag:    data.totalFlag,
+        warroom: data.warRoomAttive,
+        sfide:   data.totalSfide,
       });
-    } catch { /* usa i valori di default già nello stato */ }
+      // Dati registrazioni ultimi 7 giorni (array di 7 interi dal backend)
+      if (Array.isArray(data.regUltimi7)) setRegUltimi7(data.regUltimi7);
+    } catch { /* mantieni i valori di default */ }
+  };
+
+  const caricaFeed = async () => {
+    try {
+      const { data } = await api.get('/admin/activity');
+      const ora = Date.now();
+      const formattaWhen = (quando) => {
+        const diff = Math.floor((ora - new Date(quando).getTime()) / 1000);
+        if (diff < 60)    return 'ora';
+        if (diff < 3600)  return `${Math.floor(diff / 60)} min fa`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)} ore fa`;
+        return new Date(quando).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+      };
+      const feed = data.eventi.map(e => ({
+        ...e,
+        tempo: e.extra ? `${formattaWhen(e.quando)} · ${e.extra}` : formattaWhen(e.quando),
+      }));
+      setFeedAttivita(feed);
+    } catch { /* mantieni il feed esistente */ }
+  };
+
+  const caricaCategorie = async () => {
+    try {
+      const { data } = await challengesAPI.getAll({ limit: 500 });
+      const sfide = data.challenges ?? data ?? [];
+
+      // Raggruppa challenge per categoria e conta quelle risolte (solveCount > 0)
+      const mappa = {};
+      sfide.forEach(s => {
+        const cat = s.category;
+        if (!cat) return;
+        if (!mappa[cat]) mappa[cat] = { totale: 0, risolte: 0 };
+        mappa[cat].totale++;
+        if ((s.solveCount ?? s.solvedBy?.length ?? 0) > 0) mappa[cat].risolte++;
+      });
+
+      // Converte in array ordinato per percentuale decrescente
+      const categorie = Object.entries(mappa)
+        .map(([nome, { totale, risolte }]) => ({
+          nome,
+          pct: totale > 0 ? Math.round((risolte / totale) * 100) : 0,
+        }))
+        .sort((a, b) => b.pct - a.pct);
+
+      setFlagCategorie(categorie);
+    } catch { /* mantieni lo stato esistente */ }
+  };
+
+  const esportaCSV = async () => {
+    try {
+      const risposta = await api.get('/users/export-csv', { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([risposta.data], { type: 'text/csv' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'cybernexus-utenti.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      mostraToast("Errore durante l'export CSV", 'terr');
+    }
   };
 
   const caricaUtenti = async () => {
@@ -420,12 +464,19 @@ export default function Admin() {
           </div>
           <div className="card-body">
             <div className="spark-wrap">
-              {[4, 8, 6, 12, 9, 15, 11].map((_, i) => (
+              {regUltimi7.map((_, i) => (
                 <div key={i} className="spark-b" ref={(el) => { sparkRef.current[i] = el; }} />
               ))}
             </div>
             <div className="spark-labels">
-              {['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'].map((g) => <span key={g}>{g}</span>)}
+              {/* Etichette giorni calcolate in base alle ultime 7 date reali */}
+              {(() => {
+                const GG = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+                return Array.from({ length: 7 }, (_, i) => {
+                  const d = new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000);
+                  return <span key={i}>{GG[d.getDay()]}</span>;
+                });
+              })()}
             </div>
           </div>
         </div>
@@ -436,19 +487,22 @@ export default function Admin() {
             <div className="card-sub">% risolte sul totale</div>
           </div>
           <div className="card-body">
-            {[
-              { nome: 'Web Exploit', pct: '88%' }, { nome: 'Cryptography', pct: '72%' },
-              { nome: 'OSINT', pct: '61%' },        { nome: 'Forensics', pct: '44%' },
-              { nome: 'Reverse Eng.', pct: '28%' },
-            ].map(({ nome, pct }, i) => (
-              <div className="bar-h-row" key={nome}>
-                <div className="bar-h-lbl">{nome}</div>
-                <div className="bar-h-track">
-                  <div className="bar-h-fill" data-w={pct} ref={(el) => { barreRef.current[i] = el; }} />
-                </div>
-                <div className="bar-h-val">{pct}</div>
-              </div>
-            ))}
+            {flagCategorie.length === 0
+              ? <div style={{ color: 'var(--text2)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>Caricamento categorie...</div>
+              : flagCategorie.map(({ nome, pct }, i) => {
+                  const pctStr = `${pct}%`;
+                  return (
+                    <div className="bar-h-row" key={nome}>
+                      <div className="bar-h-lbl">{nome}</div>
+                      <div className="bar-h-track">
+                        {/* data-w usato dall'animazione per impostare width al mount */}
+                        <div className="bar-h-fill" data-w={pctStr} ref={(el) => { barreRef.current[i] = el; }} />
+                      </div>
+                      <div className="bar-h-val">{pctStr}</div>
+                    </div>
+                  );
+                })
+            }
           </div>
         </div>
       </div>
@@ -722,7 +776,7 @@ export default function Admin() {
   );
 
   const renderWarRoom = () => {
-    const liveCount = warrooms.filter((w) => w.status === 'open' || w.isActive).length;
+    const liveCount = warrooms.filter((w) => w.status === 'active').length;
     return (
       <>
         <div className="sec-eyebrow ai d1">
@@ -815,26 +869,21 @@ export default function Admin() {
             </div>
             <div className="tbl-wrap">
               <table>
-                <thead><tr><th>Nome</th><th>Tipo</th><th>Severità</th><th>Stato</th><th>Partecipanti</th><th>Azioni</th></tr></thead>
+                <thead><tr><th>Nome</th><th>Tipo</th><th>Stato</th><th>Partecipanti</th><th>Azioni</th></tr></thead>
                 <tbody>
                   {warrooms.map((wr) => {
-                    const isLive = wr.status === 'open' || wr.isActive;
+                    const isLive = wr.status === 'active';
                     return (
                       <tr key={wr._id ?? wr.id} style={{ opacity: !isLive ? 0.6 : 1 }}>
-                        <td style={{ color: 'var(--text1)', fontWeight: 500 }}>{wr.title}</td>
-                        <td><span className="text-sm">{wr.type ?? '—'}</span></td>
-                        <td>
-                          <span className={`badge ${wr.severity === 'Critical' ? 'badge-err' : wr.severity === 'High' ? 'badge-warn' : 'badge-ok'}`}>
-                            {wr.severity ?? '—'}
-                          </span>
-                        </td>
+                        <td style={{ color: 'var(--text1)', fontWeight: 500 }}>{wr.name}</td>
+                        <td><span className="text-sm">{wr.tipo ?? '—'}</span></td>
                         <td>
                           <div className="wr-status">
                             <div className="wr-dot" style={{ background: isLive ? '#F07060' : 'var(--text3)', animation: isLive ? 'liveBlip 1s infinite' : 'none' }} />
                             <span style={{ color: isLive ? '#F07060' : 'var(--text2)', fontSize: 12 }}>{isLive ? 'Live' : 'Completata'}</span>
                           </div>
                         </td>
-                        <td><span style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--text2)' }}>{(wr.participants ?? wr.members ?? []).length}</span></td>
+                        <td><span style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--text2)' }}>{wr.members?.length ?? 0}</span></td>
                         <td>
                           <div className="act-btns">
                             <button className="act-btn" onClick={() => isLive ? navigate(`/warroom/${wr._id ?? wr.id}`) : mostraToast('Report War Room — funzionalità in sviluppo', '')}>{isLive ? 'Osserva' : 'Report'}</button>
@@ -842,7 +891,7 @@ export default function Admin() {
                               <button
                                 className="act-btn danger"
                                 onClick={() => setConfirmModal({
-                                  aperto: true, titolo: 'Chiudi War Room', testo: `Chiudere forzatamente "${wr.title}"?`,
+                                  aperto: true, titolo: 'Chiudi War Room', testo: `Chiudere forzatamente "${wr.name}"?`,
                                   onConferma: async () => {
                                     try { await warroomAPI.resolve(wr._id ?? wr.id); mostraToast('War Room chiusa', 'tok'); caricaWarrooms(); }
                                     catch { mostraToast('Operazione non riuscita', 'terr'); }
@@ -852,6 +901,18 @@ export default function Admin() {
                                 Chiudi
                               </button>
                             )}
+                            <button
+                              className="act-btn danger"
+                              onClick={() => setConfirmModal({
+                                aperto: true, titolo: 'Elimina War Room', testo: `Eliminare definitivamente "${wr.name}"?`,
+                                onConferma: async () => {
+                                  try { await warroomAPI.deleteWR(wr._id ?? wr.id); mostraToast('War Room eliminata', 'tok'); caricaWarrooms(); }
+                                  catch { mostraToast('Eliminazione non riuscita', 'terr'); }
+                                },
+                              })}
+                            >
+                              Elimina
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -1100,7 +1161,7 @@ export default function Admin() {
               <input type="text" placeholder="Cerca nella piattaforma..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
             {sezione === 'users' && (
-              <button className="tb-btn tb-ghost" onClick={() => mostraToast(`Export CSV generato · ${utenti.length} utenti`, 'tok')}>
+              <button className="tb-btn tb-ghost" onClick={esportaCSV}>
                 Esporta CSV
               </button>
             )}

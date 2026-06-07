@@ -74,6 +74,9 @@ app.use('/api/warroom',      require('./routes/warroom'));
 // Route leaderboard
 app.use('/api/leaderboard',  require('./routes/leaderboard'));
 
+// Route admin (stats + activity feed)
+app.use('/api/admin', require('./routes/admin'));
+
 // Route base — health check
 app.get('/', (req, res) => {
   res.json({ message: 'CyberNexus API running' });

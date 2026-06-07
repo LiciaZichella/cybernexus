@@ -8,6 +8,7 @@ const {
   patchTask,
   joinAsObserver,
   getReport,
+  deleteWARRoom,
 } = require('../controllers/warroomController');
 const { protect, authorize } = require('../middleware/verificaUtenti');
 
@@ -24,6 +25,7 @@ router.get('/:id/report',         getReport);
 router.post('/:id/join',          joinWARRoom);
 router.post('/:id/observe',       joinAsObserver);
 router.post('/:id/resolve',       resolveWARRoom);
-router.patch('/:id/task/:taskId', patchTask);
+router.patch('/:id/task/:taskId',  patchTask);
+router.delete('/:id',              authorize('Admin'), deleteWARRoom);
 
 module.exports = router;

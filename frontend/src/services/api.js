@@ -86,6 +86,7 @@ export const warroomAPI = {
   patchTask: (id, taskId, data)   => api.patch(`/warroom/${id}/task/${taskId}`, data),
   observe:   (id)                 => api.post(`/warroom/${id}/observe`),
   getReport: (id)                 => api.get(`/warroom/${id}/report`),
+  deleteWR:  (id)                 => api.delete(`/warroom/${id}`),
 };
 
 // ─── Leaderboard ──────────────────────────────────────────────────────────────

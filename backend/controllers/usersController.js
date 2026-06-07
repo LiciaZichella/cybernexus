@@ -164,4 +164,49 @@ const getMeSubmissions = async (req, res) => {
   }
 };
 
-module.exports = { getMe, updateMe, getUserById, getAllUsers, changeUserRole, getMeActivity, getMeSubmissions };
+// GET /api/users/export-csv — esporta tutti gli utenti in CSV (solo Admin)
+const exportUsersCSV = async (req, res) => {
+  try {
+    const users = await User.find().sort({ points: -1 }).lean();
+
+    // Separatore punto e virgola — standard Excel italiano
+    const SEP = ';';
+    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+
+    // Formatta data in GG/MM/YYYY HH:MM (fuso locale server)
+    const formattaData = (d) => {
+      const dt = new Date(d);
+      const gg = String(dt.getDate()).padStart(2, '0');
+      const mm = String(dt.getMonth() + 1).padStart(2, '0');
+      const aaaa = dt.getFullYear();
+      const hh = String(dt.getHours()).padStart(2, '0');
+      const mi = String(dt.getMinutes()).padStart(2, '0');
+      return `${gg}/${mm}/${aaaa} ${hh}:${mi}`;
+    };
+
+    const righe = [['Username', 'Email', 'Ruolo', 'Punti', 'Data Registrazione'].join(SEP)];
+    users.forEach(u => {
+      righe.push([
+        esc(u.username),
+        esc(u.email),
+        esc(u.role),
+        u.points ?? 0,
+        esc(formattaData(u.createdAt)),
+      ].join(SEP));
+    });
+
+    // Nome file con data odierna: cybernexus_utenti_GGMMYYYY.csv
+    const oggi = new Date();
+    const dataFile = `${String(oggi.getDate()).padStart(2, '0')}${String(oggi.getMonth() + 1).padStart(2, '0')}${oggi.getFullYear()}`;
+    const nomeFile = `cybernexus_utenti_${dataFile}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${nomeFile}"`);
+    // BOM UTF-8: Excel lo usa per rilevare la codifica e aprire gli accenti correttamente
+    res.send('﻿' + righe.join('\n'));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { getMe, updateMe, getUserById, getAllUsers, changeUserRole, getMeActivity, getMeSubmissions, exportUsersCSV };

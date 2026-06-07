@@ -271,7 +271,19 @@ const getReport = async (req, res) => {
   }
 };
 
+// DELETE /api/warroom/:id — elimina una War Room (solo Admin)
+const deleteWARRoom = async (req, res) => {
+  try {
+    const room = await WARRoom.findByIdAndDelete(req.params.id);
+    if (!room) return res.status(404).json({ error: 'War Room non trovata.' });
+    res.json({ message: 'War Room eliminata.' });
+  } catch (err) {
+    if (err.name === 'CastError') return res.status(400).json({ error: 'ID non valido.' });
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   getWARRooms, getWARRoomById, createWARRoom, joinWARRoom, resolveWARRoom,
-  patchTask, joinAsObserver, getReport, setIo,
+  patchTask, joinAsObserver, getReport, deleteWARRoom, setIo,
 };

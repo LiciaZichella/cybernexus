@@ -17,6 +17,8 @@
   --v1:rgba(124,111,234,0.10);--v2:rgba(124,111,234,0.06);--v3:rgba(124,111,234,0.03);
 }
 .admin-app *{box-sizing:border-box;margin:0;padding:0}
+/* Ripristina il margine del logo Navbar — azzerato dal reset wildcard sopra */
+.admin-app .cn-logo{margin-right:40px}
 
 @keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
