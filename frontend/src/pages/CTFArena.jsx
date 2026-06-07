@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
 import Navbar from '../components/Navbar';
-import { usersAPI, challengesAPI } from '../services/api';
+import { usersAPI, challengesAPI, leaderboardAPI } from '../services/api';
 
 /* ─── Config ──────────────────────────────────────────────────────────────── */
 const CAT_TABS = [
@@ -331,6 +331,7 @@ export default function CTFArena() {
 
   const [profiloAperto, setProfiloAperto]   = useState(null);
   const [profiloLoading, setProfiloLoading] = useState(false);
+  const [rankUtente, setRankUtente]         = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -340,6 +341,18 @@ export default function CTFArena() {
       setSolvedIds(new Set((me.solvedChallenges || []).map(String)));
     }).catch(() => {});
   }, [authLoading]);
+
+  // Calcola il rank reale dell'utente dalla leaderboard
+  useEffect(() => {
+    if (authLoading || !user) return;
+    leaderboardAPI.get({ limit: 500 })
+      .then(({ data }) => {
+        const lista = data.classifica ?? [];
+        const idx = lista.findIndex(u => (u.id ?? u._id)?.toString() === (user.id ?? user._id)?.toString());
+        if (idx !== -1) setRankUtente(idx + 1);
+      })
+      .catch(() => {});
+  }, [authLoading, user]);
 
   useEffect(() => {
     const t = setTimeout(() => { setDebouncedSearch(searchQuery); setPage(1); }, 400);
@@ -734,7 +747,7 @@ export default function CTFArena() {
               <div className="hs">
                 <span className="hs-ico">🏆</span>
                 <div>
-                  <div className="hs-val" style={{ color: 'var(--amber)' }}>#42</div>
+                  <div className="hs-val" style={{ color: 'var(--amber)' }}>{rankUtente ? `#${rankUtente}` : '—'}</div>
                   <div className="hs-lbl">Rank</div>
                 </div>
               </div>

@@ -12,8 +12,8 @@ import './WarRoom.css';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5005';
 
-// ── Dati statici playbook ──────────────────────────────────────────────────────
-const PASSI = [
+// ── Dati playbook di default (usati se la sala non ha playbook personalizzato) ──
+const DEFAULT_PASSI = [
   {
     icon: '🔍', categoria: 'Identificazione',
     titolo: 'Analizzare alert SIEM e classificare severità',
@@ -80,16 +80,16 @@ const PASSI = [
   },
 ];
 
-// Gruppi del playbook per accordion
-const GRUPPI_PLAYBOOK = [
+// Gruppi accordion di default per il playbook standard Incident Response
+const DEFAULT_GRUPPI_PLAYBOOK = [
   { key: 'id',          nome: 'Identificazione', colore: 'var(--mint)',   colBg: 'var(--mint-bg)',   indici: [0, 1] },
   { key: 'contenimento',nome: 'Contenimento',     colore: 'var(--amber)',  colBg: 'var(--amber-bg)',  indici: [2, 3, 4] },
   { key: 'analisi',     nome: 'Analisi',          colore: 'var(--coral)',  colBg: 'var(--coral-bg)',  indici: [5, 6] },
   { key: 'recovery',    nome: 'Recovery',         colore: 'var(--text2)', colBg: 'var(--bg3)',        indici: [7] },
 ];
 
-// IOC statici (nella versione reale arriveranno dall'API)
-const IOC_DEFAULT = [
+// IOC di default (usati se la sala non ha IOC configurati)
+const DEFAULT_IOC = [
   { tipo: 'IP',     tipoBg: 'var(--coral-bg)',   tipoCol: 'var(--coral)',   valore: '185.220.101.48',    stato: '✓ Bloccato',    statoBg: 'var(--mint-bg)',   statoCol: 'var(--mint)' },
   { tipo: 'Hash',   tipoBg: 'var(--amber-bg)',   tipoCol: 'var(--amber)',   valore: '4a7b9f2c1e8d...',  stato: '⚠ Attivo',     statoBg: 'var(--coral-bg)',  statoCol: 'var(--coral)' },
   { tipo: 'CVE',    tipoBg: 'var(--violet-bg)',  tipoCol: 'var(--violet)',  valore: 'CVE-2024-3400',     stato: 'Patch pend.',  statoBg: 'var(--amber-bg)',  statoCol: 'var(--amber)' },
@@ -129,7 +129,7 @@ export default function WarRoom() {
   // Playbook — inizia da zero, senza dati falsi (Bug 1)
   const [passoAttivo, setPassoAttivo] = useState(0);
   const [passiCompletati, setPassiCompletati] = useState(new Set());
-  const [gruppiAperti, setGruppiAperti] = useState({ id: true, contenimento: true, analisi: true, recovery: false });
+  const [gruppiAperti, setGruppiAperti] = useState({ id: true, contenimento: true, analisi: true, recovery: false, playbook: true });
 
   // Pannello dettagli step
   const [dettagliAperto, setDettagliAperto] = useState(false);
@@ -190,6 +190,43 @@ export default function WarRoom() {
   const [logFeed, setLogFeed] = useState([]);
 
   const socketRef = useRef(null);
+  const passiRef  = useRef([]);   // ref per evitare stale closure nei socket handler
+
+  // ── Passi del playbook — dinamici dalla sala, con fallback ai default ─────────
+  const PASSI = sala?.playbook?.length > 0
+    ? sala.playbook.map((p, i) => ({
+        id:        i,
+        titolo:    p.step || '',
+        desc:      p.description || '',
+        fase:      'Playbook',
+        icon:      '🎯',
+        categoria: 'Playbook',
+        tag:       `Step ${i + 1}`,
+        avColore:  'var(--violet)',
+        avIni:     String(i + 1).padStart(2, '0'),
+        guida:     p.guida || '',
+        obiettivi: p.obiettivi || [],
+      }))
+    : DEFAULT_PASSI;
+
+  // Aggiorna il ref ogni render per evitare stale closure nel socket handler
+  passiRef.current = PASSI;
+
+  // Gruppi accordion: unico gruppo 'playbook' se dinamico, altrimenti i 4 default
+  const GRUPPI_PLAYBOOK = sala?.playbook?.length > 0
+    ? [{ key: 'playbook', nome: 'Playbook', colore: 'var(--violet)', colBg: 'var(--violet-bg)', indici: PASSI.map((_, i) => i) }]
+    : DEFAULT_GRUPPI_PLAYBOOK;
+
+  // IOC: dalla sala se configurati, altrimenti default di scenario
+  const IOC_DEFAULT = sala?.iocs?.length > 0
+    ? sala.iocs.map(ioc => {
+        const tipoMap = { IP: 'coral', Hash: 'amber', CVE: 'violet', Domain: 'fuchsia', File: 'cyan' };
+        const tc = tipoMap[ioc.tipo] || 'text2';
+        const s  = ioc.stato || '';
+        const sc = s.includes('Blocc') ? 'mint' : (s.includes('Attiv') || s.includes('Trov')) ? 'coral' : 'amber';
+        return { ...ioc, tipoBg: `var(--${tc}-bg)`, tipoCol: `var(--${tc})`, statoBg: `var(--${sc}-bg)`, statoCol: `var(--${sc})` };
+      })
+    : DEFAULT_IOC;
 
   // ── Aggiunge riga al log live ────────────────────────────────────────────────
   const aggiungiLog = useCallback((testo, colore) => {
@@ -257,34 +294,39 @@ export default function WarRoom() {
 
     // Step completato — payload: { stepIndex, solvedBy, solvedAt } — broadcast a TUTTI incluso mittente
     socket.on('step-completed', ({ stepIndex, solvedBy }) => {
-      const idx = stepIndex;
-      if (typeof idx === 'number' && idx >= 0 && idx < PASSI.length) {
+      const idx   = stepIndex;
+      const passi = passiRef.current; // via ref per evitare stale closure
+      if (typeof idx === 'number' && idx >= 0 && idx < passi.length) {
         setPassiCompletati(prev => new Set([...prev, idx]));
-        setPassoAttivo(prev => (prev === idx && idx + 1 < PASSI.length) ? idx + 1 : prev);
+        setPassoAttivo(prev => (prev === idx && idx + 1 < passi.length) ? idx + 1 : prev);
       }
-      const titolo = typeof idx === 'number' ? PASSI[idx]?.titolo?.slice(0, 30) || 'passo' : 'passo';
+      const titolo = typeof idx === 'number' ? passi[idx]?.titolo?.slice(0, 30) || 'passo' : 'passo';
       aggiungiLog(`${solvedBy} ✓ ${titolo}... completato`, 'var(--mint)');
     });
 
-    // Evento di log o typing indicator — payload: { content, createdAt, author, tipo? }
+    // log-event — NON va mai nella chat, solo nel logFeed o nelle righeTerminale
     socket.on('log-event', ({ content, author, tipo }) => {
+      // Typing indicator — gestione separata, non finisce né in chat né nel log
       if (content === 'sta scrivendo...') {
         setUtenteCheScrive(author);
         clearTimeout(typingTimerRef.current);
         typingTimerRef.current = setTimeout(() => setUtenteCheScrive(''), 2000);
         return;
       }
-      // Output terminale condiviso in real-time — aggiunge righe al terminale solo per gli altri
-      if (tipo === 'terminal' && author !== user?.username) {
-        try {
-          const righe = JSON.parse(content);
-          if (Array.isArray(righe)) {
-            righe.forEach(riga => setRigheTerminale(prev => [...prev, riga]));
-          }
-        } catch { /* ignora contenuto non valido */ }
-        return;
+      // Output terminale condiviso — aggiunge alle righe del terminale SOLO per gli altri
+      // (il mittente le vede già in locale); il JSON grezzo non deve mai apparire in chat
+      if (tipo === 'terminal') {
+        if (author !== user?.username) {
+          try {
+            const righe = JSON.parse(content);
+            if (Array.isArray(righe)) {
+              righe.forEach(riga => setRigheTerminale(prev => [...prev, riga]));
+            }
+          } catch { /* JSON non valido, ignora */ }
+        }
+        return; // in ogni caso non va al logFeed né alla chat
       }
-      // Colore basato sul tipo dell'evento (per eventi automatici scenario)
+      // Evento di scenario o sistema — va solo nel logFeed laterale
       const colore = tipo === 'critico' ? 'var(--coral)'
         : tipo === 'warning'            ? 'var(--amber)'
         : tipo === 'info'               ? 'var(--mint)'
@@ -318,21 +360,20 @@ export default function WarRoom() {
     });
 
     // Sala risolta — payload: { roomId, resolvedBy, resolvedAt }
-    socket.on('room-resolved', async ({ resolvedBy }) => {
-      // Ferma il timer PRIMA di tutto — nullifica il ref per evitare doppio clearInterval
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      // Aggiorna i punti utente nel contesto auth
-      if (typeof aggiornaUser === 'function') await aggiornaUser();
+    socket.on('room-resolved', async (data) => {
+      console.log('[room-resolved ricevuto]', data);
+      // Ferma il timer PRIMA di tutto
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+      setTempoRimanente(0);
       setUiBloccata(true);
-      aggiungiNotifica({ icon: '🏆', testo: `Incidente risolto da ${resolvedBy}` });
-      if (resolvedBy === user?.username) {
-        // L'utente corrente ha appena risolto — apri il modal di riepilogo
+      // Aggiorna punti utente nel contesto auth
+      if (typeof aggiornaUser === 'function') await aggiornaUser();
+      if (data.resolvedBy === user?.username) {
+        // Chi ha risolto vede il modal di riepilogo
         setRisolviAperto(true);
       } else {
-        // Un altro membro ha risolto — mostra la vista sala chiusa
+        // Gli altri vedono la vista sala chiusa
         setVistaChiusa(true);
       }
     });
@@ -505,28 +546,41 @@ export default function WarRoom() {
   };
 
   const segnaFatto = async () => {
-    console.log('[segnaFatto] passoAttivo:', passoAttivo, 'isObserver:', isObserver, 'uiBloccata:', uiBloccata);
-    if (isObserver || timerScaduto || uiBloccata || passiCompletati.has(passoAttivo)) return;
-    const idx = passoAttivo;
-    const nuovoSet = new Set([...passiCompletati, idx]);
-    setPassiCompletati(nuovoSet);
-    setDettagliAperto(false);
+    console.log('[segnaFatto] START', { passoAttivo, uiBloccata });
+    if (uiBloccata) return;
+
+    // Salva nel DB prima di aggiornare lo stato locale
+    try {
+      console.log('[segnaFatto] chiamata markStep', id, passoAttivo);
+      await warroomAPI.markStep(id, passoAttivo);
+      console.log('[segnaFatto] markStep OK');
+    } catch (err) {
+      console.error('[segnaFatto] markStep ERRORE:', err.response?.data || err.message);
+      // continua comunque con socket e stato locale
+    }
+
+    // Broadcast a tutti i membri della sala
+    console.log('[segnaFatto] emit step-completed');
+    socketRef.current?.emit('step-completed', {
+      roomId:   id,
+      stepIndex: passoAttivo,
+      username:  user?.username,
+    });
+
+    // Aggiorna stato locale (UI ottimistica)
+    setPassiCompletati(prev => {
+      const nuovi = new Set(prev);
+      nuovi.add(passoAttivo);
+      return nuovi;
+    });
 
     // Avanza automaticamente al prossimo passo non completato
-    const prossimo = PASSI.findIndex((_, i) => i > idx && !nuovoSet.has(i));
-    if (prossimo !== -1) setPassoAttivo(prossimo);
+    const prossimoLibero = PASSI.findIndex(
+      (_, i) => i > passoAttivo && !passiCompletati.has(i)
+    );
+    if (prossimoLibero !== -1) setPassoAttivo(prossimoLibero);
 
-    // Salva il passo nel DB per persistenza multi-sessione
-    try {
-      await warroomAPI.markStep(id, idx);
-    } catch (err) {
-      console.error('[WarRoom] markStep fallito:', err);
-    }
-    // Broadcast a TUTTI (incluso mittente) — il listener gestirà il log per tutti
-    socketRef.current?.emit('step-completed', { roomId: id, stepIndex: idx });
-    setRigheTerminale(prev => [...prev,
-      { tipo: 'sep-active', testo: `── Passo: ${PASSI[idx].titolo.slice(0, 40)}... completato ──` },
-    ]);
+    console.log('[segnaFatto] DONE');
   };
 
   const apriRisolvi = () => {
@@ -792,20 +846,26 @@ export default function WarRoom() {
   const toggleSb = (chiave) => setSbCompresse(prev => ({ ...prev, [chiave]: !prev[chiave] }));
 
   // ── Valori derivati ───────────────────────────────────────────────────────────
-  const passoCorr = PASSI[passoAttivo] || PASSI[3];
+  const passoCorr = PASSI[passoAttivo] ?? PASSI[0] ?? {
+    icon: '📋', categoria: '—', titolo: 'Nessun passo configurato',
+    guida: '', obiettivi: [], tag: '—', avColore: 'var(--text3)', avIni: '—',
+  };
   const completati = passiCompletati.size;
-  const pct = Math.round((completati / PASSI.length) * 100);
+  const pct = PASSI.length > 0 ? Math.round((completati / PASSI.length) * 100) : 0;
   const timerWarning = tempoRimanente <= 600 && tempoRimanente > 0;
   const titoloSala = sala?.name || sala?.title || 'Incident Response';
   const severita   = sala?.severity || 'CRITICAL';
 
-  // Ruolo dell'utente corrente nella sala — confronto ID robusto (stringa vs ObjectId)
-  const mioMembro = sala?.members?.find(m =>
-    m.user?._id?.toString() === (user?._id ?? user?.id)?.toString() ||
-    m.user?.toString()      === (user?._id ?? user?.id)?.toString()
-  );
-  const mioRuolo   = mioMembro?.role ?? 'Member';
-  const isObserver = mioRuolo === 'Observer';
+  // Ruolo dell'utente corrente nella sala
+  const mioMembro = sala?.members?.find(m => {
+    const mId = m.user?._id?.toString() ?? m.user?.toString() ?? '';
+    const uId = user?._id?.toString() ?? '';
+    if (!mId || !uId) return false;
+    return mId === uId;
+  });
+  // Se l'utente non è tra i membri (non ancora caricato) isObserver è false
+  const isObserver = mioMembro?.role === 'Observer';
+  console.log('[isObserver FINAL]', isObserver, 'ruolo:', mioMembro?.role);
 
 
   // ── Render riga terminale ────────────────────────────────────────────────────
@@ -1112,30 +1172,21 @@ export default function WarRoom() {
                   <div className="to-sol-cv">▾</div>
                 </div>
                 <div className="to-sol-bd">
-                  <div className="to-sol-step">
-                    <div className="to-sol-step-t">🔒 Isolamento rete</div>
-                    <div className="to-cmd-block">
-                      <span className="rc"><span className="p">$ </span>ssh admin@firewall-01</span>
-                      <span className="rc"><span className="p">fw# </span>set interface eth0 access-list ISOLATE in</span>
-                      <span className="rc"><span className="ok">OK ✓ server-prod-01 isolated</span></span>
-                    </div>
-                  </div>
-                  <div className="to-sol-step">
-                    <div className="to-sol-step-t">🔬 Analisi Volatility</div>
-                    <div className="to-cmd-block">
-                      <span className="rc"><span className="p">$ </span>volatility3 -f dump.raw windows.pslist</span>
-                      <span className="rc"><span className="w">⚠ PID 1234 lockbit3.exe</span></span>
-                      <span className="rc"><span className="e">✗ ESTABLISHED 185.220.101.48:8443 → C2!</span></span>
-                    </div>
-                  </div>
-                  <div className="to-sol-step">
-                    <div className="to-sol-step-t">⚠️ Blocco C2 + Recovery</div>
-                    <div className="to-cmd-block">
-                      <span className="rc"><span className="p">fw# </span>block ip 185.220.101.48</span>
-                      <span className="rc"><span className="ok">✓ C2 bloccato</span></span>
-                      <span className="rc"><span className="ok">✓ CVE-2024-3400 patchato</span></span>
-                    </div>
-                  </div>
+                  {sala?.comandiTerminale?.length > 0 ? (
+                    sala.comandiTerminale.map((cmd, i) => (
+                      <div key={i} className="to-sol-step">
+                        <div className="to-sol-step-t">💻 {cmd.comando}</div>
+                        <div className="to-cmd-block">
+                          <span className="rc"><span className="p">$ </span>{cmd.comando}</span>
+                          <span className="rc ok">{cmd.risposta}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p style={{ padding: '12px 0', color: 'var(--text2)', fontSize: 13 }}>
+                      Nessun comando personalizzato configurato per questo scenario.
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="to-btn-row">
@@ -1434,11 +1485,14 @@ export default function WarRoom() {
                 </button>
                 <button
                   className="sh-done-btn"
-                  disabled={timerScaduto || uiBloccata || isObserver || passiCompletati.has(passoAttivo)}
-                  onClick={segnaFatto}
+                  disabled={uiBloccata}
+                  onClick={() => {
+                    console.log('[CLICK segnaFatto]', { uiBloccata, isObserver, passoAttivo });
+                    if (!uiBloccata) segnaFatto();
+                  }}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  {passiCompletati.has(passoAttivo) ? 'Completato ✓' : 'Segna fatto'}
+                  ✓ Segna fatto
                 </button>
               </div>
             </div>
@@ -1464,9 +1518,9 @@ export default function WarRoom() {
                     onChange={e => setComandoInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && eseguiComando()}
                     placeholder={isObserver ? 'Modalità observer — solo lettura' : 'inserisci comando...'}
-                    disabled={timerScaduto || uiBloccata || isObserver}
+                    disabled={isObserver || uiBloccata}
                   />
-                  <button className="t-run" onClick={eseguiComando} disabled={timerScaduto || uiBloccata || isObserver}>RUN ↵</button>
+                  <button className="t-run" onClick={eseguiComando} disabled={isObserver || uiBloccata}>RUN ↵</button>
                 </div>
               </div>
             </div>
@@ -1591,9 +1645,9 @@ export default function WarRoom() {
                 }}
                 onKeyDown={e => e.key === 'Enter' && inviaChat()}
                 placeholder={uiBloccata ? 'Sala chiusa' : isObserver ? 'Modalità observer — solo lettura' : 'Scrivi al team...'}
-                disabled={timerScaduto || uiBloccata || isObserver}
+                disabled={isObserver || uiBloccata}
               />
-              <button className="chat-send" onClick={inviaChat} disabled={timerScaduto || uiBloccata || isObserver}>
+              <button className="chat-send" onClick={inviaChat} disabled={isObserver || uiBloccata}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13"/>
                   <polygon points="22 2 15 22 11 13 2 9 22 2"/>

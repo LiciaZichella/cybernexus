@@ -60,28 +60,24 @@ const HEATMAP_COLORS = [
   'var(--mint)',
 ];
 
-// Dati categorie statici per il pannello profilo
-const CATEGORIE_PROFILO = [
-  { nome: 'Web',       colore: '#7C6FEA', pct: 80 },
-  { nome: 'Crypto',    colore: '#5BC4D4', pct: 65 },
-  { nome: 'Forensics', colore: '#5CCE8A', pct: 50 },
-  { nome: 'Rev/Pwn',   colore: '#F6C652', pct: 35 },
-  { nome: 'OSINT',     colore: '#E870B8', pct: 20 },
+// Definizioni badge con soglie di sblocco calcolate a runtime
+const BADGE_DEFS = [
+  { emoji: '🔑', label: 'First Blood',   check: (p, rank) => (p.solvedCount ?? p.solved ?? (p.solvedChallenges?.length ?? 0)) >= 1 },
+  { emoji: '💎', label: 'Gem Collector', check: (p)       => (p.solvedCount ?? p.solved ?? (p.solvedChallenges?.length ?? 0)) >= 20 },
+  { emoji: '⚡', label: 'Speed Run',     check: (p)       => (p.points ?? 0) >= 5000 },
+  { emoji: '🔥', label: 'On Fire',       check: (p)       => (p.streak ?? 0) >= 7 },
+  { emoji: '👑', label: 'Champion',      check: (p, rank) => rank > 0 && rank <= 3 },
+  { emoji: '🕵️', label: 'Ghost',         check: (p)       => (p.points ?? 0) >= 1000 && (p.streak ?? 0) === 0 },
 ];
 
-// Badge disponibili nella piattaforma
-const BADGES = [
-  { emoji: '🔑', label: 'First Blood',   unlocked: true  },
-  { emoji: '💎', label: 'Gem Collector', unlocked: true  },
-  { emoji: '⚡', label: 'Speed Run',     unlocked: true  },
-  { emoji: '🔥', label: 'On Fire',       unlocked: false },
-  { emoji: '👑', label: 'Champion',      unlocked: false },
-  { emoji: '🕵️', label: 'Ghost',         unlocked: false },
+// Categorie profilo con pct a 0 — non abbiamo dati per-categoria dall'API utente
+const CATEGORIE_PROFILO_BASE = [
+  { nome: 'Web',       colore: '#7C6FEA' },
+  { nome: 'Crypto',    colore: '#5BC4D4' },
+  { nome: 'Forensics', colore: '#5CCE8A' },
+  { nome: 'Rev/Pwn',   colore: '#F6C652' },
+  { nome: 'OSINT',     colore: '#E870B8' },
 ];
-
-// Valori radar statici per i due giocatori a confronto
-const RADAR_P1 = [0.9, 0.7, 0.8, 0.6, 0.75, 0.85];
-const RADAR_P2 = [0.5, 0.65, 0.45, 0.7, 0.55, 0.4];
 
 const radarPoint = (values, idx, cx, cy, r) => {
   const a = (Math.PI / 3) * idx - Math.PI / 2;
@@ -214,8 +210,36 @@ export default function Leaderboard() {
     user && (item.id ?? item._id) === (user.id ?? user._id);
 
   // Giocatori disponibili per compare (esclude il #1)
-  const comparePool    = classifica.slice(1);
+  const comparePool     = classifica.slice(1);
   const compareCorrente = comparePool[compareIdx] ?? comparePool[0];
+
+  // Badge calcolati dai dati reali del profilo aperto
+  const BADGES = BADGE_DEFS.map(def => ({
+    emoji:    def.emoji,
+    label:    def.label,
+    unlocked: profiloAperto ? def.check(profiloAperto, rankProfilo) : false,
+  }));
+
+  // Categorie: mostriamo 0% perché l'API utente non espone breakdown per-categoria
+  const CATEGORIE_PROFILO = CATEGORIE_PROFILO_BASE.map(cat => ({ ...cat, pct: 0 }));
+
+  // Calcola valori radar [0‥1] da metriche aggregate disponibili in classifica
+  const calcRadar = (giocatore) => {
+    if (!giocatore) return [0, 0, 0, 0, 0, 0];
+    const maxPts     = classifica[0]?.points || 1;
+    const maxSolved  = Math.max(...classifica.map(u => u.solved ?? 0), 1);
+    const maxStreak  = Math.max(...classifica.map(u => u.streak ?? 0), 1);
+    const rankGio    = classifica.findIndex(u => (u.id ?? u._id) === (giocatore.id ?? giocatore._id)) + 1;
+    const rankPct    = classifica.length > 0 ? (classifica.length - (rankGio || classifica.length)) / classifica.length : 0;
+    const pts        = Math.min((giocatore.points  ?? 0) / maxPts, 1);
+    const solved     = Math.min((giocatore.solved   ?? 0) / maxSolved, 1);
+    const streak     = Math.min((giocatore.streak   ?? 0) / Math.max(maxStreak, 1), 1);
+    const efficiency = giocatore.solved > 0 ? Math.min((giocatore.points ?? 0) / (giocatore.solved * 300), 1) : 0;
+    return [pts, solved, streak, rankPct, efficiency, giocatore.streak > 0 ? 0.8 : 0.2];
+  };
+
+  const RADAR_P1 = calcRadar(top3[0]);
+  const RADAR_P2 = calcRadar(compareCorrente);
 
   // ── JSX ─────────────────────────────────────────────────────────────────────
 

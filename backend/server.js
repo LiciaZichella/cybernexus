@@ -77,6 +77,9 @@ app.use('/api/leaderboard',  require('./routes/leaderboard'));
 // Route admin (stats + activity feed)
 app.use('/api/admin', require('./routes/admin'));
 
+// Route statistiche pubbliche (no auth — usata dalla landing page)
+app.use('/api/platform', require('./routes/platform'));
+
 // Route base — health check
 app.get('/', (req, res) => {
   res.json({ message: 'CyberNexus API running' });

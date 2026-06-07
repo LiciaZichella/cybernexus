@@ -18,9 +18,28 @@ export default function Landing() {
   const [regLoading, setRegLoading] = useState(false);
   const [modalLegale, setModalLegale] = useState(null);
 
+  // Statistiche reali dalla piattaforma
+  const [statsData, setStatsData] = useState({ utenti: 0, sfide: 0, warroom: 0 });
+  const [topUtenti, setTopUtenti] = useState([]);
+
   // Imposta data-theme al montaggio
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', 'dark');
+  }, []);
+
+  // Carica statistiche pubbliche e top-3 da endpoint senza autenticazione
+  useEffect(() => {
+    fetch('http://localhost:5005/api/platform/stats')
+      .then(r => r.json())
+      .then(data => {
+        setStatsData({
+          utenti:  data.utenti  ?? 0,
+          sfide:   data.sfide   ?? 0,
+          warroom: data.warroom ?? 0,
+        });
+        if (Array.isArray(data.top3)) setTopUtenti(data.top3);
+      })
+      .catch(() => {}); // server non raggiungibile — mantieni valori di default
   }, []);
 
   // Animazione di digitazione nel terminale
@@ -119,15 +138,15 @@ export default function Landing() {
 
           <div className="hero-stats">
             <div className="hst">
-              <div className="hst-n">1,240+</div>
+              <div className="hst-n">{statsData.utenti > 0 ? `${statsData.utenti.toLocaleString('it-IT')}+` : '—'}</div>
               <div className="hst-l">Utenti attivi</div>
             </div>
             <div className="hst">
-              <div className="hst-n">380</div>
+              <div className="hst-n">{statsData.sfide > 0 ? statsData.sfide : '—'}</div>
               <div className="hst-l">Sfide CTF</div>
             </div>
             <div className="hst">
-              <div className="hst-n">142</div>
+              <div className="hst-n">{statsData.warroom > 0 ? statsData.warroom : '—'}</div>
               <div className="hst-l">Incidenti IR</div>
             </div>
           </div>
@@ -166,33 +185,37 @@ export default function Landing() {
                 <div className="live-d" />
                 Leaderboard live
               </div>
-              <div className="lb-item">
-                <div className="lb-rk">🥇</div>
-                <div className="lb-av" style={{ background: 'var(--fuchsia)' }}>SK</div>
-                <div className="lb-nm">shadow_k1ng</div>
-                <div className="lb-pts">8,450</div>
-              </div>
-              <div className="lb-item">
-                <div className="lb-rk">🥈</div>
-                <div className="lb-av" style={{ background: 'var(--cyan)' }}>NX</div>
-                <div className="lb-nm">n3x7_g3n</div>
-                <div className="lb-pts">7,200</div>
-              </div>
-              <div className="lb-item">
-                <div className="lb-rk">🥉</div>
-                <div className="lb-av" style={{ background: 'var(--mint)' }}>ZR</div>
-                <div className="lb-nm">z3r0_d4y</div>
-                <div className="lb-pts">6,800</div>
-              </div>
-              <div className="lb-item" style={{
-                background: 'var(--violet-bg)', borderRadius: '7px',
-                padding: '5px 7px', marginTop: '5px', border: 'none'
-              }}>
-                <div className="lb-rk" style={{ color: 'var(--violet)' }}>#42</div>
-                <div className="lb-av" style={{ background: 'var(--violet)' }}>TU</div>
-                <div className="lb-nm" style={{ color: 'var(--text1)', fontWeight: '500' }}>tu — sei qui</div>
-                <div className="lb-pts">4,280</div>
-              </div>
+              {topUtenti.length > 0 ? topUtenti.map((u, i) => (
+                <div key={u._id ?? i} className="lb-item">
+                  <div className="lb-rk">{['🥇','🥈','🥉'][i]}</div>
+                  <div className="lb-av" style={{ background: ['var(--fuchsia)','var(--cyan)','var(--mint)'][i] }}>
+                    {(u.username || '??').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="lb-nm">{u.username}</div>
+                  <div className="lb-pts">{(u.points || 0).toLocaleString('it-IT')}</div>
+                </div>
+              )) : (
+                <>
+                  <div className="lb-item">
+                    <div className="lb-rk">🥇</div>
+                    <div className="lb-av" style={{ background: 'var(--fuchsia)' }}>—</div>
+                    <div className="lb-nm">—</div>
+                    <div className="lb-pts">—</div>
+                  </div>
+                  <div className="lb-item">
+                    <div className="lb-rk">🥈</div>
+                    <div className="lb-av" style={{ background: 'var(--cyan)' }}>—</div>
+                    <div className="lb-nm">—</div>
+                    <div className="lb-pts">—</div>
+                  </div>
+                  <div className="lb-item">
+                    <div className="lb-rk">🥉</div>
+                    <div className="lb-av" style={{ background: 'var(--mint)' }}>—</div>
+                    <div className="lb-nm">—</div>
+                    <div className="lb-pts">—</div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Allerta war room */}
@@ -224,12 +247,12 @@ export default function Landing() {
       <div className="stats-strip">
         <div className="ss-item">
           <div className="ss-lbl">Utenti attivi</div>
-          <div className="ss-val">1,240+</div>
+          <div className="ss-val">{statsData.utenti > 0 ? `${statsData.utenti.toLocaleString('it-IT')}+` : '—'}</div>
           <div className="ss-sub">e crescono ogni giorno</div>
         </div>
         <div className="ss-item">
           <div className="ss-lbl">Sfide CTF</div>
-          <div className="ss-val">380</div>
+          <div className="ss-val">{statsData.sfide > 0 ? statsData.sfide : '—'}</div>
           <div className="ss-sub">6 categorie · Easy → Hard</div>
         </div>
         <div className="ss-item">
@@ -239,7 +262,7 @@ export default function Landing() {
         </div>
         <div className="ss-item">
           <div className="ss-lbl">Incidenti IR</div>
-          <div className="ss-val">142</div>
+          <div className="ss-val">{statsData.warroom > 0 ? statsData.warroom : '—'}</div>
           <div className="ss-sub">ransomware · DDoS · breach</div>
         </div>
       </div>

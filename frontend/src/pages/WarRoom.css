@@ -582,16 +582,20 @@
 }
 
 /* ── TIMEOUT OVERLAY ── */
+/* Overlay timeout — flex-start per permettere lo scroll su schermi piccoli */
 .warroom-app .timeout-overlay {
   position:fixed;inset:0;z-index:900;
   background:rgba(7,9,15,.92);backdrop-filter:blur(16px);
-  display:flex;align-items:center;justify-content:center;padding:20px;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:20px;overflow-y:auto;
   animation:wr-fadeIn .5s ease;
 }
 [data-theme="light"] .warroom-app .timeout-overlay { background:rgba(240,242,248,.85) }
+/* Modal timeout — altezza massima 90vh con scroll interno */
 .warroom-app .to-modal {
   width:100%;max-width:520px;background:var(--bg2);
-  border:0.5px solid rgba(240,112,96,.4);border-radius:18px;overflow:hidden;
+  border:0.5px solid rgba(240,112,96,.4);border-radius:18px;
+  overflow-y:auto;max-height:calc(90vh - 40px);
   animation:wr-scaleIn .4s cubic-bezier(.34,1.56,.64,1);
 }
 [data-theme="light"] .warroom-app .to-modal { background:#fff }
