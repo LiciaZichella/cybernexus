@@ -178,6 +178,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .hint-cost{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber);font-weight:600;flex-shrink:0}
 .hint-cost.done{color:var(--mint)}
 .hint-txt{font-size:12px;color:var(--text2);flex:1}
+.hint-txt.err{color:var(--coral)}
 .hint-revealed-txt{font-size:12px;color:var(--text1);flex:1;font-style:italic}
 .flag-sec{background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:14px}
 [data-theme="light"] .flag-sec{background:var(--bg4)}
@@ -325,6 +326,8 @@ export default function CTFArena() {
   const [flagShakeKey,   setFlagShakeKey]   = useState(0);
   const [earnedPts,      setEarnedPts]      = useState(0);
   const [hintsRevealed,  setHintsRevealed]  = useState({});
+  const [hintsMissing,   setHintsMissing]   = useState(new Set());
+  const [hintErrors,     setHintErrors]     = useState({});
   const [hintLoadingIdx, setHintLoadingIdx] = useState(null);
 
   const flagInputRef = useRef(null);
@@ -409,6 +412,8 @@ export default function CTFArena() {
     setFlagInput('');
     setFlagStatus('idle');
     setHintsRevealed({});
+    setHintsMissing(new Set());
+    setHintErrors({});
     setHintLoadingIdx(null);
     setEarnedPts(0);
     setFlagShakeKey(0);
@@ -417,14 +422,25 @@ export default function CTFArena() {
   const closeModal = () => setModal(null);
 
   const revealHint = async (idx) => {
-    if (hintsRevealed[idx] !== undefined || hintLoadingIdx !== null) return;
+    if (hintsRevealed[idx] !== undefined || hintsMissing.has(idx) || hintLoadingIdx !== null) return;
     setHintLoadingIdx(idx);
+    setHintErrors(prev => {
+      if (!(idx in prev)) return prev;
+      const next = { ...prev };
+      delete next[idx];
+      return next;
+    });
     try {
       const { data } = await challengesAPI.getHint(modal._id, idx);
-      const text = data.text ?? data.hint?.text ?? String(data);
+      const text = data.hint ?? data.text ?? String(data);
       setHintsRevealed(prev => ({ ...prev, [idx]: text }));
-    } catch {
-      setHintsRevealed(prev => ({ ...prev, [idx]: 'Impossibile caricare il suggerimento.' }));
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setHintsMissing(prev => new Set(prev).add(idx));
+      } else {
+        const msg = err.response?.data?.error || 'Impossibile caricare il suggerimento.';
+        setHintErrors(prev => ({ ...prev, [idx]: msg }));
+      }
     } finally {
       setHintLoadingIdx(null);
     }
@@ -539,6 +555,7 @@ export default function CTFArena() {
                 <div className="sm-hints">
                   <div className="sm-section-lbl">💡 Suggerimenti</div>
                   {modal.hints.map((hint, i) => {
+                    if (hintsMissing.has(i)) return null;
                     const revealed  = hintsRevealed[i];
                     const isLoading = hintLoadingIdx === i;
                     return (
@@ -550,10 +567,12 @@ export default function CTFArena() {
                         <span style={{ fontSize: '14px' }}>💡</span>
                         {revealed !== undefined
                           ? <div className="hint-revealed-txt">{revealed}</div>
-                          : <div className="hint-txt">
+                          : <div className={`hint-txt${hintErrors[i] ? ' err' : ''}`}>
                               {isLoading
                                 ? 'Caricamento...'
-                                : `Suggerimento ${i + 1} — scopri (-${hint.cost ?? 50} pts)`}
+                                : hintErrors[i]
+                                  ? hintErrors[i]
+                                  : `Suggerimento ${i + 1} — scopri (-${hint.cost ?? 50} pts)`}
                             </div>
                         }
                         <span className={`hint-cost${revealed !== undefined ? ' done' : ''}`}>

@@ -6,8 +6,6 @@ import { useNotifications } from '../context/NotificationsContext';
 import NavDropdown from '../components/NavDropdown';
 import { warroomAPI, getMemoryToken } from '../services/api';
 import Navbar from '../components/Navbar';
-import KanbanBoard from '../components/KanbanBoard';
-import jsPDF from 'jspdf';
 import './WarRoom.css';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5005';
@@ -607,146 +605,6 @@ export default function WarRoom() {
     setTimeout(() => { setWebhookInvio(false); setWebhookInviato(true); }, 1400);
   };
 
-  // Genera e scarica il report come PDF — solo testo, nessuna dipendenza da autoTable
-  const scaricaReport = async () => {
-    try {
-      const doc = new jsPDF();
-      const now = new Date();
-      const durataMins = sala?.createdAt
-        ? Math.floor((Date.now() - new Date(sala.createdAt)) / 60000)
-        : tempoElapsedMin;
-
-      // ── Header ──────────────────────────────────────────────────────────────────
-      doc.setFontSize(20);
-      doc.setTextColor(124, 111, 234);
-      doc.text('CyberNexus', 20, 22);
-      doc.setFontSize(14);
-      doc.setTextColor(0, 0, 0);
-      doc.text('Incident Response Report', 20, 33);
-      doc.setFontSize(9);
-      doc.setTextColor(120, 120, 140);
-      doc.text(`Generato il ${now.toLocaleString('it-IT')}`, 20, 41);
-
-      // ── Linea separatrice ────────────────────────────────────────────────────────
-      doc.setDrawColor(124, 111, 234);
-      doc.line(20, 45, 190, 45);
-
-      let y = 55;
-      const riga = (etichetta, valore) => {
-        doc.setFontSize(10);
-        doc.setTextColor(90, 100, 128);
-        doc.text(etichetta + ':', 20, y);
-        doc.setTextColor(20, 20, 30);
-        doc.text(String(valore ?? '–'), 75, y);
-        y += 9;
-      };
-
-      // ── 1. Riepilogo ─────────────────────────────────────────────────────────────
-      doc.setFontSize(12);
-      doc.setTextColor(124, 111, 234);
-      doc.text('1. Riepilogo incidente', 20, y);
-      y += 10;
-
-      riga('War Room', sala?.name || titoloSala);
-      riga('Severità', severita);
-      riga('Stato', sala?.status === 'closed' ? 'Risolto ✓' : 'Attivo');
-      riga('Apertura', sala?.createdAt ? new Date(sala.createdAt).toLocaleString('it-IT') : '–');
-      riga('Risoluzione', now.toLocaleString('it-IT'));
-      riga('Durata', `${durataMins} minuti`);
-      y += 4;
-
-      // ── 2. Statistiche ───────────────────────────────────────────────────────────
-      doc.setFontSize(12);
-      doc.setTextColor(124, 111, 234);
-      doc.text('2. Statistiche', 20, y);
-      y += 10;
-
-      riga('Passi completati', `${passiCompletati.size} / ${PASSI.length} (${pct}%)`);
-      riga('Punti base', `${puntiBase.toLocaleString()} pts`);
-      riga('Bonus velocità', bonusVelocita > 0 ? `+${bonusVelocita} pts` : 'Nessuno');
-      riga('Punti totali', `${puntiTotali.toLocaleString()} pts`);
-      if (tasks.length > 0) {
-        riga('Task kanban', `${tasks.filter(t => t.stato === 'fatto').length} / ${tasks.length} completati`);
-      }
-      y += 4;
-
-      // ── 3. Team ──────────────────────────────────────────────────────────────────
-      doc.setFontSize(12);
-      doc.setTextColor(124, 111, 234);
-      doc.text('3. Team', 20, y);
-      y += 10;
-
-      const memoriTeam = sala?.members?.length ? sala.members : membriOnline;
-      if (memoriTeam.length) {
-        memoriTeam.forEach(m => {
-          const nome = m.user?.username || m.username || 'utente';
-          const ruolo = m.role || 'Membro';
-          doc.setFontSize(10);
-          doc.setTextColor(20, 20, 30);
-          doc.text(`• ${nome}  —  ${ruolo}`, 25, y);
-          y += 8;
-        });
-      } else {
-        doc.setFontSize(10);
-        doc.setTextColor(120, 120, 140);
-        doc.text('Nessun membro registrato', 25, y);
-        y += 8;
-      }
-      y += 4;
-
-      // ── 4. Passi playbook ────────────────────────────────────────────────────────
-      if (y > 220) { doc.addPage(); y = 20; }
-      doc.setFontSize(12);
-      doc.setTextColor(124, 111, 234);
-      doc.text('4. Passi playbook', 20, y);
-      y += 10;
-
-      PASSI.forEach((p, i) => {
-        if (y > 270) { doc.addPage(); y = 20; }
-        const stato = passiCompletati.has(i) ? '✓' : '◌';
-        const colore = passiCompletati.has(i) ? [92, 206, 138] : [180, 180, 190];
-        doc.setTextColor(...colore);
-        doc.setFontSize(9);
-        doc.text(`${stato} ${i + 1}. ${p.titolo.slice(0, 70)}`, 25, y);
-        y += 7;
-      });
-
-      // ── 5. Timeline eventi (ultime 20 righe) ────────────────────────────────────
-      if (logFeed.length > 0) {
-        if (y > 220) { doc.addPage(); y = 20; }
-        y += 4;
-        doc.setFontSize(12);
-        doc.setTextColor(124, 111, 234);
-        doc.text('5. Timeline eventi', 20, y);
-        y += 10;
-        logFeed.slice(-20).forEach(l => {
-          if (y > 270) { doc.addPage(); y = 20; }
-          doc.setFontSize(8);
-          doc.setTextColor(90, 100, 128);
-          doc.text(l.time || '', 20, y);
-          doc.setTextColor(20, 20, 30);
-          doc.text((l.testo || '').slice(0, 90), 40, y);
-          y += 6;
-        });
-      }
-
-      // ── Footer ───────────────────────────────────────────────────────────────────
-      const totPagine = doc.internal.getNumberOfPages();
-      for (let pg = 1; pg <= totPagine; pg++) {
-        doc.setPage(pg);
-        doc.setFontSize(8);
-        doc.setTextColor(150, 150, 160);
-        doc.text('Generato da CyberNexus · cybernexus.io', 20, 287);
-        doc.text(`Pagina ${pg} di ${totPagine}`, 190, 287, { align: 'right' });
-      }
-
-      const nomeFile = `CyberNexus_Report_${(sala?.name || 'report').replace(/\s+/g, '-')}_${now.toLocaleDateString('it-IT').replace(/\//g, '-')}.pdf`;
-      doc.save(nomeFile);
-    } catch (err) {
-      console.error('[WarRoom] scaricaReport:', err);
-      alert('Errore PDF: ' + err.message);
-    }
-  };
 
   const eseguiComando = () => {
     if (timerScaduto || uiBloccata) return;
@@ -915,9 +773,6 @@ export default function WarRoom() {
           <div className="wr-chiusa-btns">
             <button className="wr-chiusa-back" onClick={() => navigate('/warroom')}>
               ← Torna alla lista War Room
-            </button>
-            <button className="wr-chiusa-report" onClick={scaricaReport}>
-              ⬇ Scarica report PDF
             </button>
           </div>
         </div>
@@ -1215,7 +1070,6 @@ export default function WarRoom() {
                 <div className="rm-stat"><div className="rms-v" style={{ color: 'var(--amber)' }}>{tempoElapsedMin || '—'}m</div><div className="rms-l">Durata</div></div>
                 <div className="rm-stat"><div className="rms-v" style={{ color: 'var(--coral)', fontSize: 12 }}>{severita}</div><div className="rms-l">Severità</div></div>
               </div>
-              <button className="rm-download-btn" onClick={scaricaReport}>⬇ Scarica report PDF</button>
               <button className="rm-close" onClick={() => navigate('/dashboard')}>← Torna alla dashboard</button>
             </div>
           </div>
@@ -1288,7 +1142,6 @@ export default function WarRoom() {
                   </div>
                 </div>
               </div>
-              <button className="rm-download-btn" onClick={scaricaReport}>⬇ Scarica report PDF</button>
               <button className="rm-close" onClick={confermaRisolvi}>✓ Torna alla dashboard</button>
             </div>
           </div>
