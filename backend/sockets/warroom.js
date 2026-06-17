@@ -27,7 +27,7 @@ const EVENTI_SCENARIO = {
 // Normalizza il tipo di sala verso la chiave EVENTI_SCENARIO
 const normalizzaTipo = (tipo) => {
   if (!tipo) return 'ransomware';
-  const t = tipo.toLowerCase();
+  const t = tipo.toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_');
   if (t.includes('breach') || t.includes('data')) return 'data_breach';
   if (t.includes('ddos') || t.includes('dos'))    return 'ddos';
   return 'ransomware';
@@ -181,8 +181,9 @@ const warroomSocket = (io) => {
         if (!room.hasMember(user._id)) return ack?.({ error: 'Accesso negato.' });
 
         // Per gli eventi terminale il content è JSON — salviamo una stringa leggibile
+        // senza JSON grezzo, così non compare nella chat al ricaricamento
         const testoDB = tipo === 'terminal'
-          ? `[terminale] ${user.username}: ${content.slice(0, 100)}`
+          ? `[terminale] ${user.username} ha eseguito un comando`
           : content.trim();
 
         room.messages.push({
@@ -205,45 +206,25 @@ const warroomSocket = (io) => {
       }
     });
 
-    // room-resolved — notifica tutti i membri che la sala è stata risolta
-    // Tipicamente chiamato dal controller warroom dopo aver chiuso la sala
-    socket.on('room-resolved', async ({ roomId }, ack) => {
-      try {
-        const room = await WARRoom.findById(roomId);
-        if (!room) return ack?.({ error: 'War Room non trovata.' });
-
-        // Solo owner, Admin o Manager possono emettere questo evento
-        const isStaff = ['Admin', 'Manager'].includes(user.role);
-        const isOwner = room.owner.equals(user._id);
-        if (!isOwner && !isStaff) return ack?.({ error: 'Permesso negato.' });
-
-        warNS.to(roomId).emit('room-resolved', {
-          roomId,
-          resolvedBy: user.username,
-          resolvedAt: new Date(),
-        });
-
-        // Cancella i timer degli eventi automatici scenario
-        const timers = timeoutScenario.get(roomId);
-        if (timers) {
-          timers.forEach(clearTimeout);
-          timeoutScenario.delete(roomId);
-        }
-
-        ack?.({ ok: true });
-      } catch (err) {
-        ack?.({ error: err.message });
-      }
-    });
-
     // Pulizia alla disconnessione
     socket.on('disconnect', () => {
       console.log(`Socket disconnesso: ${user.username} (${socket.id})`);
       if (socket.data.roomId) {
         socket.to(socket.data.roomId).emit('user-left', { username: user.username });
+
+        // Cancella i timer se non ci sono più utenti nella stanza
+        const stanza = warNS.adapter.rooms.get(socket.data.roomId);
+        if (!stanza || stanza.size === 0) {
+          const timers = timeoutScenario.get(socket.data.roomId);
+          if (timers) {
+            timers.forEach(clearTimeout);
+            timeoutScenario.delete(socket.data.roomId);
+          }
+        }
       }
     });
   });
 };
 
 module.exports = warroomSocket;
+module.exports.timeoutScenario = timeoutScenario;

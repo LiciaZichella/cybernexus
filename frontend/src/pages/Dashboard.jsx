@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
 import Navbar from '../components/Navbar';
@@ -416,6 +416,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 export default function Dashboard() {
   const { user, loading: authLoading, aggiornaUser } = useAuth();
   const navigate   = useNavigate();
+  const location   = useLocation();
   const { notifiche, segnaLetta, segnaLetteTutte, nonLette } = useNotifications();
 
   const [profile,       setProfile]       = useState(null);
@@ -485,6 +486,19 @@ export default function Dashboard() {
     if (authLoading) return;
     loadAllData();
   }, [authLoading, loadAllData]);
+
+  // Ricarica dati ogni volta che si naviga alla dashboard (es. ritorno dalla War Room)
+  useEffect(() => {
+    const needsRefresh = sessionStorage.getItem('dashboard_refresh');
+    if (needsRefresh) {
+      sessionStorage.removeItem('dashboard_refresh');
+      // Piccolo delay per permettere al token di aggiornarsi
+      setTimeout(() => {
+        aggiornaUser();
+        loadAllData();
+      }, 300);
+    }
+  }, [location.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Animate progress bar after profile loads
   useEffect(() => {

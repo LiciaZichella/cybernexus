@@ -60,7 +60,7 @@ export default function Admin() {
   const [warroomsErrore, setWarroomsErrore]   = useState(null);
 
   // Statistiche dashboard
-  const [dashStats, setDashStats] = useState({ utenti: 1248, flag: 847, warroom: 3, sfide: 380 });
+  const [dashStats, setDashStats] = useState(null);
 
   // Dati grafici dashboard — inizializzati a zero, popolati dalle API
   const [regUltimi7, setRegUltimi7]       = useState([0, 0, 0, 0, 0, 0, 0]);
@@ -132,7 +132,7 @@ export default function Admin() {
 
   // ── Animazioni dashboard: counters + barre ───────────────────────────────────
   useEffect(() => {
-    if (sezione !== 'stats') return;
+    if (sezione !== 'stats' || !dashStats) return;
     const targets = [dashStats.utenti, dashStats.flag, dashStats.warroom, dashStats.sfide];
     targets.forEach((target, i) => {
       const el = contatoriRef.current[i];
@@ -484,7 +484,7 @@ export default function Admin() {
                   : c.trend}
               </span>
             </div>
-            <div className="sc-val sc-val-shimmer" ref={(el) => { contatoriRef.current[i] = el; }}>0</div>
+            <div className="sc-val sc-val-shimmer" ref={(el) => { contatoriRef.current[i] = el; }}>{dashStats ? 0 : '—'}</div>
             <div className="sc-lbl">{c.lbl}</div>
           </div>
         ))}

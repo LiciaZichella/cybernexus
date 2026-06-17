@@ -98,6 +98,19 @@ const WARRoomSchema = new mongoose.Schema(
       default: 'Ransomware',
     },
 
+    severity: {
+      type: String,
+      enum: ['Low', 'Medium', 'High', 'Critical'],
+      default: 'Medium',
+    },
+
+    durataMinuti: {
+      type: Number,
+      default: 90,
+      min: [10, 'Durata minima 10 minuti'],
+      max: [480, 'Durata massima 480 minuti'],
+    },
+
     // Stato operativo della sala
     status: {
       type: String,
@@ -140,6 +153,8 @@ const WARRoomSchema = new mongoose.Schema(
       {
         step:        { type: String, required: true, trim: true },
         description: { type: String, default: '' },
+        guida:       { type: String, default: '' },
+        obiettivi:   [{ type: String }],
       },
     ],
 

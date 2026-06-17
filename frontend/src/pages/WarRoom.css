@@ -386,7 +386,7 @@
 .warroom-app .col-right {
   width:var(--rw);flex-shrink:0;background:var(--bg2);border-left:0.5px solid var(--border);
   display:flex;flex-direction:column;overflow:hidden;
-  transition:width .3s cubic-bezier(.4,0,.2,1),opacity .25s;position:relative;
+  transition:width .3s cubic-bezier(.4,0,.2,1),opacity .25s;position:relative;height:100%;
 }
 [data-theme="light"] .warroom-app .col-right { background:#fff }
 .warroom-app .col-right.hidden { width:0;opacity:0;pointer-events:none;border:none }
@@ -394,10 +394,10 @@
 /* Pannello dettagli step */
 .warroom-app .step-details {
   position:absolute;inset:0;background:var(--bg2);z-index:50;
-  display:flex;flex-direction:column;
+  display:flex;flex-direction:column;overflow:hidden;
   transform:translateX(100%);
   transition:transform .3s cubic-bezier(.4,0,.2,1);
-  border-left:0.5px solid var(--border);
+  border-left:0.5px solid var(--border);height:100%;
 }
 [data-theme="light"] .warroom-app .step-details { background:#fff }
 .warroom-app .step-details.open { transform:translateX(0) }
@@ -423,7 +423,7 @@
 }
 [data-theme="light"] .warroom-app .sd-close { background:var(--bg4) }
 .warroom-app .sd-close:hover { color:var(--text1);background:var(--border2) }
-.warroom-app .sd-scroll { flex:1;overflow-y:auto;padding:12px 13px;display:flex;flex-direction:column }
+.warroom-app .sd-scroll { flex:1;overflow-y:auto;padding:12px 13px;display:flex;flex-direction:column;min-height:0 }
 .warroom-app .sd-scroll::-webkit-scrollbar { width:3px }
 .warroom-app .sd-scroll::-webkit-scrollbar-thumb { background:var(--border2);border-radius:2px }
 .warroom-app .sd-guide-lbl {

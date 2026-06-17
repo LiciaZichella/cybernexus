@@ -155,6 +155,10 @@ export default function WarRoom() {
   const [webhookInvio, setWebhookInvio] = useState(false);
   const [webhookInviato, setWebhookInviato] = useState(false);
   const [tempoElapsedMin, setTempoElapsedMin] = useState(0);
+  // Punti reali calcolati dal backend e ricevuti nel payload room-resolved
+  const [puntiReali, setPuntiReali] = useState(null);
+  // Blocca il bottone conferma mentre la chiamata resolve è in corso
+  const [risoluzioneInCorso, setRisoluzioneInCorso] = useState(false);
   const ptsCounterRef = useRef(null);
 
   // Vista centrale: terminale o kanban
@@ -260,7 +264,13 @@ export default function WarRoom() {
         const inizioSala   = new Date(room.createdAt).getTime();
         const secTrascorsi = Math.floor((Date.now() - inizioSala) / 1000);
         setTempoRimanente(Math.max(0, durataSec - secTrascorsi));
-        warroomAPI.join(id).catch(() => {});
+        // Entra nella sala solo se non già membro (evita di sovrascrivere il ruolo Observer)
+        const membro = room.members?.find(m =>
+          (m.user?._id ?? m.user)?.toString() === user?._id?.toString()
+        );
+        if (!membro) {
+          warroomAPI.join(id).catch(() => {});
+        }
       })
       .catch(() => setErrore('Impossibile caricare la War Room.'))
       .finally(() => setLoading(false));
@@ -276,7 +286,11 @@ export default function WarRoom() {
     const socket = io(`${SOCKET_URL}/warroom`, { auth: { token } });
     socketRef.current = socket;
 
-    socket.emit('join-room', { roomId: id });
+    socket.emit('join-room', { roomId: id }, (ack) => {
+      if (ack?.error) {
+        aggiungiLog(`⚠ Errore ingresso sala: ${ack.error}`, 'var(--coral)');
+      }
+    });
 
     // Messaggio chat ricevuto — payload: { _id, content, type, createdAt, author: { username, avatar } }
     socket.on('chat-message', (msg) => {
@@ -357,23 +371,31 @@ export default function WarRoom() {
       aggiungiNotifica({ icon: '👋', testo: `${username} ha lasciato la sala` });
     });
 
-    // Sala risolta — payload: { roomId, resolvedBy, resolvedAt }
-    socket.on('room-resolved', async (data) => {
-      console.log('[room-resolved ricevuto]', data);
-      // Ferma il timer PRIMA di tutto
+    // Sala risolta — payload: { roomId, resolvedBy, resolvedAt, puntiTotali, passiCompletati, durataMin }
+    socket.on('room-resolved', (data) => {
+      // Ferma il timer immediatamente su tutti i client
       clearInterval(timerRef.current);
       timerRef.current = null;
       setTempoRimanente(0);
       setUiBloccata(true);
-      // Aggiorna punti utente nel contesto auth
-      if (typeof aggiornaUser === 'function') await aggiornaUser();
+
+      // Usa i punti calcolati dal backend
+      if (data.puntiTotali !== undefined) setPuntiReali(data.puntiTotali);
+      if (data.durataMin !== undefined) setTempoElapsedMin(data.durataMin);
+
+      // Mostra subito il modal corretto senza aspettare aggiornaUser
       if (data.resolvedBy === user?.username) {
-        // Chi ha risolto vede il modal di riepilogo
+        // Chi ha risolto: vede il modal di riepilogo con i punti
         setRisolviAperto(true);
       } else {
-        // Gli altri vedono la vista sala chiusa
-        setVistaChiusa(true);
+        // Gli altri: vedono il modal "sala chiusa da altri" con il nome di chi ha risolto
+        setSalaChiusaDaAltri(true);
+        setRisolutore(data.resolvedBy || 'il team');
       }
+
+      // Aggiorna punti in background senza bloccare la UI
+      sessionStorage.setItem('dashboard_refresh', 'true');
+      if (typeof aggiornaUser === 'function') aggiornaUser();
     });
 
     socket.on('connect_error', (err) => {
@@ -432,12 +454,19 @@ export default function WarRoom() {
       { tipo: 'out', testo: "Digita 'help' per vedere i comandi disponibili" },
     ]);
 
-    // Membri online: solo l'utente corrente all'apertura (Bug 2)
-    setMembriOnline([{
-      iniziali: (user.username || 'TU').slice(0, 2).toUpperCase(),
-      username: user.username || 'Tu',
-      gradiente: 'linear-gradient(135deg,var(--violet),var(--fuchsia))',
-    }]);
+    // Costruisci lista membri online da sala.members (esclude Observer)
+    const membriDB = sala.members
+      .filter(m => m.role !== 'Observer')
+      .map(m => ({
+        iniziali: (m.user?.username || 'US').slice(0, 2).toUpperCase(),
+        username: m.user?.username || 'Utente',
+        gradiente: m.user?._id?.toString() === user._id?.toString()
+          ? 'linear-gradient(135deg,var(--violet),var(--fuchsia))'
+          : 'linear-gradient(135deg,var(--cyan),var(--violet))',
+      }));
+    setMembriOnline(membriDB);
+    // Apri subito il pannello playbook così è visibile al primo caricamento
+    setDettagliAperto(true);
 
     // Passi completati: ripristina dal DB per sincronizzare multi-utente
     if (sala.passiCompletati?.length) {
@@ -449,7 +478,13 @@ export default function WarRoom() {
 
     // Chat: carica la storia dei messaggi salvati nel DB
     if (sala.messages?.length) {
-      const storico = sala.messages.slice(-30).map(msg => {
+      const storico = sala.messages.slice(-30)
+        .filter(msg => {
+          // Nasconde i log del terminale dalla chat
+          if (msg.type === 'system' && msg.content?.startsWith('[terminale]')) return false;
+          return true;
+        })
+        .map(msg => {
         if (msg.type === 'system') return { tipo: 'sys', testo: msg.content };
         const autore = msg.author?.username;
         if (autore) {
@@ -501,11 +536,13 @@ export default function WarRoom() {
                       : tempoElapsedMin >= 30 && tempoElapsedMin < 60 ? 150
                       : 0;
   const puntiTotali   = puntiBase + bonusVelocita;
+  // Usa i punti calcolati dal backend se disponibili, altrimenti stima locale
+  const puntiMostrati = puntiReali ?? puntiTotali;
 
   // ── Animazione counter punti nel resolve modal ───────────────────────────────
   useEffect(() => {
     if (!risolviAperto || !ptsCounterRef.current) return;
-    const target = puntiTotali;
+    const target = puntiMostrati;
     const dur = 2000;
     const t0 = performance.now();
     const el = ptsCounterRef.current;
@@ -517,7 +554,7 @@ export default function WarRoom() {
       else el.textContent = target.toLocaleString();
     };
     requestAnimationFrame(step);
-  }, [risolviAperto, puntiTotali]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [risolviAperto, puntiMostrati]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
@@ -544,41 +581,27 @@ export default function WarRoom() {
   };
 
   const segnaFatto = async () => {
-    console.log('[segnaFatto] START', { passoAttivo, uiBloccata });
-    if (uiBloccata) return;
+    if (uiBloccata || isObserver) return;
 
-    // Salva nel DB prima di aggiornare lo stato locale
     try {
-      console.log('[segnaFatto] chiamata markStep', id, passoAttivo);
       await warroomAPI.markStep(id, passoAttivo);
-      console.log('[segnaFatto] markStep OK');
     } catch (err) {
-      console.error('[segnaFatto] markStep ERRORE:', err.response?.data || err.message);
-      // continua comunque con socket e stato locale
+      console.error('[segnaFatto] markStep errore:', err.response?.data || err.message);
     }
 
-    // Broadcast a tutti i membri della sala
-    console.log('[segnaFatto] emit step-completed');
     socketRef.current?.emit('step-completed', {
-      roomId:   id,
+      roomId:    id,
       stepIndex: passoAttivo,
       username:  user?.username,
     });
 
-    // Aggiorna stato locale (UI ottimistica)
+    // Aggiornamento locale ottimistico solo per passiCompletati
+    // passoAttivo viene avanzato nel listener step-completed
     setPassiCompletati(prev => {
       const nuovi = new Set(prev);
       nuovi.add(passoAttivo);
       return nuovi;
     });
-
-    // Avanza automaticamente al prossimo passo non completato
-    const prossimoLibero = PASSI.findIndex(
-      (_, i) => i > passoAttivo && !passiCompletati.has(i)
-    );
-    if (prossimoLibero !== -1) setPassoAttivo(prossimoLibero);
-
-    console.log('[segnaFatto] DONE');
   };
 
   const apriRisolvi = () => {
@@ -592,11 +615,142 @@ export default function WarRoom() {
   };
 
   const confermaRisolvi = async () => {
+    if (risoluzioneInCorso) return;
+    setRisoluzioneInCorso(true);
     try {
       await warroomAPI.resolve(id);
-      socketRef.current?.emit('room-resolved', { roomId: id });
-    } catch { /* la UI naviga comunque */ }
-    navigate('/dashboard');
+      // Il backend emette room-resolved via Socket.IO a tutti i client
+      // Il listener room-resolved gestisce punti, modal e aggiornamento utente
+    } catch (err) {
+      console.error('[resolve] errore:', err.response?.data || err.message);
+      alert('Errore: ' + (err.response?.data?.error || err.message));
+      setRisoluzioneInCorso(false);
+    }
+  };
+
+  const scaricaReport = async () => {
+    try {
+      const { data } = await warroomAPI.getReport(id);
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const W = 210;
+      const H = 297;
+
+      // Sfondo scuro
+      doc.setFillColor(7, 9, 15);
+      doc.rect(0, 0, W, H, 'F');
+
+      // Barra superiore colorata
+      doc.setFillColor(92, 206, 138);
+      doc.rect(0, 0, W * 0.45, 3, 'F');
+      doc.setFillColor(91, 196, 212);
+      doc.rect(W * 0.45, 0, W * 0.3, 3, 'F');
+      doc.setFillColor(124, 111, 234);
+      doc.rect(W * 0.75, 0, W * 0.25, 3, 'F');
+
+      // Header: box scuro con logo e timestamp
+      doc.setFillColor(13, 17, 23);
+      doc.roundedRect(10, 8, W - 20, 28, 3, 3, 'F');
+      doc.setFontSize(18);
+      doc.setTextColor(248, 237, 248);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CyberNexus', 18, 20);
+      doc.setFontSize(9);
+      doc.setTextColor(92, 206, 138);
+      doc.setFont('helvetica', 'normal');
+      doc.text('INCIDENT RESPONSE REPORT', 18, 27);
+      doc.setFontSize(8);
+      doc.setTextColor(74, 90, 122);
+      doc.text(`Generato il ${new Date(data.generatoIl).toLocaleString('it-IT')}`, W - 18, 27, { align: 'right' });
+
+      // Badge tipo incidente in alto a destra
+      doc.setFillColor(240, 112, 96);
+      doc.roundedRect(W - 50, 10, 38, 10, 2, 2, 'F');
+      doc.setFontSize(8);
+      doc.setTextColor(10, 26, 16);
+      doc.setFont('helvetica', 'bold');
+      doc.text(data.tipo?.toUpperCase() || 'INCIDENT', W - 31, 16.5, { align: 'center' });
+
+      // Sezione info sala
+      let y = 46;
+      doc.setFillColor(13, 17, 23);
+      doc.roundedRect(10, y, W - 20, 36, 3, 3, 'F');
+      doc.setFontSize(20);
+      doc.setTextColor(232, 237, 248);
+      doc.setFont('helvetica', 'bold');
+      doc.text(data.nome || 'Incident Response', 18, y + 13);
+      doc.setFontSize(9);
+      doc.setTextColor(122, 138, 170);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Tipo: ${data.tipo || '—'}   ·   Durata: ${data.durata || '—'}   ·   Esito: ${data.esito || '—'}`, 18, y + 23);
+      doc.setFontSize(8);
+      doc.setTextColor(74, 90, 122);
+      doc.text(`Membri coinvolti: ${data.membriCoinvolti?.length || 0}   ·   Task completati: ${data.taskCompletati}/${data.taskTotali}   ·   Log eventi: ${data.eventiLog || 0}`, 18, y + 31);
+
+      // Stat cards (4 box orizzontali)
+      y += 44;
+      const stats = [
+        { label: 'TASK COMPLETATI', value: `${data.taskCompletati}/${data.taskTotali}`, color: [92, 206, 138] },
+        { label: 'DURATA',          value: data.durata || '—',                          color: [91, 196, 212] },
+        { label: 'TEAM',            value: `${data.membriCoinvolti?.length || 0} analisti`, color: [124, 111, 234] },
+        { label: 'ESITO',           value: data.esito?.toUpperCase() || '—',            color: [246, 198, 82] },
+      ];
+      const cardW = (W - 20 - 9) / 4;
+      stats.forEach((s, i) => {
+        const x = 10 + i * (cardW + 3);
+        doc.setFillColor(13, 17, 23);
+        doc.roundedRect(x, y, cardW, 24, 2, 2, 'F');
+        doc.setDrawColor(...s.color);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(x, y, cardW, 24, 2, 2, 'S');
+        doc.setFontSize(14);
+        doc.setTextColor(...s.color);
+        doc.setFont('helvetica', 'bold');
+        doc.text(s.value, x + cardW / 2, y + 13, { align: 'center' });
+        doc.setFontSize(7);
+        doc.setTextColor(74, 90, 122);
+        doc.setFont('helvetica', 'normal');
+        doc.text(s.label, x + cardW / 2, y + 20, { align: 'center' });
+      });
+
+      // Sezione team
+      y += 32;
+      doc.setFontSize(9);
+      doc.setTextColor(92, 206, 138);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TEAM COINVOLTO', 10, y);
+      doc.setDrawColor(92, 206, 138);
+      doc.setLineWidth(0.3);
+      doc.line(10, y + 2, W - 10, y + 2);
+      y += 8;
+      (data.membriCoinvolti || []).forEach((m) => {
+        doc.setFillColor(13, 17, 23);
+        doc.roundedRect(10, y, W - 20, 10, 2, 2, 'F');
+        doc.setFontSize(9);
+        doc.setTextColor(232, 237, 248);
+        doc.setFont('helvetica', 'bold');
+        doc.text(m.username || '—', 18, y + 7);
+        doc.setFontSize(8);
+        doc.setTextColor(122, 138, 170);
+        doc.setFont('helvetica', 'normal');
+        doc.text(m.ruolo || '—', W - 18, y + 7, { align: 'right' });
+        y += 13;
+      });
+
+      // Footer
+      doc.setFillColor(13, 17, 23);
+      doc.rect(0, H - 16, W, 16, 'F');
+      doc.setFontSize(7);
+      doc.setTextColor(74, 90, 122);
+      doc.text('CyberNexus — Piattaforma educativa di cybersecurity', W / 2, H - 8, { align: 'center' });
+      doc.setTextColor(92, 206, 138);
+      doc.text('CONFIDENZIALE', W - 14, H - 8, { align: 'right' });
+
+      doc.save(`cybernexus-report-${data.nome?.replace(/\s+/g, '-') || 'incident'}-${Date.now()}.pdf`);
+    } catch (err) {
+      console.error('[report]', err);
+      alert('Errore nel generare il report');
+    }
   };
 
   const inviaWebhook = () => {
@@ -607,7 +761,7 @@ export default function WarRoom() {
 
 
   const eseguiComando = () => {
-    if (timerScaduto || uiBloccata) return;
+    if (timerScaduto || uiBloccata || isObserver) return;
     const cmd = comandoInput.trim();
     if (!cmd) return;
     setComandoInput('');
@@ -685,7 +839,7 @@ export default function WarRoom() {
   };
 
   const inviaChat = () => {
-    if (timerScaduto || uiBloccata || !inputChat.trim()) return;
+    if (timerScaduto || uiBloccata || isObserver || !inputChat.trim()) return;
     const testo = inputChat.trim();
     setInputChat('');
     clearTimeout(typingDebounceRef.current);
@@ -712,7 +866,7 @@ export default function WarRoom() {
   const pct = PASSI.length > 0 ? Math.round((completati / PASSI.length) * 100) : 0;
   const timerWarning = tempoRimanente <= 600 && tempoRimanente > 0;
   const titoloSala = sala?.name || sala?.title || 'Incident Response';
-  const severita   = sala?.severity || 'CRITICAL';
+  const severita   = sala?.severity || 'Critical';
 
   // Ruolo dell'utente corrente nella sala
   const mioMembro = sala?.members?.find(m => {
@@ -723,7 +877,6 @@ export default function WarRoom() {
   });
   // Se l'utente non è tra i membri (non ancora caricato) isObserver è false
   const isObserver = mioMembro?.role === 'Observer';
-  console.log('[isObserver FINAL]', isObserver, 'ruolo:', mioMembro?.role);
 
 
   // ── Render riga terminale ────────────────────────────────────────────────────
@@ -928,16 +1081,16 @@ export default function WarRoom() {
                     }}>⚔</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text1)', marginBottom: 3 }}>
-                        {s.title}
+                        {s.name}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: "'JetBrains Mono',monospace" }}>
-                        {s.type ?? 'Incident'} ·{' '}
+                        {s.tipo ?? 'Incident'} ·{' '}
                         <span style={{
-                          color: s.severity === 'CRITICAL' ? 'var(--coral)'
-                               : s.severity === 'HIGH'     ? 'var(--amber)'
+                          color: s.severity === 'Critical' ? 'var(--coral)'
+                               : s.severity === 'High'     ? 'var(--amber)'
                                : 'var(--mint)',
                         }}>
-                          {s.severity ?? 'MEDIUM'}
+                          {s.severity ?? s.stato ?? 'MEDIUM'}
                         </span>
                       </div>
                     </div>
@@ -1070,6 +1223,13 @@ export default function WarRoom() {
                 <div className="rm-stat"><div className="rms-v" style={{ color: 'var(--amber)' }}>{tempoElapsedMin || '—'}m</div><div className="rms-l">Durata</div></div>
                 <div className="rm-stat"><div className="rms-v" style={{ color: 'var(--coral)', fontSize: 12 }}>{severita}</div><div className="rms-l">Severità</div></div>
               </div>
+              <button
+                className="rm-close"
+                style={{ background: 'var(--bg3)', color: 'var(--text1)', border: '0.5px solid var(--border2)', marginBottom: 10 }}
+                onClick={scaricaReport}
+              >
+                ⬇ Scarica report PDF
+              </button>
               <button className="rm-close" onClick={() => navigate('/dashboard')}>← Torna alla dashboard</button>
             </div>
           </div>
@@ -1142,7 +1302,21 @@ export default function WarRoom() {
                   </div>
                 </div>
               </div>
-              <button className="rm-close" onClick={confermaRisolvi}>✓ Torna alla dashboard</button>
+              <button
+                className="rm-close"
+                style={{ background: 'var(--bg3)', color: 'var(--text1)', border: '0.5px solid var(--border2)', marginBottom: 10 }}
+                onClick={scaricaReport}
+              >
+                ⬇ Scarica report PDF
+              </button>
+              <button
+                className="rm-close"
+                disabled={risoluzioneInCorso}
+                onClick={confermaRisolvi}
+              >
+                {risoluzioneInCorso ? '⏳ Chiusura in corso...' : '✓ Conferma risoluzione'}
+              </button>
+              <button className="rm-close" onClick={() => navigate('/dashboard')}>← Torna alla dashboard</button>
             </div>
           </div>
         </div>
@@ -1339,12 +1513,8 @@ export default function WarRoom() {
                 <button
                   className="sh-done-btn"
                   disabled={uiBloccata}
-                  onClick={() => {
-                    console.log('[CLICK segnaFatto]', { uiBloccata, isObserver, passoAttivo });
-                    if (!uiBloccata) segnaFatto();
-                  }}
+                  onClick={() => { if (!uiBloccata) segnaFatto(); }}
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   ✓ Segna fatto
                 </button>
               </div>
@@ -1418,40 +1588,6 @@ export default function WarRoom() {
                 })}
               </div>
 
-              {/* Playbook completo */}
-              <div className="sd-guide-lbl sd-pb-lbl">📖 Playbook completo</div>
-              {GRUPPI_PLAYBOOK.map(g => (
-                <div key={g.key} className={`acc-ph ${gruppiAperti[g.key] ? 'open' : ''}`}>
-                  <div className="acc-tr" onClick={() => setGruppiAperti(prev => ({ ...prev, [g.key]: !prev[g.key] }))}>
-                    <div className="acc-dot" style={{ background: g.colore }} />
-                    <div className="acc-nm" style={{ color: g.colore }}>{g.nome}</div>
-                    <div className="acc-bg" style={{ background: g.colBg, color: g.colore, padding: '2px 7px', borderRadius: 4, fontSize: 9, fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }}>
-                      {g.indici.filter(i => passiCompletati.has(i)).length}/{g.indici.length}
-                      {g.indici.every(i => passiCompletati.has(i)) ? ' ✓' : ''}
-                    </div>
-                    <div className="acc-cv">▾</div>
-                  </div>
-                  <div className="acc-bd">
-                    {g.indici.map(idx => {
-                      const p = PASSI[idx];
-                      const fatto = passiCompletati.has(idx);
-                      const attivo = idx === passoAttivo && !fatto;
-                      return (
-                        <div key={idx} className={`acc-st ${fatto ? 'done' : attivo ? 'active' : ''}`} onClick={() => selezionaPasso(idx)}>
-                          <div className="acc-ck">{fatto ? '✓' : ''}</div>
-                          <div>
-                            <div className="as-tx">{p.titolo}</div>
-                            <div className="as-mt">
-                              <span className="as-tag">{p.tag}</span>
-                              <div className="as-av" style={{ background: p.avColore }}>{p.avIni}</div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
 

@@ -2,6 +2,7 @@ const crypto  = require('crypto');
 const WARRoom = require('../models/WARRoom');
 const User    = require('../models/User');
 const { inviaWebhook } = require('../services/webhook');
+const { timeoutScenario } = require('../sockets/warroom');
 
 // Istanza Socket.IO iniettata da server.js dopo l'avvio
 let io = null;
@@ -145,14 +146,35 @@ const resolveWARRoom = async (req, res) => {
     await room.save();
     console.log('[resolve] salvato:', room._id);
 
-    // Assegna punti a tutti i membri attivi (non Observer)
+    // Calcola punti reali prima di emettere l'evento
     const puntiBase = (room.passiCompletati?.length || 0) * 150;
+    const durataMs  = Date.now() - new Date(room.createdAt).getTime();
+    const durataMin = Math.floor(durataMs / 60000);
+    const bonus     = durataMin < 30 ? 350 : durataMin < 60 ? 150 : 0;
+    const puntiTotali = puntiBase + bonus;
+
+    // Notifica tutti i client nella sala che l'incidente è risolto
+    if (io) {
+      io.of('/warroom').to(req.params.id).emit('room-resolved', {
+        roomId:          req.params.id,
+        resolvedBy:      req.user.username,
+        resolvedAt:      new Date(),
+        puntiTotali,
+        passiCompletati: room.passiCompletati?.length || 0,
+        durataMin,
+      });
+    }
+
+    // Cancella i timer degli eventi automatici scenario
+    const timers = timeoutScenario.get(req.params.id);
+    if (timers) {
+      timers.forEach(clearTimeout);
+      timeoutScenario.delete(req.params.id);
+    }
+
+    // Assegna punti a tutti i membri attivi (non Observer)
     if (puntiBase > 0) {
-      const durataMs  = Date.now() - new Date(room.createdAt).getTime();
-      const durataMin = Math.floor(durataMs / 60000);
-      const bonus     = durataMin < 30 ? 350 : durataMin < 60 ? 150 : 0;
-      const puntiTotali = puntiBase + bonus;
-      const membriFull  = room.members.filter(m => m.role !== 'Observer');
+      const membriFull = room.members.filter(m => m.role !== 'Observer');
       await Promise.all(
         membriFull.map(m => User.findByIdAndUpdate(m.user, { $inc: { points: puntiTotali } }))
       );

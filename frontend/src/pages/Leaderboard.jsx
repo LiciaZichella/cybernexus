@@ -41,16 +41,9 @@ const displayRank = (rank) => {
   return `#${rank}`;
 };
 
-// Genera 80 celle pseudo-casuali per l'heatmap attività (seed deterministico)
+// Restituisce 80 celle tutte a zero — dati reali non disponibili per l'heatmap
 const generaHeatmap = () =>
-  Array.from({ length: 80 }, (_, i) => {
-    const v = Math.sin(i * 17.3 + 1.7) * 0.5 + 0.5;
-    if (v < 0.45) return 0;
-    if (v < 0.65) return 1;
-    if (v < 0.80) return 2;
-    if (v < 0.92) return 3;
-    return 4;
-  });
+  Array.from({ length: 80 }, () => 0);
 
 const HEATMAP_COLORS = [
   'var(--border2)',

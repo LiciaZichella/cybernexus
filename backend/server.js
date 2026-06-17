@@ -91,8 +91,8 @@ process.on('unhandledRejection', (err) => {
   process.exit(1);
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5005;
 httpServer.listen(PORT, () => {
   console.log(`Server avviato sulla porta ${PORT}`);
-  console.log(`Swagger UI disponibile su http://localhost:5005/api/docs`);
+  console.log(`Swagger UI disponibile su http://localhost:${PORT}/api/docs`);
 });
