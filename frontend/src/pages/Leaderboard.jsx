@@ -100,7 +100,6 @@ export default function Leaderboard() {
   const [ricerca, setRicerca]           = useState('');
   const [compareIdx, setCompareIdx]     = useState(0);
 
-  const heatmapCells = generaHeatmap();
 
   // ── Caricamento classifica ──────────────────────────────────────────────────
 
@@ -167,8 +166,25 @@ export default function Leaderboard() {
     setProfiloAperto(item);
     setProfiloLoading(true);
     try {
-      const { data } = await usersAPI.getById(item.id ?? item._id);
-      setProfiloAperto((prev) => ({ ...prev, ...data }));
+      const userId = item.id ?? item._id;
+
+      // Carica profilo e attività in parallelo
+      const [profiloRes, activityRes] = await Promise.allSettled([
+        usersAPI.getById(userId),
+        usersAPI.getActivityById(userId),
+      ]);
+
+      let nuovoProfilo = { ...item };
+
+      if (profiloRes.status === 'fulfilled') {
+        nuovoProfilo = { ...nuovoProfilo, ...profiloRes.value.data };
+      }
+      if (activityRes.status === 'fulfilled') {
+        nuovoProfilo._activity  = activityRes.value.data.activity  ?? [];
+        nuovoProfilo._categorie = activityRes.value.data.categorie ?? [];
+      }
+
+      setProfiloAperto(nuovoProfilo);
     } catch {
       // Mostra i dati già disponibili dalla riga classifica
     } finally {
@@ -213,8 +229,23 @@ export default function Leaderboard() {
     unlocked: profiloAperto ? def.check(profiloAperto, rankProfilo) : false,
   }));
 
-  // Categorie: mostriamo 0% perché l'API utente non espone breakdown per-categoria
-  const CATEGORIE_PROFILO = CATEGORIE_PROFILO_BASE.map(cat => ({ ...cat, pct: 0 }));
+  // Categorie: dati reali se disponibili, altrimenti base con pct 0
+  const coloriCat = {
+    'Web':          '#7C6FEA',
+    'Crypto':       '#5BC4D4',
+    'Cryptography': '#5BC4D4',
+    'Forensics':    '#5CCE8A',
+    'Reverse':      '#F6C652',
+    'OSINT':        '#E870B8',
+    'Misc':         '#F07060',
+  };
+  const CATEGORIE_PROFILO = profiloAperto?._categorie?.length
+    ? profiloAperto._categorie.map(cat => ({
+        nome:   cat.nome,
+        colore: coloriCat[cat.nome] || '#7C6FEA',
+        pct:    cat.pct,
+      }))
+    : CATEGORIE_PROFILO_BASE.map(cat => ({ ...cat, pct: 0 }));
 
   // Calcola valori radar [0‥1] da metriche aggregate disponibili in classifica
   const calcRadar = (giocatore) => {
@@ -358,14 +389,19 @@ export default function Leaderboard() {
                           </span>
                         </div>
                         <div className="pm-hm-grid">
-                          {heatmapCells.map((livello, i) => (
-                            <div
-                              key={i}
-                              className="pm-hm-cell"
-                              style={{ background: HEATMAP_COLORS[livello] }}
-                              title={`Giorno ${i + 1}: ${livello} solve`}
-                            />
-                          ))}
+                          {(() => {
+                            const cells = profiloAperto?._activity?.length
+                              ? profiloAperto._activity.map(a => Math.min(a.count, 4))
+                              : Array.from({ length: 60 }, () => 0);
+                            return cells.map((livello, i) => (
+                              <div
+                                key={i}
+                                className="pm-hm-cell"
+                                style={{ background: HEATMAP_COLORS[livello] }}
+                                title={`Giorno ${i + 1}: ${livello} solve`}
+                              />
+                            ));
+                          })()}
                         </div>
                       </div>
                     </div>

@@ -11,16 +11,35 @@ const getChallenges = async (req, res) => {
   try {
     const filter = { isActive: true };
 
-    // Filtri opzionali via query string: ?category=Web&difficulty=Easy
+    // Filtri opzionali via query string: ?category=Web&difficulty=Easy&search=sql
     if (req.query.category)   filter.category   = req.query.category;
     if (req.query.difficulty) filter.difficulty = req.query.difficulty;
 
-    const challenges = await Challenge.find(filter)
-      .select('-flag -solvedBy')     // non esporre flag né lista completa solve
-      .sort({ points: 1 })
-      .populate('author', 'username');
+    // Ricerca per titolo (case-insensitive)
+    if (req.query.search) {
+      filter.title = { $regex: req.query.search.trim(), $options: 'i' };
+    }
 
-    res.json({ total: challenges.length, challenges });
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 12);
+    const skip  = (page - 1) * limit;
+
+    const [challenges, total] = await Promise.all([
+      Challenge.find(filter)
+        .select('-flag -solvedBy')     // non esporre flag né lista completa solve
+        .sort({ points: 1 })
+        .populate('author', 'username')
+        .skip(skip)
+        .limit(limit),
+      Challenge.countDocuments(filter),
+    ]);
+
+    res.json({
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      challenges,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

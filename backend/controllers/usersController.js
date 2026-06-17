@@ -209,4 +209,61 @@ const exportUsersCSV = async (req, res) => {
   }
 };
 
-module.exports = { getMe, updateMe, getUserById, getAllUsers, changeUserRole, getMeActivity, getMeSubmissions, exportUsersCSV };
+// GET /api/users/:id/activity — heatmap e categorie per profilo pubblico
+const getUserActivity = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const sessantaGiorniFa = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+
+    // Submission corrette ultimi 60 giorni per heatmap
+    const submissionsHeatmap = await Submission.find({
+      user:      userId,
+      isCorrect: true,
+      createdAt: { $gte: sessantaGiorniFa },
+    }).select('createdAt').lean();
+
+    // Raggruppa per giorno
+    const contaPerGiorno = {};
+    submissionsHeatmap.forEach(s => {
+      const giorno = new Date(s.createdAt).toISOString().slice(0, 10);
+      contaPerGiorno[giorno] = (contaPerGiorno[giorno] || 0) + 1;
+    });
+
+    // Array 60 elementi dal più vecchio al più recente
+    const oggi = new Date();
+    const activity = Array.from({ length: 60 }, (_, i) => {
+      const data   = new Date(oggi.getTime() - (59 - i) * 24 * 60 * 60 * 1000);
+      const chiave = data.toISOString().slice(0, 10);
+      return { date: chiave, count: contaPerGiorno[chiave] || 0 };
+    });
+
+    // Submission corrette con categoria per breakdown categorie
+    const Challenge = require('../models/Challenge');
+    const submissionsCategorie = await Submission.find({
+      user:      userId,
+      isCorrect: true,
+    }).populate('challenge', 'category').lean();
+
+    // Conta per categoria
+    const conteCategorie = {};
+    submissionsCategorie.forEach(s => {
+      const cat = s.challenge?.category;
+      if (cat) conteCategorie[cat] = (conteCategorie[cat] || 0) + 1;
+    });
+
+    // Totale per calcolare percentuali
+    const totale = Object.values(conteCategorie).reduce((a, b) => a + b, 0);
+    const categorie = Object.entries(conteCategorie).map(([nome, count]) => ({
+      nome,
+      count,
+      pct: totale > 0 ? Math.round((count / totale) * 100) : 0,
+    }));
+
+    res.json({ activity, categorie });
+  } catch (err) {
+    if (err.name === 'CastError') return res.status(400).json({ error: 'ID non valido.' });
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { getMe, updateMe, getUserById, getAllUsers, changeUserRole, getMeActivity, getMeSubmissions, exportUsersCSV, getUserActivity };

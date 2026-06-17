@@ -1,5 +1,5 @@
 const express = require('express');
-const { getMe, updateMe, getUserById, getAllUsers, changeUserRole, getMeActivity, getMeSubmissions, exportUsersCSV } = require('../controllers/usersController');
+const { getMe, updateMe, getUserById, getAllUsers, changeUserRole, getMeActivity, getMeSubmissions, exportUsersCSV, getUserActivity } = require('../controllers/usersController');
 const { protect, authorize } = require('../middleware/verificaUtenti');
 
 const router = express.Router();
@@ -16,6 +16,7 @@ router.get('/',            authorize('Admin'), getAllUsers);     // lista utenti
 router.get('/export-csv', authorize('Admin'), exportUsersCSV); // export CSV — solo Admin
 
 // :id dopo le route statiche per evitare che '/me' venga catturata come parametro
+router.get('/:id/activity', getUserActivity);                        // heatmap + categorie profilo pubblico
 router.get('/:id',        getUserById);                          // profilo pubblico per ID
 router.patch('/:id/role', authorize('Admin'), changeUserRole);   // cambia ruolo — solo Admin
 

@@ -63,6 +63,7 @@ export const usersAPI = {
   getAll:         (params) => api.get('/users', { params }),
   getActivity:    ()       => api.get('/users/me/activity'),
   getSubmissions: ()       => api.get('/users/me/submissions'),
+  getActivityById: (id)   => api.get(`/users/${id}/activity`),
 };
 
 // ─── Challenge ────────────────────────────────────────────────────────────────
