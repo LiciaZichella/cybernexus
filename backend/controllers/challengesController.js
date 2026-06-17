@@ -24,15 +24,22 @@ const getChallenges = async (req, res) => {
     const limit = Math.min(50, parseInt(req.query.limit) || 12);
     const skip  = (page - 1) * limit;
 
-    const [challenges, total] = await Promise.all([
+    const [docs, total] = await Promise.all([
       Challenge.find(filter)
-        .select('-flag -solvedBy')     // non esporre flag né lista completa solve
+        .select('-flag')               // carica solvedBy per il virtual solveCount, ma non espone la flag
         .sort({ points: 1 })
         .populate('author', 'username')
         .skip(skip)
         .limit(limit),
       Challenge.countDocuments(filter),
     ]);
+
+    // Converte in JSON (include il virtual solveCount), poi rimuove solvedBy dalla risposta
+    const challenges = docs.map(ch => {
+      const obj = ch.toJSON();
+      delete obj.solvedBy;
+      return obj;
+    });
 
     res.json({
       total,

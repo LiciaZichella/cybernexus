@@ -41,10 +41,6 @@ const displayRank = (rank) => {
   return `#${rank}`;
 };
 
-// Restituisce 80 celle tutte a zero — dati reali non disponibili per l'heatmap
-const generaHeatmap = () =>
-  Array.from({ length: 80 }, () => 0);
-
 const HEATMAP_COLORS = [
   'var(--border2)',
   'rgba(92,206,138,.25)',
@@ -55,8 +51,8 @@ const HEATMAP_COLORS = [
 
 // Definizioni badge con soglie di sblocco calcolate a runtime
 const BADGE_DEFS = [
-  { emoji: '🔑', label: 'First Blood',   check: (p, rank) => (p.solvedCount ?? p.solved ?? (p.solvedChallenges?.length ?? 0)) >= 1 },
-  { emoji: '💎', label: 'Gem Collector', check: (p)       => (p.solvedCount ?? p.solved ?? (p.solvedChallenges?.length ?? 0)) >= 20 },
+  { emoji: '🔑', label: 'First Blood',   check: (p, rank) => (p.solvedCount ?? (p.solvedChallenges?.length ?? 0)) >= 1 },
+  { emoji: '💎', label: 'Gem Collector', check: (p)       => (p.solvedCount ?? (p.solvedChallenges?.length ?? 0)) >= 20 },
   { emoji: '⚡', label: 'Speed Run',     check: (p)       => (p.points ?? 0) >= 5000 },
   { emoji: '🔥', label: 'On Fire',       check: (p)       => (p.streak ?? 0) >= 7 },
   { emoji: '👑', label: 'Champion',      check: (p, rank) => rank > 0 && rank <= 3 },
@@ -251,14 +247,14 @@ export default function Leaderboard() {
   const calcRadar = (giocatore) => {
     if (!giocatore) return [0, 0, 0, 0, 0, 0];
     const maxPts     = classifica[0]?.points || 1;
-    const maxSolved  = Math.max(...classifica.map(u => u.solved ?? 0), 1);
+    const maxSolved  = Math.max(...classifica.map(u => u.solvedCount ?? 0), 1);
     const maxStreak  = Math.max(...classifica.map(u => u.streak ?? 0), 1);
     const rankGio    = classifica.findIndex(u => (u.id ?? u._id) === (giocatore.id ?? giocatore._id)) + 1;
     const rankPct    = classifica.length > 0 ? (classifica.length - (rankGio || classifica.length)) / classifica.length : 0;
-    const pts        = Math.min((giocatore.points  ?? 0) / maxPts, 1);
-    const solved     = Math.min((giocatore.solved   ?? 0) / maxSolved, 1);
-    const streak     = Math.min((giocatore.streak   ?? 0) / Math.max(maxStreak, 1), 1);
-    const efficiency = giocatore.solved > 0 ? Math.min((giocatore.points ?? 0) / (giocatore.solved * 300), 1) : 0;
+    const pts        = Math.min((giocatore.points       ?? 0) / maxPts, 1);
+    const solved     = Math.min((giocatore.solvedCount  ?? 0) / maxSolved, 1);
+    const streak     = Math.min((giocatore.streak       ?? 0) / Math.max(maxStreak, 1), 1);
+    const efficiency = giocatore.solvedCount > 0 ? Math.min((giocatore.points ?? 0) / (giocatore.solvedCount * 300), 1) : 0;
     return [pts, solved, streak, rankPct, efficiency, giocatore.streak > 0 ? 0.8 : 0.2];
   };
 
@@ -478,9 +474,7 @@ export default function Leaderboard() {
             </div>
             <div className="lb-filter">
               {[
-                { id: 'global',  label: 'Globale'      },
-                { id: 'weekly',  label: 'Settimanale'  },
-                { id: 'friends', label: 'Amici'        },
+                { id: 'global', label: 'Globale' },
               ].map(({ id, label }) => (
                 <button
                   key={id}

@@ -46,12 +46,10 @@ const UserSchema = new mongoose.Schema(
     },
 
     // Challenge risolte: riferimenti ai documenti Challenge
-    solvedChallenges: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Challenge',
-      },
-    ],
+    solvedChallenges: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Challenge' }],
+      default: [],
+    },
 
     // Avatar scelto dall'utente (URL o percorso relativo)
     avatar: {

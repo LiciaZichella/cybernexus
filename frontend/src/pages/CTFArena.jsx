@@ -26,12 +26,11 @@ const CAT_STYLE = {
   Reverse:      { color:'var(--coral)',  bg:'rgba(240,112,96,.12)',  cls:'cc-reverse'   },
   OSINT:        { color:'var(--cyan)',   bg:'rgba(91,196,212,.12)',  cls:'cc-osint'     },
   Misc:         { color:'var(--text2)',  bg:'rgba(138,150,176,.10)', cls:'cc-misc'      },
-  Steganography:{ color:'var(--mint)',   bg:'rgba(92,206,138,.12)',  cls:'cc-stegano'   },
 };
 
 const CAT_ICON = {
   Web:'💻', Crypto:'🔐', Cryptography:'🔐', Forensics:'🔎',
-  Pwn:'💀', Reverse:'⚙️', OSINT:'🔍', Misc:'🔧', Steganography:'🖼️',
+  Pwn:'💀', Reverse:'⚙️', OSINT:'🔍', Misc:'🔧',
 };
 
 const DIFF_STYLE = {
@@ -275,30 +274,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 `;
 
 /* ─── Profile modal helpers ───────────────────────────────────────────────── */
-const PROFILE_HEATMAP = Array.from({ length: 80 }, (_, i) => {
-  const v = Math.sin(i * 17.3 + 1.7) * 0.5 + 0.5;
-  if (v < 0.45) return 0;
-  if (v < 0.65) return 1;
-  if (v < 0.80) return 2;
-  if (v < 0.92) return 3;
-  return 4;
-});
 const HEATMAP_COLORS = ['var(--border2)','rgba(92,206,138,.25)','rgba(92,206,138,.5)','rgba(92,206,138,.75)','var(--mint)'];
-const PROFILE_CATS = [
-  { nome:'Web',       colore:'#7C6FEA', pct:80 },
-  { nome:'Crypto',    colore:'#5BC4D4', pct:65 },
-  { nome:'Forensics', colore:'#5CCE8A', pct:50 },
-  { nome:'Rev/Pwn',   colore:'#F6C652', pct:35 },
-  { nome:'OSINT',     colore:'#E870B8', pct:20 },
-];
-const PROFILE_BADGES = [
-  { emoji:'🔑', label:'First Blood',   unlocked:true  },
-  { emoji:'💎', label:'Gem Collector', unlocked:true  },
-  { emoji:'⚡', label:'Speed Run',     unlocked:true  },
-  { emoji:'🔥', label:'On Fire',       unlocked:false },
-  { emoji:'👑', label:'Champion',      unlocked:false },
-  { emoji:'🕵️', label:'Ghost',         unlocked:false },
-];
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
 export default function CTFArena() {
@@ -484,8 +460,21 @@ export default function CTFArena() {
     setProfiloAperto(item);
     setProfiloLoading(true);
     try {
-      const { data } = await usersAPI.getById(item.id ?? item._id);
-      setProfiloAperto((prev) => ({ ...prev, ...(data.user ?? data) }));
+      const userId = item.id ?? item._id;
+      // Carica profilo e attività in parallelo
+      const [profiloRes, activityRes] = await Promise.allSettled([
+        usersAPI.getById(userId),
+        usersAPI.getActivityById(userId),
+      ]);
+      let nuovoProfilo = { ...item };
+      if (profiloRes.status === 'fulfilled') {
+        nuovoProfilo = { ...nuovoProfilo, ...(profiloRes.value.data.user ?? profiloRes.value.data) };
+      }
+      if (activityRes.status === 'fulfilled') {
+        nuovoProfilo._activity  = activityRes.value.data.activity  ?? [];
+        nuovoProfilo._categorie = activityRes.value.data.categorie ?? [];
+      }
+      setProfiloAperto(nuovoProfilo);
     } catch {
       // mostra i dati già disponibili
     } finally {
@@ -688,39 +677,77 @@ export default function CTFArena() {
                           <span className="pmh-streak">🔥 {profiloAperto.streak ?? 0} giorni</span>
                         </div>
                         <div className="pm-hm-grid">
-                          {PROFILE_HEATMAP.map((lvl, i) => (
-                            <div key={i} className="pm-hm-cell" style={{ background: HEATMAP_COLORS[lvl] }} />
-                          ))}
+                          {(() => {
+                            const cells = profiloAperto?._activity?.length
+                              ? profiloAperto._activity.map(a => Math.min(a.count, 4))
+                              : Array.from({ length: 60 }, () => 0);
+                            return cells.map((livello, i) => (
+                              <div
+                                key={i}
+                                className="pm-hm-cell"
+                                style={{ background: HEATMAP_COLORS[livello] }}
+                              />
+                            ));
+                          })()}
                         </div>
                       </div>
                     </div>
                     <div>
                       <div className="pm-section-title">Categorie</div>
                       <div className="pm-cats">
-                        {PROFILE_CATS.map((cat) => (
-                          <div key={cat.nome} className="pm-cat-row">
-                            <div className="pm-cat-dot" style={{ background: cat.colore }} />
-                            <div className="pm-cat-name">{cat.nome}</div>
-                            <div className="pm-cat-bar">
-                              <div className="pm-cat-fill" style={{ width: `${cat.pct}%`, background: cat.colore }} />
+                        {(() => {
+                          const coloriCat = {
+                            'Web': '#7C6FEA', 'Crypto': '#5BC4D4',
+                            'Cryptography': '#5BC4D4', 'Forensics': '#5CCE8A',
+                            'Reverse': '#F6C652', 'OSINT': '#E870B8', 'Misc': '#F07060',
+                          };
+                          const cats = profiloAperto?._categorie?.length
+                            ? profiloAperto._categorie.map(c => ({
+                                nome: c.nome, colore: coloriCat[c.nome] || '#7C6FEA', pct: c.pct
+                              }))
+                            : [];
+                          if (!cats.length) return (
+                            <div style={{ fontSize: 11, color: 'var(--text3)', padding: '8px 0' }}>
+                              Nessuna sfida risolta ancora
                             </div>
-                            <div className="pm-cat-pct" style={{ color: cat.colore }}>{cat.pct}%</div>
-                          </div>
-                        ))}
+                          );
+                          return cats.map(cat => (
+                            <div key={cat.nome} className="pm-cat-row">
+                              <div className="pm-cat-dot" style={{ background: cat.colore }} />
+                              <div className="pm-cat-name">{cat.nome}</div>
+                              <div className="pm-cat-bar">
+                                <div className="pm-cat-fill" style={{ width: `${cat.pct}%`, background: cat.colore }} />
+                              </div>
+                              <div className="pm-cat-pct" style={{ color: cat.colore }}>{cat.pct}%</div>
+                            </div>
+                          ));
+                        })()}
                       </div>
                     </div>
                     <div>
                       <div className="pm-section-title">Badge</div>
                       <div className="pm-badges-grid">
-                        {PROFILE_BADGES.map((badge) => (
-                          <div
-                            key={badge.label}
-                            className={`pm-badge ${badge.unlocked ? 'unlocked' : 'locked'}`}
-                            title={badge.label}
-                          >
-                            {badge.emoji}
-                          </div>
-                        ))}
+                        {(() => {
+                          const p = profiloAperto;
+                          const solved = p?.solvedChallenges?.length ?? p?.solvedCount ?? 0;
+                          const badges = [
+                            { emoji: '🔑', label: 'First Blood',   unlocked: solved >= 1 },
+                            { emoji: '💎', label: 'Gem Collector', unlocked: solved >= 20 },
+                            { emoji: '⚡', label: 'Speed Run',     unlocked: (p?.points ?? 0) >= 5000 },
+                            { emoji: '🔥', label: 'On Fire',       unlocked: (p?.streak ?? 0) >= 7 },
+                            { emoji: '👑', label: 'Champion',      unlocked: false },
+                            { emoji: '🕵️', label: 'Ghost',         unlocked: (p?.points ?? 0) >= 1000 && (p?.streak ?? 0) === 0 },
+                          ];
+                          return badges.map(badge => (
+                            <div
+                              key={badge.label}
+                              className={`pm-badge ${badge.unlocked ? 'unlocked' : 'locked'}`}
+                              title={badge.label}
+                            >
+                              {badge.emoji}
+                            </div>
+                          ));
+                        })()}
                       </div>
                     </div>
                   </>

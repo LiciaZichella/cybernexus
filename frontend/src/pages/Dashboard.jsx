@@ -759,7 +759,7 @@ export default function Dashboard() {
                   War Room
                 </div>
                 <div className="stat-val"><Counter target={warroomCount} style={{color:'var(--cyan)'}} delay={640}/></div>
-                <div className="stat-badge" style={{background:'var(--coral-bg)',color:'var(--coral)'}}>▲ 2 live ora</div>
+                <div className="stat-badge" style={{background:'var(--coral-bg)',color:'var(--coral)'}}>▲ {warroomCount} live ora</div>
               </div>
               <svg className="sc-spark" viewBox="0 0 60 30"><rect x="2" y="18" width="6" height="10" fill="var(--cyan-bg)" stroke="var(--cyan)" strokeWidth=".5"/><rect x="12" y="14" width="6" height="14" fill="var(--cyan-bg)" stroke="var(--cyan)" strokeWidth=".5"/><rect x="22" y="20" width="6" height="8" fill="var(--cyan-bg)" stroke="var(--cyan)" strokeWidth=".5"/><rect x="32" y="10" width="6" height="18" fill="var(--cyan-bg)" stroke="var(--cyan)" strokeWidth=".5"/><rect x="42" y="16" width="6" height="12" fill="var(--cyan-bg)" stroke="var(--cyan)" strokeWidth=".5"/><rect x="52" y="6" width="6" height="22" fill="var(--cyan)"/></svg>
             </div>
@@ -850,7 +850,7 @@ export default function Dashboard() {
                     <div className="cf-tag" style={{background: cs.bg, color: cs.c}}>{ch?.category || 'Cryptography'}</div>
                     <div className="cf-tag" style={{background: ds.bg, color: ds.c}}>{ch?.difficulty || 'Easy'}</div>
                     <div className="cf-tag" style={{background:'var(--bg3)',color:'var(--text2)',border:'0.5px solid var(--border)'}}>
-                      {ch?.solveCount ?? 234} solved
+                      {ch?.solveCount ?? 0} solved
                     </div>
                   </div>
                 </div>
