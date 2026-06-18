@@ -1,4 +1,4 @@
-/* WarRoom.css — variabili scoped sotto .warroom-app per evitare conflitti globali */
+
 
 .warroom-app {
   --bg:#07090f;--bg2:#0d1117;--bg3:#111825;--bg4:#161d2b;
@@ -19,10 +19,10 @@
 }
 
 .warroom-app * { box-sizing:border-box;margin:0;padding:0 }
-/* Ripristina il margine del logo Navbar — azzerato dal reset wildcard sopra */
+
 .warroom-app .cn-logo { margin-right:40px }
 
-/* Tema chiaro */
+
 [data-theme="light"] .warroom-app {
   --bg:#f0f2f8;--bg2:#ffffff;--bg3:#f5f7fc;--bg4:#eaeef8;
   --border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);
@@ -30,7 +30,7 @@
   --text1:#0f1623;--text2:#5a6480;--text3:#9aa3b8;
 }
 
-/* Scanline sfondo */
+
 .warroom-app .scan-line {
   position:fixed;left:0;right:0;height:2px;pointer-events:none;z-index:300;
   background:linear-gradient(90deg,transparent,rgba(240,112,96,.1),transparent);
@@ -38,7 +38,7 @@
 }
 [data-theme="light"] .warroom-app .scan-line { display:none }
 
-/* Grid noise */
+
 .warroom-app::before {
   content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(240,112,96,.013) 3px,rgba(240,112,96,.013) 4px);
@@ -129,7 +129,7 @@
 }
 .warroom-app .toggle-thumb.light { transform:translateX(12px) }
 
-/* ── PROGRESS BANNER ── */
+
 .warroom-app .prog-banner {
   height:var(--banner-h);padding:0 20px;flex-shrink:0;
   background:linear-gradient(135deg,rgba(240,112,96,.07),rgba(246,198,82,.03));
@@ -246,7 +246,7 @@
 .warroom-app .sb-body { padding:10px 12px;border-top:0.5px solid var(--border) }
 .warroom-app .sb-sec.collapsed .sb-body { display:none }
 
-/* IOC */
+
 .warroom-app .ioc-row {
   display:flex;align-items:center;gap:7px;padding:7px 0;
   border-bottom:0.5px solid var(--border);
@@ -265,10 +265,10 @@
   font-family:'JetBrains Mono',monospace;
 }
 
-/* Mappa rete */
+
 .warroom-app .net-legend { display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--text3) }
 
-/* Log live */
+
 .warroom-app .log-feed { display:flex;flex-direction:column;max-height:200px;overflow-y:auto }
 .warroom-app .log-feed::-webkit-scrollbar { width:3px }
 .warroom-app .log-feed::-webkit-scrollbar-thumb { background:var(--border2);border-radius:2px }
@@ -287,7 +287,7 @@
 .warroom-app .log-txt strong { color:var(--text1);font-weight:500 }
 .warroom-app .tld { width:5px;height:5px;border-radius:50%;background:var(--mint);animation:wr-pulse 1.5s infinite }
 
-/* ── CENTRO ── */
+
 .warroom-app .col-center {
   flex:1;min-width:0;background:var(--bg);display:flex;flex-direction:column;
   overflow:hidden;transition:all .3s;
@@ -328,7 +328,7 @@
 .warroom-app .sh-done-btn:hover { transform:translateY(-1px);box-shadow:0 4px 14px rgba(92,206,138,.3) }
 .warroom-app .sh-done-btn:disabled { opacity:.4;cursor:not-allowed;transform:none;box-shadow:none }
 
-/* Terminale */
+
 .warroom-app .center-scroll { flex:1;overflow:hidden;padding:16px 18px;display:flex;flex-direction:column }
 .warroom-app .terminal-card {
   background:#020408;border:0.5px solid rgba(92,206,138,.18);
@@ -382,7 +382,7 @@
 .warroom-app .t-run:hover { background:rgba(92,206,138,.14) }
 .warroom-app .t-run:disabled { opacity:.3;cursor:not-allowed }
 
-/* ── SIDEBAR DESTRA ── */
+
 .warroom-app .col-right {
   width:var(--rw);flex-shrink:0;background:var(--bg2);border-left:0.5px solid var(--border);
   display:flex;flex-direction:column;overflow:hidden;
@@ -391,7 +391,7 @@
 [data-theme="light"] .warroom-app .col-right { background:#fff }
 .warroom-app .col-right.hidden { width:0;opacity:0;pointer-events:none;border:none }
 
-/* Pannello dettagli step */
+
 .warroom-app .step-details {
   position:absolute;inset:0;background:var(--bg2);z-index:50;
   display:flex;flex-direction:column;overflow:hidden;
@@ -519,7 +519,7 @@
 }
 .warroom-app .sd-pb-lbl { margin-top:16px }
 
-/* ── CHAT ── */
+
 .warroom-app .chat-sec { flex:1;display:flex;flex-direction:column;min-height:0;background:var(--bg) }
 [data-theme="light"] .warroom-app .chat-sec { background:var(--bg3) }
 .warroom-app .chat-hdr {
@@ -566,7 +566,7 @@
 .warroom-app .chat-send:hover { background:var(--fuchsia) }
 .warroom-app .chat-send:disabled { opacity:.4;cursor:not-allowed }
 
-/* ── LOADING / ERRORE ── */
+
 .warroom-app .wr-loading {
   flex:1;display:flex;align-items:center;justify-content:center;
   flex-direction:column;gap:14px;color:var(--text2);font-size:13px;
@@ -581,8 +581,8 @@
   border:0.5px solid rgba(240,112,96,.2);border-radius:10px;font-size:13px;margin:20px;
 }
 
-/* ── TIMEOUT OVERLAY ── */
-/* Overlay timeout — flex-start per permettere lo scroll su schermi piccoli */
+
+
 .warroom-app .timeout-overlay {
   position:fixed;inset:0;z-index:900;
   background:rgba(7,9,15,.92);backdrop-filter:blur(16px);
@@ -591,7 +591,7 @@
   animation:wr-fadeIn .5s ease;
 }
 [data-theme="light"] .warroom-app .timeout-overlay { background:rgba(240,242,248,.85) }
-/* Modal timeout — altezza massima 90vh con scroll interno */
+
 .warroom-app .to-modal {
   width:100%;max-width:520px;background:var(--bg2);
   border:0.5px solid rgba(240,112,96,.4);border-radius:18px;
@@ -648,7 +648,7 @@
 [data-theme="light"] .warroom-app .to-btn-ghost { background:var(--bg4) }
 .warroom-app .to-btn-ghost:hover { color:var(--text1) }
 
-/* ── RESOLVE MODAL ── */
+
 .warroom-app .resolve-overlay {
   position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.82);
   backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;
@@ -738,7 +738,7 @@
 }
 .warroom-app .rm-close:hover { transform:translateY(-2px);box-shadow:0 8px 22px rgba(92,206,138,.35) }
 
-/* Bottone download report */
+
 .warroom-app .rm-download-btn {
   width:100%;padding:10px;border-radius:9px;margin-bottom:8px;
   border:0.5px solid rgba(246,198,82,.35);background:var(--amber-bg);
@@ -747,14 +747,14 @@
 }
 .warroom-app .rm-download-btn:hover { background:rgba(246,198,82,.15);transform:translateY(-1px) }
 
-/* Typing indicator nella chat */
+
 .warroom-app .chat-typing {
   padding:3px 12px 3px;font-size:10px;color:var(--text3);
   font-family:'DM Sans',sans-serif;font-style:italic;animation:wr-fadeIn .2s ease;
 }
 
-/* ── PREVIEW MODALE (lista sale) ── */
-/* Overlay dietro il modal anteprima — copre tutto lo schermo */
+
+
 .warroom-app .wr-preview-overlay {
   position:fixed;inset:0;z-index:799;
   background:rgba(0,0,0,.7);backdrop-filter:blur(8px);
@@ -762,7 +762,7 @@
   animation:wr-fadeIn .2s ease;
 }
 [data-theme="light"] .warroom-app .wr-preview-overlay { background:rgba(240,242,248,.8) }
-/* Modal anteprima — centrato, scrollabile, visibile su qualsiasi altezza schermo */
+
 .warroom-app .wr-preview-modal {
   position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
   width:90%;max-width:560px;
@@ -833,7 +833,7 @@
 .warroom-app .wr-preview-entra:hover { transform:translateY(-1px);box-shadow:0 6px 16px rgba(124,111,234,.35) }
 .warroom-app .wr-preview-entra:disabled { opacity:.45;cursor:not-allowed;transform:none;box-shadow:none }
 
-/* Bottone Osserva nel preview modal */
+
 .warroom-app .wr-preview-observe {
   padding:10px 18px;border-radius:8px;border:0.5px solid rgba(91,196,212,.4);
   background:rgba(91,196,212,.1);color:var(--cyan);
@@ -843,7 +843,7 @@
 .warroom-app .wr-preview-observe:hover { background:rgba(91,196,212,.18) }
 .warroom-app .wr-preview-observe:disabled { opacity:.45;cursor:not-allowed }
 
-/* Tab toggle Terminale / Kanban */
+
 .warroom-app .center-tabs {
   display:flex;gap:4px;padding:8px 12px 0;flex-shrink:0;
   border-bottom:0.5px solid var(--border);background:var(--bg2);
@@ -865,13 +865,13 @@
   background:var(--mint-bg);color:var(--mint);
 }
 
-/* Contenitore Kanban nella colonna centrale */
+
 .warroom-app .kanban-wrap {
   flex:1;overflow:hidden;padding:10px 12px;
   display:flex;flex-direction:column;
 }
 
-/* Lista obiettivi inline (sotto lo step-hdr) */
+
 .warroom-app .obj-list-inline {
   display:flex;flex-direction:column;gap:4px;
   padding:8px 12px;border-bottom:0.5px solid var(--border);
@@ -879,7 +879,7 @@
 }
 .warroom-app .obj-list-inline .obj-item { font-size:11px;padding:6px 10px }
 
-/* Input codice invito nel modal anteprima */
+
 .warroom-app .wr-preview-invite {
   padding:10px 0 4px;
   display:flex;flex-direction:column;gap:6px;
@@ -898,7 +898,7 @@
   border-color:var(--amber);
 }
 
-/* Vista sala chiusa */
+
 .warroom-app .wr-chiusa-wrap {
   display:flex;align-items:center;justify-content:center;
   flex:1;padding:20px;

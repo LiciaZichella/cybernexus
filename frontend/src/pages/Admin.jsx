@@ -5,7 +5,7 @@ import { api, usersAPI, challengesAPI, warroomAPI, leaderboardAPI } from '../ser
 import Navbar from '../components/Navbar';
 import './Admin.css';
 
-// ── Helper: SHA-256 via Web Crypto API ───────────────────────────────────────
+
 const calcolaHash = async (testo) => {
   if (!testo || testo.length < 3) return '';
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(testo.trim()));
@@ -23,33 +23,33 @@ export default function Admin() {
     if (user !== null && user?.role !== 'Admin') navigate('/dashboard');
   }, [user, navigate]);
 
-  // ── State ──────────────────────────────────────────────────────────────────
+  
   const [sezione, setSezione]   = useState('stats');
   const [theme, setTheme]       = useState('dark');
 
-  // Dati utenti
+  
   const [utenti, setUtenti]               = useState([]);
   const [utentiLoading, setUtentiLoading] = useState(false);
   const [utentiErrore, setUtentiErrore]   = useState(null);
 
-  // Dati sfide CTF
+  
   const [sfide, setSfide]               = useState([]);
   const [sfideLoading, setSfideLoading] = useState(false);
   const [sfideErrore, setSfideErrore]   = useState(null);
 
-  // Dati War Room
+  
   const [warrooms, setWarrooms]               = useState([]);
   const [warroomsLoading, setWarroomsLoading] = useState(false);
   const [warroomsErrore, setWarroomsErrore]   = useState(null);
 
-  // Statistiche dashboard
+  
   const [dashStats, setDashStats] = useState(null);
 
-  // Dati grafici dashboard — inizializzati a zero, popolati dalle API
+  
   const [regUltimi7, setRegUltimi7]       = useState([0, 0, 0, 0, 0, 0, 0]);
   const [flagCategorie, setFlagCategorie] = useState([]);
 
-  // Form crea sfida
+  
   const [formCTF, setFormCTF] = useState({
     titolo: '', categoria: 'Web', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '',
     hints: [], // array di { text: '', cost: 0 }
@@ -101,16 +101,16 @@ export default function Admin() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  // ── Caricamento dati al cambio sezione ──────────────────────────────────────
+  
   useEffect(() => {
     if (authLoading) return;
     if (sezione === 'stats')    { caricaStats(); caricaFeed(); caricaCategorie(); }
     if (sezione === 'users')    caricaUtenti();
     if (sezione === 'ctf')      caricaSfide();
     if (sezione === 'warroom')  caricaWarrooms();
-  }, [sezione, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sezione, authLoading]); 
 
-  // ── Animazioni dashboard: counters + barre ───────────────────────────────────
+  
   useEffect(() => {
     if (sezione !== 'stats' || !dashStats) return;
     const targets = [dashStats.utenti, dashStats.flag, dashStats.warroom, dashStats.sfide];
@@ -133,15 +133,15 @@ export default function Admin() {
     return () => clearTimeout(timer);
   }, [sezione, dashStats, flagCategorie]);
 
-  // ── Spark bars (animazione altezze con dati reali) ───────────────────────────
+  
   useEffect(() => {
     if (sezione !== 'stats') return;
-    // Evita divisione per zero quando tutti i valori sono 0
+    
     const maxV = Math.max(...regUltimi7, 1);
     sparkRef.current.forEach((el, i) => {
       if (!el) return;
       el.style.height = '0%';
-      // L'ultima barra (oggi) è evidenziata in viola pieno
+      
       el.style.background = i === 6 ? 'var(--v)' : 'rgba(124,111,234,0.4)';
       setTimeout(() => {
         el.style.height = `${Math.round((regUltimi7[i] / maxV) * 100)}%`;
@@ -149,14 +149,14 @@ export default function Admin() {
     });
   }, [sezione, regUltimi7]);
 
-  // ── Aggiornamento feed ogni 30 secondi ──────────────────────────────────────
+  
   useEffect(() => {
     if (sezione !== 'stats') return;
     const intervallo = setInterval(caricaFeed, 30000);
     return () => clearInterval(intervallo);
-  }, [sezione]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sezione]); 
 
-  // ── Chiamate API ─────────────────────────────────────────────────────────────
+  
 
   const caricaStats = async () => {
     try {
@@ -167,9 +167,9 @@ export default function Admin() {
         warroom: data.warRoomAttive,
         sfide:   data.totalSfide,
       });
-      // Dati registrazioni ultimi 7 giorni (array di 7 interi dal backend)
+      
       if (Array.isArray(data.regUltimi7)) setRegUltimi7(data.regUltimi7);
-    } catch { /* mantieni i valori di default */ }
+    } catch {  }
   };
 
   const caricaFeed = async () => {
@@ -188,7 +188,7 @@ export default function Admin() {
         tempo: e.extra ? `${formattaWhen(e.quando)} · ${e.extra}` : formattaWhen(e.quando),
       }));
       setFeedAttivita(feed);
-    } catch { /* mantieni il feed esistente */ }
+    } catch {  }
   };
 
   const caricaCategorie = async () => {
@@ -196,7 +196,7 @@ export default function Admin() {
       const { data } = await challengesAPI.getAll({ limit: 500 });
       const sfide = data.challenges ?? data ?? [];
 
-      // Raggruppa challenge per categoria e conta quelle risolte (solveCount > 0)
+      
       const mappa = {};
       sfide.forEach(s => {
         const cat = s.category;
@@ -206,7 +206,7 @@ export default function Admin() {
         if ((s.solveCount ?? s.solvedBy?.length ?? 0) > 0) mappa[cat].risolte++;
       });
 
-      // Converte in array ordinato per percentuale decrescente
+      
       const categorie = Object.entries(mappa)
         .map(([nome, { totale, risolte }]) => ({
           nome,
@@ -215,7 +215,7 @@ export default function Admin() {
         .sort((a, b) => b.pct - a.pct);
 
       setFlagCategorie(categorie);
-    } catch { /* mantieni lo stato esistente */ }
+    } catch {  }
   };
 
   const esportaCSV = async () => {
@@ -271,7 +271,7 @@ export default function Admin() {
     }
   };
 
-  // ── Handlers ─────────────────────────────────────────────────────────────────
+  
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -335,7 +335,7 @@ export default function Admin() {
     if (!formWR.nome) { mostraToast('Nome incidente obbligatorio', 'terr'); return; }
     setInvioWR(true);
     try {
-      // Parsa il testo "comando|risposta" in array di oggetti
+      
       const comandiParsati = formWR.comandiTerminale
         .split('\n')
         .map(r => r.trim())
@@ -346,7 +346,7 @@ export default function Admin() {
         })
         .filter(c => c.comando && c.risposta);
 
-      // Parsa task iniziali (una riga = un task)
+      
       const tasksParsati = formWR.tasks
         .split('\n')
         .map(r => r.trim())
@@ -364,7 +364,7 @@ export default function Admin() {
         comandiTerminale: comandiParsati,
         tasks:            tasksParsati,
       });
-      // Se la stanza è privata, mostra il codice invito generato
+      
       const codice = risposta.data?.inviteCode ?? risposta.data?.room?.inviteCode ?? null;
       if (codice) setInviteCodeGenerato(codice);
       mostraToast('War Room creata! Playbook generato ✓', 'tok');
@@ -422,7 +422,7 @@ export default function Admin() {
 
   const isMe = (u) => (u._id ?? u.id) === (user?.id ?? user?._id);
 
-  // ── Render sezioni ────────────────────────────────────────────────────────────
+  
 
   const renderDashboard = () => (
     <>
@@ -437,7 +437,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Stat cards */}
+      
       <div className="stats-grid ai d2">
         {[
           { ico: '👥', lbl: 'Utenti registrati'  },
@@ -455,7 +455,7 @@ export default function Admin() {
         ))}
       </div>
 
-      {/* Grafici */}
+      
       <div className="two-col ai d3">
         <div className="card" style={{ marginBottom: 0 }}>
           <div className="card-hdr">
@@ -469,7 +469,7 @@ export default function Admin() {
               ))}
             </div>
             <div className="spark-labels">
-              {/* Etichette giorni calcolate in base alle ultime 7 date reali */}
+              
               {(() => {
                 const GG = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
                 return Array.from({ length: 7 }, (_, i) => {
@@ -495,7 +495,7 @@ export default function Admin() {
                     <div className="bar-h-row" key={nome}>
                       <div className="bar-h-lbl">{nome}</div>
                       <div className="bar-h-track">
-                        {/* data-w usato dall'animazione per impostare width al mount */}
+                        
                         <div className="bar-h-fill" data-w={pctStr} ref={(el) => { barreRef.current[i] = el; }} />
                       </div>
                       <div className="bar-h-val">{pctStr}</div>
@@ -507,7 +507,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Feed attività */}
+      
       <div className="card ai d4">
         <div className="card-hdr">
           <div className="card-title">Attività recente</div>
@@ -659,7 +659,7 @@ export default function Admin() {
         <div className="se-badge badge-ok">🔒 SHA-256 attivo</div>
       </div>
 
-      {/* Form crea sfida */}
+      
       <div className="form-card ai d2">
         <div className="fc-hdr">
           <div className="fc-icon">⚑</div>
@@ -742,7 +742,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Tabella sfide */}
+      
       {sfideLoading && <div className="a-loading"><div className="a-spinner" />Caricamento sfide…</div>}
       {sfideErrore  && <div className="a-errore">{sfideErrore}</div>}
       {!sfideLoading && (
@@ -816,7 +816,7 @@ export default function Admin() {
           </div>
         </div>
 
-        {/* Form crea War Room */}
+        
         <div className="form-card ai d2">
           <div className="fc-hdr">
             <div className="fc-icon">🛡️</div>
@@ -897,7 +897,7 @@ export default function Admin() {
             </button>
             <button className="tb-btn tb-ghost" onClick={handleSalvaBozza} disabled={invioWR}>Salva bozza</button>
           </div>
-          {/* Codice invito generato dopo la creazione di una stanza privata */}
+          
           {inviteCodeGenerato && (
             <div style={{ margin: '0 24px 18px', padding: '12px 16px', borderRadius: 10, background: 'rgba(246,198,82,.08)', border: '0.5px solid rgba(246,198,82,.3)', display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontSize: 18 }}>🔒</span>
@@ -1043,7 +1043,7 @@ export default function Admin() {
 
   return (
     <div className="admin-app">
-      {/* ── Toast ── */}
+      
       <div className="toast-wrap">
         {toasts.map(({ id, messaggio, tipo }) => (
           <div key={id} className={`toast ${tipo}`}>
@@ -1053,7 +1053,7 @@ export default function Admin() {
         ))}
       </div>
 
-      {/* ── Modale cambio ruolo ── */}
+      
       {roleModal.aperto && (
         <div className="modal-overlay" onClick={() => setRoleModal((m) => ({ ...m, aperto: false }))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -1078,7 +1078,7 @@ export default function Admin() {
         </div>
       )}
 
-      {/* ── Modale conferma ── */}
+      
       {confirmModal.aperto && (
         <div className="modal-overlay" onClick={() => setConfirmModal((m) => ({ ...m, aperto: false }))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -1103,13 +1103,13 @@ export default function Admin() {
         </div>
       )}
 
-      {/* Navbar condivisa — fissa in cima */}
+      
       <Navbar />
 
-      {/* ── Layout app ── */}
+      
       <div className="app" style={{ paddingTop: '60px' }}>
 
-        {/* Sidebar */}
+        
         <aside className="sidebar">
           <div className="sb-logo">
             <div className="sb-logo-name">CyberNexus</div>
@@ -1147,7 +1147,7 @@ export default function Admin() {
           </div>
         </aside>
 
-        {/* Main */}
+        
         <div className="main">
           <div className="topbar">
             <div className="tb-title">

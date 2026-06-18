@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-/* ── DESIGN TOKENS ── */
+
 :root {
   --bg:#111827;--bg2:#1a2235;--bg3:#1e2a3a;--bg4:#212d40;
   --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
@@ -23,7 +23,7 @@
   --grid:rgba(0,0,0,0.03);
 }
 
-/* ── BASE ── */
+
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow-x:hidden}
 body{font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--text1);min-height:100vh}
@@ -98,7 +98,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   position:fixed;top:var(--navbar-h);left:0;right:0;z-index:499;
 }
 
-/* ── PAGINA ── */
+
 .page{
   padding-top:calc(var(--navbar-h) + 2px);
   min-height:100vh;max-width:1300px;
@@ -106,7 +106,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   padding-bottom:60px;position:relative;z-index:1;
 }
 
-/* ── HEADER PAGINA ── */
+
 .lb-page-header{
   padding:32px 0 28px;display:flex;align-items:flex-end;
   justify-content:space-between;gap:20px;flex-wrap:wrap;
@@ -141,7 +141,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 }
 .lbf-btn.active{background:var(--violet);color:#fff;font-weight:600}
 
-/* ── STATO LOADING / ERRORE ── */
+
 .lb-loading{
   display:flex;flex-direction:column;align-items:center;
   justify-content:center;padding:80px 0;gap:14px;
@@ -158,10 +158,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
   border:0.5px solid rgba(240,112,96,.25);margin:20px 0;
 }
 
-/* ── GRIGLIA PRINCIPALE ── */
+
 .lb-main{display:grid;grid-template-columns:1fr 280px;gap:20px;margin-bottom:28px}
 
-/* ── SEZIONE PODIO ── */
+
 .podium-section{
   background:var(--bg2);border:0.5px solid var(--border);
   border-radius:16px;padding:28px 28px 0;overflow:hidden;position:relative;
@@ -260,7 +260,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .rl-item{display:flex;align-items:center;gap:5px}
 .rl-line{width:16px;height:2px;border-radius:1px}
 
-/* ── CLASSIFICA COMPLETA ── */
+
 .ranked-section{
   background:var(--bg2);border:0.5px solid var(--border);
   border-radius:16px;overflow:hidden;
@@ -315,8 +315,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .lbs-text{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
 .lbs-line{flex:1;height:0.5px;background:var(--border)}
 
-/* ── MODALE PROFILO ── */
-/* React gestisce la visibilità via rendering condizionale: sempre display:flex quando presente */
+
+
 .profile-overlay{
   position:fixed;inset:0;z-index:700;
   display:flex;align-items:center;justify-content:center;
@@ -353,7 +353,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .pm-body::-webkit-scrollbar{width:4px}
 .pm-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 
-/* Sinistra modale: identità utente */
+
 .pm-left{
   padding:28px 20px;
   background:linear-gradient(180deg,var(--violet-bg) 0%,transparent 60%);
@@ -398,7 +398,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 }
 .pm-social-btn.primary:hover{opacity:.88}
 
-/* Destra modale: statistiche dettagliate */
+
 .pm-right{padding:22px 22px 22px 20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
 .pm-right::-webkit-scrollbar{width:3px}
 .pm-right::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
@@ -446,7 +446,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .pm-badge.locked{opacity:.35;filter:grayscale(.8)}
 .pm-empty{font-size:12px;color:var(--text3);padding:8px 0}
 
-/* ── RESPONSIVE ── */
+
 @media(max-width:1200px){.lb-main{grid-template-columns:1fr 250px}.lb-r-bar{display:none}}
 @media(max-width:960px){
   .lb-main{grid-template-columns:1fr}

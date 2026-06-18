@@ -6,7 +6,7 @@ import { useNotifications } from '../context/NotificationsContext';
 import Navbar from '../components/Navbar';
 import { usersAPI, challengesAPI, leaderboardAPI } from '../services/api';
 
-/* ─── Config ──────────────────────────────────────────────────────────────── */
+
 const CAT_TABS = [
   { id: 'all',      label: 'Tutte',     count: null, icon: null,  color: null,             bg: null,                    cls: '' },
   { id: 'Web',      label: 'Web',       count: null, icon: '💻', color: 'var(--fuchsia)', bg: 'rgba(232,112,184,.12)', cls: 'cc-web'      },
@@ -52,7 +52,7 @@ function getPaginationItems(cur, total) {
   return items;
 }
 
-/* ─── CSS ─────────────────────────────────────────────────────────────────── */
+
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 :root{--bg:#111827;--bg2:#1a2235;--bg3:#1e2a3a;--bg4:#212d40;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);--text1:#f0f4ff;--text2:#8a96b0;--text3:#4a5568;--violet:#7C6FEA;--violet-bg:rgba(124,111,234,0.10);--fuchsia:#E870B8;--fuchsia-bg:rgba(232,112,184,0.10);--cyan:#5BC4D4;--cyan-bg:rgba(91,196,212,0.10);--mint:#5CCE8A;--mint-bg:rgba(92,206,138,0.10);--amber:#F6C652;--amber-bg:rgba(246,198,82,0.10);--coral:#F07060;--coral-bg:rgba(240,112,96,0.10);--navbar-h:56px}
@@ -275,7 +275,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .pm-spinner{width:24px;height:24px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--violet);animation:spin 0.8s linear infinite}
 @media(max-width:700px){.pm-body{grid-template-columns:1fr}.pm-left{border-right:none;border-bottom:0.5px solid var(--border);padding:20px}}
 
-/* LIVE FLAG FEED */
+
 .live-flag-feed{position:fixed;bottom:24px;left:24px;z-index:700;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .lff-item{display:flex;align-items:center;gap:8px;background:var(--bg2);border:0.5px solid rgba(92,206,138,.3);border-radius:var(--r8);padding:9px 14px;min-width:220px;max-width:320px;box-shadow:0 4px 16px rgba(0,0,0,.3);animation:slideInLeft .35s ease;font-size:12px}
 @keyframes slideInLeft{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
@@ -284,10 +284,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .lff-pts{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--mint);flex-shrink:0}
 `;
 
-/* ─── Profile modal helpers ───────────────────────────────────────────────── */
+
 const HEATMAP_COLORS = ['var(--border2)','rgba(92,206,138,.25)','rgba(92,206,138,.5)','rgba(92,206,138,.75)','var(--mint)'];
 
-/* ─── Component ───────────────────────────────────────────────────────────── */
+
 export default function CTFArena() {
   const { loading: authLoading, user, aggiornaUser } = useAuth();
   const { aggiungiNotifica } = useNotifications();
@@ -324,10 +324,10 @@ export default function CTFArena() {
   const [profiloLoading, setProfiloLoading] = useState(false);
   const [rankUtente, setRankUtente]         = useState(null);
 
-  // Notifiche real-time flag catturate da altri utenti
+  
   const [liveNotifiche, setLiveNotifiche]   = useState([]);
 
-  // Socket.IO: ascolta flag:catturata da qualsiasi utente sulla piattaforma
+  
   useEffect(() => {
     const socket = io(window.location.origin, { path: '/socket.io', transports: ['websocket', 'polling'] });
     socket.on('flag:catturata', (data) => {
@@ -340,7 +340,7 @@ export default function CTFArena() {
 
   useEffect(() => {
     if (authLoading) return;
-    // Carica profilo e submission in parallelo per popolare solved + attempted
+    
     Promise.allSettled([
       usersAPI.getMe(),
       usersAPI.getAttempts(),
@@ -351,7 +351,7 @@ export default function CTFArena() {
         setSolvedIds(new Set((me.solvedChallenges || []).map(String)));
       }
       if (subRes.status === 'fulfilled') {
-        // Challenge tentate ma non risolte (submission errate)
+        
         const subs = subRes.value.data.submissions ?? [];
         const tentate = new Set(
           subs.filter(s => !s.isCorrect).map(s => String(s.challenge?._id ?? s.challenge))
@@ -361,7 +361,7 @@ export default function CTFArena() {
     });
   }, [authLoading]);
 
-  // Calcola il rank reale dell'utente dalla leaderboard
+  
   useEffect(() => {
     if (authLoading || !user) return;
     leaderboardAPI.get({ limit: 500 })
@@ -420,7 +420,7 @@ export default function CTFArena() {
     if (modal && flagStatus !== 'correct') {
       setTimeout(() => flagInputRef.current?.focus(), 400);
     }
-  }, [modal]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [modal]); 
 
 
   const openModal = (ch) => {
@@ -468,7 +468,7 @@ export default function CTFArena() {
     try {
       const { data } = await challengesAPI.submitFlag(modal._id, { flag: flagInput.trim() });
 
-      // Il backend risponde 200 sia per flag corretta che errata — controlla il campo correct
+      
       if (!data.correct) {
         setFlagStatus('wrong');
         setFlagShakeKey(k => k + 1);
@@ -482,7 +482,7 @@ export default function CTFArena() {
       setSolvedIds(prev => new Set([...prev, String(modal._id)]));
       aggiungiNotifica({ icon: '🚩', testo: `Flag catturata: ${modal.title}`, sub: `+${earnedPts} pts` });
 
-      // Ri-fetcha /api/users/me, aggiorna AuthContext e il profilo locale con i punti freschi dal DB
+      
       const updated = await aggiornaUser();
       if (updated) setProfile(updated);
     } catch {
@@ -501,7 +501,7 @@ export default function CTFArena() {
     setProfiloLoading(true);
     try {
       const userId = item.id ?? item._id;
-      // Carica profilo e attività in parallelo
+      
       const [profiloRes, activityRes] = await Promise.allSettled([
         usersAPI.getById(userId),
         usersAPI.getActivityById(userId),
@@ -516,7 +516,7 @@ export default function CTFArena() {
       }
       setProfiloAperto(nuovoProfilo);
     } catch {
-      // mostra i dati già disponibili
+      
     } finally {
       setProfiloLoading(false);
     }
@@ -542,7 +542,7 @@ export default function CTFArena() {
       <style>{CSS}</style>
       <div className="orb o1"/><div className="orb o2"/>
 
-      {/* ── Modal ── */}
+      
       {modal && (
         <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
           <div className="sm">
@@ -649,14 +649,14 @@ export default function CTFArena() {
         </div>
       )}
 
-      {/* ── Profile modal ── */}
+      
       {profiloAperto && (
         <div className="profile-overlay" onClick={handleCloseProfile}>
           <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
             <div className="pm-topbar" />
             <button className="pm-close" onClick={handleCloseProfile}>✕</button>
             <div className="pm-body">
-              {/* Colonna sinistra */}
+              
               <div className="pm-left">
                 <div className="pm-avatar-wrap">
                   <div className="pm-avatar" style={{ background: 'linear-gradient(135deg,var(--violet),var(--fuchsia))' }}>
@@ -700,7 +700,7 @@ export default function CTFArena() {
                 </div>
               </div>
 
-              {/* Colonna destra */}
+              
               <div className="pm-right">
                 {profiloLoading ? (
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, padding:'40px 0', color:'var(--text2)' }}>
@@ -802,7 +802,7 @@ export default function CTFArena() {
 
       <div className="page">
 
-        {/* ── Hero ── */}
+        
         <div className="arena-hero">
           <div className="hero-eyebrow"><div className="ey-dot"/>CTF Arena — Stagione 01/2026</div>
           <div className="hero-row">
@@ -841,7 +841,7 @@ export default function CTFArena() {
           </div>
         </div>
 
-        {/* ── Category tabs ── */}
+        
         <div className="cat-tabs">
           {CAT_TABS.map(tab => (
             <div
@@ -860,7 +860,7 @@ export default function CTFArena() {
           ))}
         </div>
 
-        {/* ── Toolbar ── */}
+        
         <div className="toolbar">
           <div className="search-box">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -896,7 +896,7 @@ export default function CTFArena() {
           </div>
         </div>
 
-        {/* ── Challenge grid ── */}
+        
         <div className="ch-grid">
           {loading ? (
             <div className="grid-loader"><div className="spin"/><span>Caricamento sfide...</span></div>
@@ -933,7 +933,7 @@ export default function CTFArena() {
           })}
         </div>
 
-        {/* ── Pagination ── */}
+        
         {totalPages > 1 && (
           <div className="pagination">
             <button className="pg-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>‹</button>
@@ -952,7 +952,7 @@ export default function CTFArena() {
 
       </div>
 
-      {/* ── Live flag feed — angolo in basso a sinistra ── */}
+      
       {liveNotifiche.length > 0 && (
         <div className="live-flag-feed">
           {liveNotifiche.map(n => (

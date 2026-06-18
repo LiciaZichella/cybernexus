@@ -3,19 +3,19 @@ const Challenge  = require('../models/Challenge');
 const Submission = require('../models/Submission');
 const User       = require('../models/User');
 
-// Utility: hash SHA-256 di una stringa (flag plaintext → digest hex)
+
 const sha256 = (str) => crypto.createHash('sha256').update(str.trim()).digest('hex');
 
-// GET /api/challenges — lista challenge attive con filtri opzionali
+
 const getChallenges = async (req, res) => {
   try {
     const filter = { isActive: true };
 
-    // Filtri opzionali via query string: ?category=Web&difficulty=Easy&search=sql
+    
     if (req.query.category)   filter.category   = req.query.category;
     if (req.query.difficulty) filter.difficulty = req.query.difficulty;
 
-    // Ricerca per titolo (case-insensitive)
+    
     if (req.query.search) {
       filter.title = { $regex: req.query.search.trim(), $options: 'i' };
     }
@@ -26,7 +26,7 @@ const getChallenges = async (req, res) => {
 
     const [docs, total] = await Promise.all([
       Challenge.find(filter)
-        .select('-flag')               // carica solvedBy per il virtual solveCount, ma non espone la flag
+        .select('-flag')               
         .sort({ points: 1 })
         .populate('author', 'username')
         .skip(skip)
@@ -34,7 +34,7 @@ const getChallenges = async (req, res) => {
       Challenge.countDocuments(filter),
     ]);
 
-    // Converte in JSON (include il virtual solveCount), poi rimuove solvedBy dalla risposta
+    
     const challenges = docs.map(ch => {
       const obj = ch.toJSON();
       delete obj.solvedBy;
@@ -52,7 +52,7 @@ const getChallenges = async (req, res) => {
   }
 };
 
-// GET /api/challenges/:id — dettaglio singola challenge attiva
+
 const getChallengeById = async (req, res) => {
   try {
     const challenge = await Challenge.findOne({ _id: req.params.id, isActive: true })
@@ -61,7 +61,7 @@ const getChallengeById = async (req, res) => {
 
     if (!challenge) return res.status(404).json({ error: 'Challenge non trovata.' });
 
-    // Indica se l'utente corrente l'ha già risolta
+    
     const alreadySolved = challenge.solvedBy.some((s) => s.user.equals(req.user._id));
 
     res.json({ challenge, alreadySolved });
@@ -71,14 +71,14 @@ const getChallengeById = async (req, res) => {
   }
 };
 
-// POST /api/challenges — crea nuova challenge (solo Admin)
+
 const createChallenge = async (req, res) => {
   try {
     const { title, description, category, difficulty, points, flag, hints, attachments, tags } = req.body;
 
     if (!flag) return res.status(400).json({ error: 'Flag obbligatoria.' });
 
-    // Salva l'hash SHA-256 della flag — mai il plaintext
+    
     const challenge = await Challenge.create({
       title,
       description,
@@ -99,18 +99,18 @@ const createChallenge = async (req, res) => {
   }
 };
 
-// POST /api/challenges/:id/submit — invio flag
+
 const submitFlag = async (req, res) => {
   try {
     const { flag, warRoom } = req.body;
 
     if (!flag) return res.status(400).json({ error: 'Flag mancante.' });
 
-    // Carica la flag hashata (select: false nel modello)
+    
     const challenge = await Challenge.findOne({ _id: req.params.id, isActive: true }).select('+flag');
     if (!challenge) return res.status(404).json({ error: 'Challenge non trovata.' });
 
-    // Controlla se l'utente ha già risolto questa challenge
+    
     const alreadySolved = challenge.solvedBy.some((s) => s.user.equals(req.user._id));
     if (alreadySolved) {
       return res.status(400).json({ error: 'Hai già risolto questa challenge.' });
@@ -119,27 +119,27 @@ const submitFlag = async (req, res) => {
     const isCorrect = sha256(flag) === challenge.flag;
     const pointsAwarded = isCorrect ? challenge.points : 0;
 
-    // Registra la submission (la flag inviata viene hashata per l'audit)
+    
     await Submission.create({
       user:          req.user._id,
       challenge:     challenge._id,
       warRoom:       warRoom || null,
-      submittedFlag: sha256(flag),   // non salviamo plaintext neanche qui
+      submittedFlag: sha256(flag),   
       isCorrect,
       pointsAwarded,
       ipAddress:     req.ip,
     });
 
     if (isCorrect) {
-      // Aggiunge utente alla lista solve della challenge
+      
       challenge.solvedBy.push({ user: req.user._id });
       await challenge.save();
 
-      // Carica utente per aggiornare streak e ruolo
+      
       const utente = await User.findById(req.user._id);
       if (!utente) return res.status(404).json({ error: 'Utente non trovato.' });
 
-      // Calcolo streak giornaliero
+      
       const oggi       = new Date();
       const oggiStr    = oggi.toISOString().slice(0, 10);
       const ultimaStr  = utente.lastActivityDate
@@ -148,16 +148,16 @@ const submitFlag = async (req, res) => {
 
       let nuovoStreak = utente.streak;
       if (ultimaStr === null || ultimaStr < oggiStr) {
-        // Controlla se ieri era l'ultimo giorno attivo (streak continua) o no (reset)
+        
         const ieri = new Date(oggi.getTime() - 86400000).toISOString().slice(0, 10);
         nuovoStreak = ultimaStr === ieri ? utente.streak + 1 : 1;
       }
 
-      // Promozione automatica a Analyst a 500 punti (solo se ruolo attuale è Player o Guest)
+      
       const nuoviPunti = utente.points + challenge.points;
       const promuovi   = nuoviPunti >= 500 && ['Player', 'Guest'].includes(utente.role);
 
-      // Aggiorna tutto in una sola operazione
+      
       utente.points += challenge.points;
       utente.solvedChallenges.addToSet(challenge._id);
       utente.streak           = nuovoStreak;
@@ -165,7 +165,7 @@ const submitFlag = async (req, res) => {
       if (promuovi) utente.role = 'Analyst';
       await utente.save();
 
-      // Notifica real-time a tutti i client connessi (CTFArena live feed)
+      
       req.app.get('io')?.emit('flag:catturata', {
         username:  utente.username,
         challenge: challenge.title,
@@ -190,7 +190,7 @@ const submitFlag = async (req, res) => {
   }
 };
 
-// PATCH /api/challenges/:id — aggiorna una challenge esistente (solo Admin)
+
 const updateChallenge = async (req, res) => {
   try {
     const { title, description, category, difficulty, points, flag, hints, isActive } = req.body;
@@ -217,7 +217,7 @@ const updateChallenge = async (req, res) => {
   }
 };
 
-// DELETE /api/challenges/:id — elimina una challenge (solo Admin)
+
 const deleteChallenge = async (req, res) => {
   try {
     const challenge = await Challenge.findByIdAndDelete(req.params.id);
@@ -229,7 +229,7 @@ const deleteChallenge = async (req, res) => {
   }
 };
 
-// GET /api/challenges/:id/hint?index=0 — sblocca un suggerimento
+
 const getHint = async (req, res) => {
   try {
     const index = parseInt(req.query.index);
@@ -243,7 +243,7 @@ const getHint = async (req, res) => {
     const hint = challenge.hints[index];
     if (!hint) return res.status(404).json({ error: `Hint ${index} non esiste.` });
 
-    // Controlla se l'utente ha abbastanza punti per sbloccarla
+    
     const user = await User.findById(req.user._id);
     if (hint.cost > 0 && user.points < hint.cost) {
       return res.status(400).json({
@@ -251,7 +251,7 @@ const getHint = async (req, res) => {
       });
     }
 
-    // Scala i punti solo se la hint ha un costo
+    
     if (hint.cost > 0) {
       await User.findByIdAndUpdate(req.user._id, { $inc: { points: -hint.cost } });
     }

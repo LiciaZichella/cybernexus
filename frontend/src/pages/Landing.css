@@ -1,8 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ──────────────────────────────────────
-   DESIGN TOKENS
-────────────────────────────────────── */
+
+
 :root {
   --bg:#111827; --bg2:#1a2235; --bg3:#1e2a3a; --bg4:#212d40;
   --border:rgba(255,255,255,0.06); --border2:rgba(255,255,255,0.13);
@@ -31,9 +30,8 @@
   --grid:rgba(0,0,0,0.035);
 }
 
-/* ──────────────────────────────────────
-   BASE
-────────────────────────────────────── */
+
+
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{
@@ -109,17 +107,15 @@ body::before{
 }
 .btn-nav-primary:hover{opacity:.88;transform:translateY(-1px)}
 
-/* ──────────────────────────────────────
-   GRADIENT DIVIDER
-────────────────────────────────────── */
+
+
 .grad-line{
   height:3px;position:relative;z-index:1;
   background:linear-gradient(90deg,var(--violet),var(--fuchsia),var(--cyan),var(--mint),var(--amber));
 }
 
-/* ──────────────────────────────────────
-   HERO — SPLIT
-────────────────────────────────────── */
+
+
 .hero{
   min-height:100vh;display:grid;grid-template-columns:1fr 1fr;
   position:relative;overflow:hidden;padding-top:58px;
@@ -242,9 +238,8 @@ body::before{
 .notif-ttl{font-size:12px;font-weight:500;color:var(--text1)}
 .notif-stl{font-size:10px;color:var(--text3)}
 
-/* ──────────────────────────────────────
-   STATS STRIP
-────────────────────────────────────── */
+
+
 .stats-strip{
   position:relative;z-index:1;display:flex;
   border-top:0.5px solid var(--border);border-bottom:0.5px solid var(--border);
@@ -265,9 +260,8 @@ body::before{
 }
 .ss-sub{font-size:12px;color:var(--text2)}
 
-/* ──────────────────────────────────────
-   COME FUNZIONA
-────────────────────────────────────── */
+
+
 .how-section{
   position:relative;z-index:1;
   background:var(--bg2);transition:background .35s;
@@ -313,9 +307,8 @@ body::before{
   margin-top:14px;
 }
 
-/* ──────────────────────────────────────
-   CTF ARENA
-────────────────────────────────────── */
+
+
 .ctf-section{
   position:relative;z-index:1;
   background:var(--bg);transition:background .35s;
@@ -368,9 +361,8 @@ body::before{
 .cat-name{font-size:12px;font-weight:500;color:var(--text2)}
 .cat-count{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
 
-/* ──────────────────────────────────────
-   SEZIONE TERMINALE
-────────────────────────────────────── */
+
+
 .term-section{
   position:relative;z-index:1;
   background:var(--bg2);transition:background .35s;
@@ -420,9 +412,8 @@ body::before{
 }
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
-/* ──────────────────────────────────────
-   WAR ROOM
-────────────────────────────────────── */
+
+
 .wr-section{
   position:relative;z-index:1;
   background:var(--bg);transition:background .35s;
@@ -517,9 +508,8 @@ body::before{
 .wr-feat-title{font-size:13px;font-weight:600;margin-bottom:3px}
 .wr-feat-desc{font-size:12px;color:var(--text2);line-height:1.5}
 
-/* ──────────────────────────────────────
-   SEZIONE LOGIN/REGISTRAZIONE
-────────────────────────────────────── */
+
+
 .login-section{
   position:relative;z-index:1;
   background:var(--bg2);transition:background .35s;
@@ -580,9 +570,8 @@ body::before{
 .login-note{text-align:center;font-size:11px;color:var(--text3);margin-top:14px}
 .login-note a{color:var(--violet);text-decoration:none}
 
-/* ──────────────────────────────────────
-   FOOTER
-────────────────────────────────────── */
+
+
 footer{
   position:relative;z-index:1;
   border-top:0.5px solid var(--border);
@@ -597,7 +586,6 @@ footer{
 .foot-lnk:hover{color:var(--text2)}
 .foot-copy{font-size:12px;color:var(--text3)}
 
-/* ──────────────────────────────────────
-   UTILITY
-────────────────────────────────────── */
+
+
 .tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px}

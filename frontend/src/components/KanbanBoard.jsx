@@ -58,7 +58,7 @@ export default function KanbanBoard({ tasks = [], onTaskMoved }) {
             onDrop={e => handleDrop(e, col.id)}
             onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverCol(null); }}
           >
-            {/* Intestazione colonna */}
+            
             <div className="kb-col-hdr">
               <span className="kb-col-lbl" style={{ color: col.colore }}>{col.label}</span>
               <span className="kb-col-ct" style={{ background: col.bg, color: col.colore }}>
@@ -66,7 +66,7 @@ export default function KanbanBoard({ tasks = [], onTaskMoved }) {
               </span>
             </div>
 
-            {/* Carte task */}
+            
             <div className="kb-col-body">
               {carteColonna.map(task => (
                 <div
@@ -100,7 +100,7 @@ export default function KanbanBoard({ tasks = [], onTaskMoved }) {
                 </div>
               ))}
 
-              {/* Indicatore drop target */}
+              
               {isTarget && (
                 <div className="kb-drop-hint">Rilascia qui →</div>
               )}

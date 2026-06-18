@@ -8,19 +8,19 @@ export default function OAuthCallback() {
   const { loginWithOAuth } = useAuth();
 
   useEffect(() => {
-    // Legge entrambi i token dai query param del redirect OAuth
+    
     const at = searchParams.get('accessToken');
     const rt = searchParams.get('refreshToken');
 
     if (!at || !rt) {
-      // Token mancanti: redirect a login con messaggio di errore
+      
       navigate('/login?error=oauth');
       return;
     }
 
-    // Completa l'autenticazione OAuth direttamente senza round-trip extra
+    
     loginWithOAuth(at, rt).then(ok => navigate(ok ? '/dashboard' : '/login?error=oauth'));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); 
 
   return (
     <div style={{

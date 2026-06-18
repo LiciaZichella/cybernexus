@@ -3,7 +3,7 @@ const Submission = require('../models/Submission');
 const Challenge  = require('../models/Challenge');
 const WARRoom    = require('../models/WARRoom');
 
-// GET /api/admin/stats — contatori reali per la dashboard admin
+
 const getStats = async (req, res) => {
   try {
     const setteGiorniFa = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -13,7 +13,7 @@ const getStats = async (req, res) => {
       Submission.countDocuments({ isCorrect: true }),
       Challenge.countDocuments(),
       WARRoom.countDocuments({ status: 'active' }),
-      // Aggregazione: utenti registrati negli ultimi 7 giorni raggruppati per giorno
+      
       User.aggregate([
         { $match: { createdAt: { $gte: setteGiorniFa } } },
         {
@@ -25,7 +25,7 @@ const getStats = async (req, res) => {
       ]),
     ]);
 
-    // Costruisce array di 7 elementi (dal giorno più vecchio a oggi) con 0 dove non ci sono registrazioni
+    
     const oggi = new Date();
     const regUltimi7 = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(oggi.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
@@ -39,7 +39,7 @@ const getStats = async (req, res) => {
   }
 };
 
-// GET /api/admin/activity — eventi recenti reali (submission + warroom + utenti)
+
 const getActivity = async (req, res) => {
   try {
     const [submissions, warrooms, nuoviUtenti] = await Promise.all([

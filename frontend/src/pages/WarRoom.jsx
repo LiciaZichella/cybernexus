@@ -11,7 +11,7 @@ import './WarRoom.css';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5005';
 
-// ── Dati playbook di default (usati se la sala non ha playbook personalizzato) ──
+
 const DEFAULT_PASSI = [
   {
     icon: '🔍', categoria: 'Identificazione',
@@ -79,7 +79,7 @@ const DEFAULT_PASSI = [
   },
 ];
 
-// Gruppi accordion di default per il playbook standard Incident Response
+
 const DEFAULT_GRUPPI_PLAYBOOK = [
   { key: 'id',          nome: 'Identificazione', colore: 'var(--mint)',   colBg: 'var(--mint-bg)',   indici: [0, 1] },
   { key: 'contenimento',nome: 'Contenimento',     colore: 'var(--amber)',  colBg: 'var(--amber-bg)',  indici: [2, 3, 4] },
@@ -87,7 +87,7 @@ const DEFAULT_GRUPPI_PLAYBOOK = [
   { key: 'recovery',    nome: 'Recovery',         colore: 'var(--text2)', colBg: 'var(--bg3)',        indici: [7] },
 ];
 
-// IOC di default (usati se la sala non ha IOC configurati)
+
 const DEFAULT_IOC = [
   { tipo: 'IP',     tipoBg: 'var(--coral-bg)',   tipoCol: 'var(--coral)',   valore: '185.220.101.48',    stato: '✓ Bloccato',    statoBg: 'var(--mint-bg)',   statoCol: 'var(--mint)' },
   { tipo: 'Hash',   tipoBg: 'var(--amber-bg)',   tipoCol: 'var(--amber)',   valore: '4a7b9f2c1e8d...',  stato: '⚠ Attivo',     statoBg: 'var(--coral-bg)',  statoCol: 'var(--coral)' },
@@ -97,20 +97,20 @@ const DEFAULT_IOC = [
   { tipo: 'File',   tipoBg: 'var(--cyan-bg)',    tipoCol: 'var(--cyan)',    valore: '!README.txt',       stato: '⚠ Trovato',    statoBg: 'var(--coral-bg)',  statoCol: 'var(--coral)' },
 ];
 
-// (CMD_SETS rimosso — la logica dei comandi è ora nella funzione eseguiComando)
 
-// Formatta secondi MM:SS
+
+
 const formatTime = (s) =>
   `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
-// ── Componente ────────────────────────────────────────────────────────────────
+
 export default function WarRoom() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading, aggiornaUser } = useAuth();
   const { aggiungiNotifica } = useNotifications();
 
-  // Dati sala
+  
   const [sala, setSala] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState('');
@@ -125,16 +125,16 @@ export default function WarRoom() {
   const [destraAperta, setDestraAperta] = useState(true);
   const [sbCompresse, setSbCompresse] = useState({});
 
-  // Playbook — inizia da zero, senza dati falsi (Bug 1)
+  
   const [passoAttivo, setPassoAttivo] = useState(0);
   const [passiCompletati, setPassiCompletati] = useState(new Set());
   const [gruppiAperti, setGruppiAperti] = useState({ id: true, contenimento: true, analisi: true, recovery: false, playbook: true });
 
-  // Pannello dettagli step
+  
   const [dettagliAperto, setDettagliAperto] = useState(false);
   const [obiettiviCheck, setObiettiviCheck] = useState({});
 
-  // Terminale — inizia vuoto, viene popolato dopo il caricamento della sala (Bug 3)
+  
   const [righeTerminale, setRigheTerminale] = useState([]);
   const [comandoInput, setComandoInput] = useState('');
   const termBodyRef = useRef(null);
@@ -162,10 +162,10 @@ export default function WarRoom() {
   // Vista centrale: terminale o kanban
   const [vistaCentro, setVistaCentro] = useState('terminale');
 
-  // Task Kanban — inizializzati da sala.tasks al caricamento
+  
   const [tasks, setTasks] = useState([]);
 
-  // Typing indicator
+  
   const [utenteCheScrive, setUtenteCheScrive] = useState('');
   const typingTimerRef   = useRef(null);
   const typingDebounceRef = useRef(null);
@@ -183,16 +183,16 @@ export default function WarRoom() {
   // Vista sala già chiusa al caricamento (status === 'closed')
   const [vistaChiusa, setVistaChiusa] = useState(false);
 
-  // Membri online — inizia vuoto, l'utente corrente viene aggiunto all'init (Bug 2)
+  
   const [membriOnline, setMembriOnline] = useState([]);
 
-  // Log live — inizia vuoto, viene popolato da eventi reali socket (Bug 3)
+  
   const [logFeed, setLogFeed] = useState([]);
 
   const socketRef = useRef(null);
-  const passiRef  = useRef([]);   // ref per evitare stale closure nei socket handler
+  const passiRef  = useRef([]);   
 
-  // ── Passi del playbook — dinamici dalla sala, con fallback ai default ─────────
+  
   const PASSI = sala?.playbook?.length > 0
     ? sala.playbook.map((p, i) => ({
         id:        i,
@@ -217,7 +217,7 @@ export default function WarRoom() {
     ? [{ key: 'playbook', nome: 'Playbook', colore: 'var(--violet)', colBg: 'var(--violet-bg)', indici: PASSI.map((_, i) => i) }]
     : DEFAULT_GRUPPI_PLAYBOOK;
 
-  // IOC: dalla sala se configurati, altrimenti default di scenario
+  
   const IOC_DEFAULT = sala?.iocs?.length > 0
     ? sala.iocs.map(ioc => {
         const tipoMap = { IP: 'coral', Hash: 'amber', CVE: 'violet', Domain: 'fuchsia', File: 'cyan' };
@@ -228,14 +228,14 @@ export default function WarRoom() {
       })
     : DEFAULT_IOC;
 
-  // ── Aggiunge riga al log live ────────────────────────────────────────────────
+  
   const aggiungiLog = useCallback((testo, colore) => {
     const now = new Date();
     const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     setLogFeed(prev => [...prev.slice(-19), { time, colore, testo, fresh: true }]);
   }, []);
 
-  // ── Carica dati sala dall'API ────────────────────────────────────────────────
+  
   useEffect(() => {
     if (authLoading) return;
     if (!id) {
@@ -249,20 +249,20 @@ export default function WarRoom() {
     }
     warroomAPI.getById(id)
       .then(({ data }) => {
-        // Il backend risponde con { room: {...} }
+        
         const room = data.room ?? data;
         setSala(room);
-        // Sala già chiusa: mostra subito la vista chiusa, non avviare socket né timer
+        
         if (room.status === 'closed') {
           setVistaChiusa(true);
           return;
         }
-        // Timer sincronizzato: calcolato da createdAt, non da 90 min fissi
+        
         const durataSec    = (room.durataMinuti || 90) * 60;
         const inizioSala   = new Date(room.createdAt).getTime();
         const secTrascorsi = Math.floor((Date.now() - inizioSala) / 1000);
         setTempoRimanente(Math.max(0, durataSec - secTrascorsi));
-        // Non fare join se l'utente è già membro
+        
         const membro = room.members?.find(m => {
           const mId = (m.user?._id ?? m.user)?.toString() ?? '';
           const uId = (user?._id || user?.id)?.toString() ?? '';
@@ -298,9 +298,9 @@ export default function WarRoom() {
       }
     });
 
-    // Messaggio chat ricevuto — payload: { _id, content, type, createdAt, author: { username, avatar } }
+    
     socket.on('chat-message', (msg) => {
-      // Il backend fa broadcast a tutti incluso mittente — scarta i propri (già mostrati in optimistic update)
+      
       if (msg.author?.username === user?.username) return;
       setMessaggiChat(prev => [...prev, {
         av:    (msg.author?.username ?? '??').slice(0, 2).toUpperCase(),
@@ -310,10 +310,10 @@ export default function WarRoom() {
       }]);
     });
 
-    // Step completato — payload: { stepIndex, solvedBy, solvedAt } — broadcast a TUTTI incluso mittente
+    
     socket.on('step-completed', ({ stepIndex, solvedBy }) => {
       const idx   = stepIndex;
-      const passi = passiRef.current; // via ref per evitare stale closure
+      const passi = passiRef.current; 
       if (typeof idx === 'number' && idx >= 0 && idx < passi.length) {
         setPassiCompletati(prev => new Set([...prev, idx]));
         setPassoAttivo(prev => (prev === idx && idx + 1 < passi.length) ? idx + 1 : prev);
@@ -322,9 +322,9 @@ export default function WarRoom() {
       aggiungiLog(`${solvedBy} ✓ ${titolo}... completato`, 'var(--mint)');
     });
 
-    // log-event — NON va mai nella chat, solo nel logFeed o nelle righeTerminale
+    
     socket.on('log-event', ({ content, author, tipo }) => {
-      // Typing indicator — gestione separata, non finisce né in chat né nel log
+      
       if (content === 'sta scrivendo...') {
         setUtenteCheScrive(author);
         clearTimeout(typingTimerRef.current);
@@ -340,11 +340,11 @@ export default function WarRoom() {
             if (Array.isArray(righe)) {
               righe.forEach(riga => setRigheTerminale(prev => [...prev, riga]));
             }
-          } catch { /* JSON non valido, ignora */ }
+          } catch {  }
         }
-        return; // in ogni caso non va al logFeed né alla chat
+        return; 
       }
-      // Evento di scenario o sistema — va solo nel logFeed laterale
+      
       const colore = tipo === 'critico' ? 'var(--coral)'
         : tipo === 'warning'            ? 'var(--amber)'
         : tipo === 'info'               ? 'var(--mint)'
@@ -352,12 +352,12 @@ export default function WarRoom() {
       aggiungiLog(`${author ? author + ': ' : ''}${content}`, colore);
     });
 
-    // Aggiornamento task Kanban da un altro membro
+    
     socket.on('task:update', ({ taskId, nuovoStato }) => {
       setTasks(prev => prev.map(t => t._id === taskId ? { ...t, stato: nuovoStato } : t));
     });
 
-    // Nuovo membro entrato — payload: { username, avatar }
+    
     socket.on('user-joined', ({ username }) => {
       const iniziali = username.slice(0, 2).toUpperCase();
       setMembriOnline(prev => {
@@ -369,7 +369,7 @@ export default function WarRoom() {
       aggiungiNotifica({ icon: '👥', testo: `${username} è entrato nella sala` });
     });
 
-    // Membro uscito — payload: { username }
+    
     socket.on('user-left', ({ username }) => {
       setMembriOnline(prev => prev.filter(m => m.username !== username));
       aggiungiLog(`${username} ha lasciato`, 'var(--text3)');
@@ -377,30 +377,30 @@ export default function WarRoom() {
       aggiungiNotifica({ icon: '👋', testo: `${username} ha lasciato la sala` });
     });
 
-    // Sala risolta — payload: { roomId, resolvedBy, resolvedAt, puntiTotali, passiCompletati, durataMin }
+    
     socket.on('room-resolved', (data) => {
-      // Ferma il timer immediatamente su tutti i client
+      
       clearInterval(timerRef.current);
       timerRef.current = null;
       setTempoRimanente(0);
       setUiBloccata(true);
 
-      // Usa i punti calcolati dal backend
+      
       if (data.puntiTotali !== undefined) setPuntiReali(data.puntiTotali);
       if (data.durataMin !== undefined) setTempoElapsedMin(data.durataMin);
 
-      // Mostra subito il modal corretto senza aspettare aggiornaUser
+      
       if (data.resolvedBy === user?.username) {
-        // Chi ha risolto: resetta il blocco pulsante e apre il modal di riepilogo
+        
         setRisoluzioneInCorso(false);
         setRisolviAperto(true);
       } else {
-        // Gli altri: vedono il modal "sala chiusa da altri" con il nome di chi ha risolto
+        
         setSalaChiusaDaAltri(true);
         setRisolutore(data.resolvedBy || 'il team');
       }
 
-      // Aggiorna punti in background senza bloccare la UI
+      
       sessionStorage.setItem('dashboard_refresh', 'true');
       if (typeof aggiornaUser === 'function') aggiornaUser();
     });
@@ -416,9 +416,9 @@ export default function WarRoom() {
     };
   }, [id, vistaChiusa, aggiungiLog, aggiungiNotifica, user?.username]);
 
-  // ── Countdown timer ──────────────────────────────────────────────────────────
+  
   useEffect(() => {
-    // Ferma subito il timer se la sala è chiusa o l'UI è bloccata (risoluzione ricevuta)
+    
     if (vistaChiusa || uiBloccata) {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -435,7 +435,7 @@ export default function WarRoom() {
           setTimerScaduto(true);
           return 0;
         }
-        // Avviso a 10 minuti
+        
         if (prev === 601) aggiungiLog('⚠️ Attenzione: meno di 10 minuti!', 'var(--coral)');
         return prev - 1;
       });
@@ -448,12 +448,12 @@ export default function WarRoom() {
     };
   }, [loading, timerScaduto, vistaChiusa, uiBloccata, aggiungiLog]);
 
-  // ── Inizializzazione dopo il caricamento della sala (Bug 1-4) ──────────────────
-  // Eseguito una sola volta quando sala e user sono disponibili
+  
+  
   useEffect(() => {
     if (!sala || !user) return;
 
-    // Terminale: intestazione con il nome reale della sala
+    
     const nomeSala = sala.name || sala.title || 'Incident Response';
     setRigheTerminale([
       { tipo: 'ok',  testo: `CyberNexus IR Console — ${nomeSala}` },
@@ -461,7 +461,7 @@ export default function WarRoom() {
       { tipo: 'out', testo: "Digita 'help' per vedere i comandi disponibili" },
     ]);
 
-    // Costruisci lista membri online da sala.members
+    
     const membriDB = sala.members
       .map(m => ({
         iniziali: (m.user?.username || 'US').slice(0, 2).toUpperCase(),
@@ -471,22 +471,22 @@ export default function WarRoom() {
           : 'linear-gradient(135deg,var(--cyan),var(--violet))',
       }));
     setMembriOnline(membriDB);
-    // Apri subito il pannello playbook così è visibile al primo caricamento
+    
     setDettagliAperto(true);
 
-    // Passi completati: ripristina dal DB per sincronizzare multi-utente
+    
     if (sala.passiCompletati?.length) {
       setPassiCompletati(new Set(sala.passiCompletati));
     }
 
-    // Task Kanban: carica dal DB
+    
     if (sala.tasks?.length) setTasks(sala.tasks);
 
-    // Chat: carica la storia dei messaggi salvati nel DB
+    
     if (sala.messages?.length) {
       const storico = sala.messages.slice(-30)
         .filter(msg => {
-          // Nasconde i log del terminale dalla chat
+          
           if (msg.type === 'system' && msg.content?.startsWith('[terminale]')) return false;
           return true;
         })
@@ -508,19 +508,19 @@ export default function WarRoom() {
       setMessaggiChat(storico);
     }
 
-  }, [sala, user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sala, user]); 
 
-  // ── Auto-scroll terminale ────────────────────────────────────────────────────
+  
   useEffect(() => {
     if (termBodyRef.current) termBodyRef.current.scrollTop = termBodyRef.current.scrollHeight;
   }, [righeTerminale]);
 
-  // ── Auto-scroll chat ─────────────────────────────────────────────────────────
+  
   useEffect(() => {
     if (chatMsgsRef.current) chatMsgsRef.current.scrollTop = chatMsgsRef.current.scrollHeight;
   }, [messaggiChat]);
 
-  // ── Blocca scroll body durante la sessione ───────────────────────────────────
+  
   useEffect(() => {
     if (!id) return;
     document.body.style.overflow = 'hidden';
@@ -536,16 +536,16 @@ export default function WarRoom() {
     return () => document.removeEventListener('keydown', handler);
   }, []);
 
-  // Punti: passiCompletati * 150 + bonus velocità (350pt <30min, 150pt 30-60min)
+  
   const puntiBase     = passiCompletati.size * 150;
   const bonusVelocita = tempoElapsedMin > 0 && tempoElapsedMin < 30  ? 350
                       : tempoElapsedMin >= 30 && tempoElapsedMin < 60 ? 150
                       : 0;
   const puntiTotali   = puntiBase + bonusVelocita;
-  // Usa i punti calcolati dal backend se disponibili, altrimenti stima locale
+  
   const puntiMostrati = puntiReali ?? puntiTotali;
 
-  // ── Animazione counter punti nel resolve modal ───────────────────────────────
+  
   useEffect(() => {
     if (!risolviAperto || !ptsCounterRef.current) return;
     const target = puntiMostrati;
@@ -560,17 +560,17 @@ export default function WarRoom() {
       else el.textContent = target.toLocaleString();
     };
     requestAnimationFrame(step);
-  }, [risolviAperto, puntiMostrati]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [risolviAperto, puntiMostrati]); 
 
-  // ── Handlers ─────────────────────────────────────────────────────────────────
+  
 
-  // Sposta un task Kanban: aggiornamento ottimistico + chiamata API
+  
   const spostaTask = async (taskId, nuovoStato) => {
     setTasks(prev => prev.map(t => t._id === taskId ? { ...t, stato: nuovoStato } : t));
     try {
       await warroomAPI.patchTask(id, taskId, { stato: nuovoStato });
     } catch {
-      // Rollback allo stato DB in caso di errore
+      
       setTasks(sala?.tasks || []);
     }
   };
@@ -601,8 +601,8 @@ export default function WarRoom() {
       username:  user?.username,
     });
 
-    // Aggiornamento locale ottimistico solo per passiCompletati
-    // passoAttivo viene avanzato nel listener step-completed
+    
+    
     setPassiCompletati(prev => {
       const nuovi = new Set(prev);
       nuovi.add(passoAttivo);
@@ -612,7 +612,7 @@ export default function WarRoom() {
 
   const apriRisolvi = () => {
     if (timerScaduto || uiBloccata) return;
-    // Calcola durata reale da createdAt della sala, o stima dal timer
+    
     const durataMin = sala?.createdAt
       ? Math.round((Date.now() - new Date(sala.createdAt).getTime()) / 60000)
       : 90 - Math.floor(tempoRimanente / 60);
@@ -625,8 +625,8 @@ export default function WarRoom() {
     setRisoluzioneInCorso(true);
     try {
       await warroomAPI.resolve(id);
-      // Il backend emette room-resolved via Socket.IO a tutti i client
-      // Il listener room-resolved gestisce punti, modal e aggiornamento utente
+      
+      
     } catch (err) {
       console.error('[resolve] errore:', err.response?.data || err.message);
       alert('Errore: ' + (err.response?.data?.error || err.message));
@@ -641,11 +641,11 @@ export default function WarRoom() {
       const W = 210;
       const H = 297;
 
-      // Sfondo scuro
+      
       doc.setFillColor(7, 9, 15);
       doc.rect(0, 0, W, H, 'F');
 
-      // Barra superiore colorata
+      
       doc.setFillColor(92, 206, 138);
       doc.rect(0, 0, W * 0.45, 3, 'F');
       doc.setFillColor(91, 196, 212);
@@ -653,7 +653,7 @@ export default function WarRoom() {
       doc.setFillColor(124, 111, 234);
       doc.rect(W * 0.75, 0, W * 0.25, 3, 'F');
 
-      // Header: box scuro con logo e timestamp
+      
       doc.setFillColor(13, 17, 23);
       doc.roundedRect(10, 8, W - 20, 28, 3, 3, 'F');
       doc.setFontSize(18);
@@ -668,7 +668,7 @@ export default function WarRoom() {
       doc.setTextColor(74, 90, 122);
       doc.text(`Generato il ${new Date(data.generatoIl).toLocaleString('it-IT')}`, W - 18, 27, { align: 'right' });
 
-      // Badge tipo incidente in alto a destra
+      
       doc.setFillColor(240, 112, 96);
       doc.roundedRect(W - 50, 10, 38, 10, 2, 2, 'F');
       doc.setFontSize(8);
@@ -676,7 +676,7 @@ export default function WarRoom() {
       doc.setFont('helvetica', 'bold');
       doc.text(data.tipo?.toUpperCase() || 'INCIDENT', W - 31, 16.5, { align: 'center' });
 
-      // Sezione info sala
+      
       let y = 46;
       doc.setFillColor(13, 17, 23);
       doc.roundedRect(10, y, W - 20, 36, 3, 3, 'F');
@@ -692,7 +692,7 @@ export default function WarRoom() {
       doc.setTextColor(74, 90, 122);
       doc.text(`Membri coinvolti: ${data.membriCoinvolti?.length || 0}   ·   Task completati: ${data.taskCompletati}/${data.taskTotali}   ·   Log eventi: ${data.eventiLog || 0}`, 18, y + 31);
 
-      // Stat cards (4 box orizzontali)
+      
       y += 44;
       const stats = [
         { label: 'TASK COMPLETATI', value: `${data.taskCompletati}/${data.taskTotali}`, color: [92, 206, 138] },
@@ -718,7 +718,7 @@ export default function WarRoom() {
         doc.text(s.label, x + cardW / 2, y + 20, { align: 'center' });
       });
 
-      // Sezione team
+      
       y += 32;
       doc.setFontSize(9);
       doc.setTextColor(92, 206, 138);
@@ -742,7 +742,7 @@ export default function WarRoom() {
         y += 13;
       });
 
-      // Footer
+      
       doc.setFillColor(13, 17, 23);
       doc.rect(0, H - 16, W, 16, 'F');
       doc.setFontSize(7);
@@ -942,13 +942,13 @@ export default function WarRoom() {
           justifyContent: 'center', minHeight: 'calc(100vh - 60px)',
           gap: 14, textAlign: 'center', padding: 24, paddingTop: 80,
         }}>
-          {/* ── Modale anteprima sala ── */}
+          
           {previewSala && (
             <div className="wr-preview-overlay" onClick={() => setPreviewSala(null)}>
               <div className="wr-preview-modal" onClick={e => e.stopPropagation()}>
                 <button className="wr-preview-close" onClick={() => setPreviewSala(null)}>✕</button>
 
-                {/* Header sala */}
+                
                 <div className="wr-preview-hdr">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ fontSize: 24 }}>⚔</div>
@@ -964,13 +964,13 @@ export default function WarRoom() {
                   </div>
                 </div>
 
-                {/* Corpo */}
+                
                 <div className="wr-preview-body">
                   {previewSala.description && (
                     <div className="wr-preview-desc">{previewSala.description}</div>
                   )}
 
-                  {/* Statistiche */}
+                  
                   <div className="wr-preview-stats">
                     <div className="wr-preview-stat">
                       <span className="wr-ps-v">{previewSala.memberCount ?? previewSala.members?.length ?? 0}</span>
@@ -986,7 +986,7 @@ export default function WarRoom() {
                     </div>
                   </div>
 
-                  {/* Anteprima passi */}
+                  
                   <div className="wr-preview-steps-lbl">📋 Playbook</div>
                   <div className="wr-preview-steps">
                     {PASSI.slice(0, 4).map((p, i) => (
@@ -1003,7 +1003,7 @@ export default function WarRoom() {
                   </div>
                 </div>
 
-                {/* Input codice invito per sale su invito */}
+                
                 {previewSala.accessoLibero === false && previewSala.status !== 'closed' && (
                   <div className="wr-preview-invite">
                     <div className="wr-preview-invite-lbl">🔒 Sala su invito — inserisci il codice</div>
@@ -1017,12 +1017,12 @@ export default function WarRoom() {
                   </div>
                 )}
 
-                {/* Footer azioni */}
+                
                 <div className="wr-preview-footer">
                   <button className="wr-preview-cancel" onClick={() => { setPreviewSala(null); setCodiceInvito(''); }}>Annulla</button>
 
 
-                  {/* Entra — disabilitato per Player/Guest con tooltip */}
+                  
                   {['Player', 'Guest'].includes(user?.role) ? (
                     <button
                       className="wr-preview-entra"
@@ -1159,7 +1159,7 @@ export default function WarRoom() {
     <div className="warroom-app">
       <div className="scan-line" />
 
-      {/* ── Timeout overlay ── */}
+      
       {timerScaduto && (
         <div className="timeout-overlay">
           <div className="to-modal">
@@ -1206,7 +1206,7 @@ export default function WarRoom() {
         </div>
       )}
 
-      {/* ── Modale sala chiusa da un altro membro ── */}
+      
       {salaChiusaDaAltri && (
         <div className="resolve-overlay">
           <div className="rm">
@@ -1236,7 +1236,7 @@ export default function WarRoom() {
         </div>
       )}
 
-      {/* ── Resolve modal ── */}
+      
       {risolviAperto && (
         <div className="resolve-overlay" onClick={(e) => e.target === e.currentTarget && setRisolviAperto(false)}>
           <div className="rm">
@@ -1285,7 +1285,7 @@ export default function WarRoom() {
                 <span className="rm-tp" style={{ color: 'var(--violet)', borderColor: 'rgba(124,111,234,.3)',background: 'var(--violet-bg)' }}>🔗 MongoDB</span>
                 <span className="rm-tp" style={{ color: 'var(--cyan)',   borderColor: 'rgba(91,196,212,.3)', background: 'var(--cyan-bg)'   }}>🔔 Webhook</span>
               </div>
-              {/* Il webhook viene inviato dal backend automaticamente a risoluzione */}
+              
               <div className="rm-webhook">
                 <div className="rm-wh-hdr">
                   <div className="rm-wh-ico">🔔</div>
@@ -1323,7 +1323,7 @@ export default function WarRoom() {
         </div>
       )}
 
-      {/* ── Navbar ── */}
+      
       <nav className="wr-navbar">
         <Link className="nav-logo" to="/">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -1359,7 +1359,7 @@ export default function WarRoom() {
         </div>
       </nav>
 
-      {/* ── Progress banner ── */}
+      
       <div className="prog-banner">
         <div className="pb-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--coral)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a12 12 0 008.5 3A12 12 0 0112 21 12 12 0 013.5 6 12 12 0 0012 3"/></svg>
@@ -1382,28 +1382,28 @@ export default function WarRoom() {
       </div>
 
 
-      {/* ── War shell ── */}
+      
       <div className="war-shell">
 
-        {/* Toggle sidebar sinistra */}
+        
         <div
           className={`stoggle ltoggle ${!sinistraAperta ? 'closed' : ''}`}
           style={{ left: sinistraAperta ? 'var(--lw)' : 0 }}
           onClick={() => setSinistraAperta(p => !p)}
         >{sinistraAperta ? '‹' : '›'}</div>
 
-        {/* Toggle sidebar destra */}
+        
         <div
           className={`stoggle rtoggle ${!destraAperta ? 'closed' : ''}`}
           style={{ right: destraAperta ? 'var(--rw)' : 0 }}
           onClick={() => setDestraAperta(p => !p)}
         >{destraAperta ? '›' : '‹'}</div>
 
-        {/* ── Sidebar sinistra ── */}
+        
         <div className={`col-left ${!sinistraAperta ? 'hidden' : ''}`}>
           <div className="sb-scroll">
 
-            {/* IOC */}
+            
             <div className={`sb-sec ${sbCompresse.ioc ? 'collapsed' : ''}`}>
               <div className="sb-hdr" onClick={() => toggleSb('ioc')}>
                 <span className="sb-ico">🔎</span>
@@ -1422,7 +1422,7 @@ export default function WarRoom() {
               </div>
             </div>
 
-            {/* Mappa rete */}
+            
             <div className={`sb-sec ${sbCompresse.net ? 'collapsed' : ''}`}>
               <div className="sb-hdr" onClick={() => toggleSb('net')}>
                 <span className="sb-ico">🗺</span>
@@ -1459,7 +1459,7 @@ export default function WarRoom() {
               </div>
             </div>
 
-            {/* Log live */}
+            
             <div className={`sb-sec ${sbCompresse.log ? 'collapsed' : ''}`}>
               <div className="sb-hdr" onClick={() => toggleSb('log')}>
                 <span className="sb-ico">🔔</span>
@@ -1483,10 +1483,10 @@ export default function WarRoom() {
           </div>
         </div>
 
-        {/* ── Centro ── */}
+        
         <div className="col-center">
 
-          {/* Terminale + obiettivi passo: tab toggle rimosso, sempre visibile */}
+          
           <>
             <div className="step-hdr">
               <div className="sh-ico">{passoCorr.icon}</div>
@@ -1541,10 +1541,10 @@ export default function WarRoom() {
           </>
         </div>
 
-        {/* ── Sidebar destra ── */}
+        
         <div className={`col-right ${!destraAperta ? 'hidden' : ''}`}>
 
-          {/* Pannello dettagli step — si sovrappone alla chat */}
+          
           <div className={`step-details ${dettagliAperto ? 'open' : ''}`}>
             <div className="sd-hdr">
               <div className="sd-ico">{passoCorr.icon}</div>
@@ -1562,7 +1562,7 @@ export default function WarRoom() {
 
             <div className="sd-scroll">
               <div className="sd-guide-lbl">📋 Cosa fare</div>
-              {/* dangerouslySetInnerHTML sicuro: contenuto statico, non da input utente */}
+              
               <div className="sd-guide-text" dangerouslySetInnerHTML={{ __html: passoCorr.guida }} />
 
               <div className="sd-obj-lbl">✓ Obiettivi</div>
@@ -1582,7 +1582,7 @@ export default function WarRoom() {
             </div>
           </div>
 
-          {/* Chat — occupa tutta l'altezza quando il pannello è chiuso */}
+          
           <div className="chat-sec">
             <div className="chat-hdr">
               <div className="chat-hdr-t">
@@ -1606,7 +1606,7 @@ export default function WarRoom() {
                 );
               })}
             </div>
-            {/* Indicatore di digitazione: appare quando un altro membro sta scrivendo */}
+            
             {utenteCheScrive && (
               <div className="chat-typing">{utenteCheScrive} sta scrivendo...</div>
             )}

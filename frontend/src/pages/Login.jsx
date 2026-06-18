@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authAPI, api } from '../services/api';
 import Navbar from '../components/Navbar';
+import LegalModal from '../components/LegalModal';
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
@@ -40,7 +41,7 @@ const CSS = `
   display:flex;height:100vh;overflow:hidden;
 }
 
-/* ── LEFT PANEL ─────────────────────────────────────── */
+
 .lp{
   flex:1;min-width:0;
   background:linear-gradient(135deg,#0a0c1a 0%,#0f1128 50%,#0a0d1f 100%);
@@ -112,7 +113,7 @@ const CSS = `
 .lp-card-name{font-size:11px;color:rgba(255,255,255,.7);flex:1;font-family:'JetBrains Mono',monospace}
 .lp-card-pts{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace}
 
-/* ── RIGHT PANEL ─────────────────────────────────────── */
+
 .rp{
   width:460px;flex-shrink:0;
   background:var(--bg2);border-left:0.5px solid var(--border);
@@ -247,8 +248,8 @@ export default function Login() {
   const [pwScore,   setPwScore]   = useState(0);
   const [shakeKey,  setShakeKey]  = useState({ email: 0, pw: 0 });
   const [theme,     setTheme]     = useState('dark');
+  const [modalLegale, setModalLegale] = useState(null);
 
-  // Statistiche pubbliche e top-3 per il pannello sinistro
   const [statsLogin, setStatsLogin] = useState({ utenti: 0, sfide: 0, warroom: 0 });
   const [topLogin,   setTopLogin]   = useState([]);
 
@@ -324,7 +325,7 @@ export default function Login() {
       <Navbar />
       <div className="login-page" style={{ paddingTop: '60px' }}>
 
-        {/* ── LEFT PANEL ── */}
+        
         <div className="lp">
           <div className="lp-scan" />
           <div className="lp-orb lp-orb-1" />
@@ -401,7 +402,7 @@ export default function Login() {
           </div>
         </div>
 
-        {/* ── RIGHT PANEL ── */}
+        
         <div className="rp">
           <div className="rp-top" />
 
@@ -419,7 +420,7 @@ export default function Login() {
                 <button className={`auth-tab${tab === 'register' ? ' active' : ''}`} onClick={() => switchTab('register')}>Registrati</button>
               </div>
 
-              {/* Email */}
+              
               <div className="field-group">
                 <label className="field-label">Email</label>
                 <div className="field-wrap">
@@ -436,7 +437,7 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Username pubblico — solo register */}
+              
               {tab === 'register' && (
                 <div className="field-group">
                   <label className="field-label">Username (pubblico)</label>
@@ -457,7 +458,7 @@ export default function Login() {
                 </div>
               )}
 
-              {/* Password */}
+              
               <div className="field-group">
                 <label className="field-label">Password</label>
                 <div className="field-wrap">
@@ -490,7 +491,7 @@ export default function Login() {
                 )}
               </div>
 
-              {/* Conferma password — solo register */}
+              
               {tab === 'register' && (
                 <div className="field-group">
                   <label className="field-label">Conferma password</label>
@@ -507,7 +508,7 @@ export default function Login() {
                 </div>
               )}
 
-              {/* Messaggio di errore API */}
+              
               {error && <div className="error-msg">{error}</div>}
 
               <button className="submit-btn" onClick={handleSubmit} disabled={loading}>
@@ -546,8 +547,8 @@ export default function Login() {
 
               <div className="terms-txt">
                 {tab === 'login'
-                  ? <><>Accedendo accetti i nostri </><a href="#">Termini di servizio</a><> e la </><a href="#">Privacy Policy</a>.</>
-                  : <><>Registrandoti accetti i </><a href="#">Termini</a><> e la </><a href="#">Privacy Policy</a></>
+                  ? <>Accedendo accetti i nostri{' '}<a href="#" onClick={e => { e.preventDefault(); setModalLegale('termini'); }}>Termini di servizio</a>{' '}e la{' '}<a href="#" onClick={e => { e.preventDefault(); setModalLegale('privacy'); }}>Privacy Policy</a>.</>
+                  : <>Registrandoti accetti i{' '}<a href="#" onClick={e => { e.preventDefault(); setModalLegale('termini'); }}>Termini</a>{' '}e la{' '}<a href="#" onClick={e => { e.preventDefault(); setModalLegale('privacy'); }}>Privacy Policy</a></>
                 }
               </div>
             </div>
@@ -568,6 +569,7 @@ export default function Login() {
           )}
         </div>
       </div>
+      <LegalModal tipo={modalLegale} onClose={() => setModalLegale(null)} />
     </>
   );
 }

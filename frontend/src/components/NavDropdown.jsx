@@ -54,7 +54,7 @@ export default function NavDropdown({ initials, user: userProp }) {
   const user = userProp ?? authUser;
   const ini  = initials ?? (user?.username || 'US').slice(0, 2).toUpperCase();
 
-  // Stato per il modal profilo
+  
   const [profiloAperto, setProfiloAperto] = useState(false);
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function NavDropdown({ initials, user: userProp }) {
   return (
     <>
       <style>{DROP_CSS}</style>
-      {/* Modal profilo — si apre al click "Il mio profilo" */}
+      
       <ProfiloModal
         open={profiloAperto}
         onClose={() => setProfiloAperto(false)}

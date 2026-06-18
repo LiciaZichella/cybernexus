@@ -3,7 +3,7 @@ import { api, authAPI, setMemoryToken, setRefreshCallback } from '../services/ap
 
 const AuthContext = createContext(null);
 
-// ─── Refresh token storage ────────────────────────────────────────────────────
+
 
 const RT_KEY = 'refreshToken';
 
@@ -15,7 +15,7 @@ const leggiRefreshToken = () => {
 };
 
 const salvaRefreshToken = (token) => {
-  // Fallback localStorage — per httpOnly vero il server deve usare Set-Cookie
+  
   localStorage.setItem(RT_KEY, token);
 };
 
@@ -24,30 +24,30 @@ const cancellaRefreshToken = () => {
   document.cookie = 'refreshToken=; Max-Age=0; path=/';
 };
 
-// ─── Provider ────────────────────────────────────────────────────────────────
+
 
 export function AuthProvider({ children }) {
   const [user, setUser]               = useState(null);
   const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading]         = useState(true);
 
-  // Sincronizza stato React e variabile di modulo in api.js
+  
   const impostaToken = (token) => {
     setMemoryToken(token);
     setAccessToken(token);
   };
 
-  // Rinnova l'access token usando il refresh token salvato
+  
   const refreshToken = useCallback(async () => {
     const rt = leggiRefreshToken();
     if (!rt) { setLoading(false); return false; }
 
     try {
-      // authAPI.refresh usa axios diretto — bypassa l'interceptor 401 (evita loop)
+      
       const { data } = await authAPI.refresh(rt);
       impostaToken(data.accessToken);
       salvaRefreshToken(data.refreshToken);
-      // Il refresh endpoint non restituisce user: ripristina il profilo (incluso role)
+      
       const { data: me } = await api.get('/users/me');
       setUser(me.user);
       return true;
@@ -59,19 +59,19 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); 
 
-  // Registra il callback di refresh in api.js per l'interceptor 401
+  
   useEffect(() => {
     setRefreshCallback(refreshToken);
   }, [refreshToken]);
 
-  // Al montaggio: ripristina la sessione se esiste un refresh token
+  
   useEffect(() => {
     refreshToken();
   }, [refreshToken]);
 
-  // Login: chiama l'API, aggiorna token e stato utente
+  
   const login = async (email, password) => {
     const { data } = await authAPI.login({ email, password });
     impostaToken(data.accessToken);
@@ -80,12 +80,12 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
-  // Login tramite OAuth: riceve i token direttamente dal callback senza round-trip di refresh
+  
   const loginWithOAuth = useCallback(async (at, rt) => {
     try {
       impostaToken(at);
       salvaRefreshToken(rt);
-      // Recupera il profilo usando il nuovo accessToken appena settato
+      
       const { data: me } = await api.get('/users/me');
       setUser(me.user ?? me);
       return true;
@@ -97,9 +97,9 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); 
 
-  // Ricarica il profilo utente dal backend e aggiorna lo stato
+  
   const aggiornaUser = useCallback(async () => {
     try {
       const { data } = await api.get('/users/me');
@@ -109,14 +109,14 @@ export function AuthProvider({ children }) {
     } catch {
       return null;
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); 
 
-  // Logout: revoca il token lato server e pulisce lo stato locale
+  
   const logout = async () => {
     try {
       await authAPI.logout();
     } catch {
-      // Pulizia locale anche se il server non risponde
+      
     } finally {
       impostaToken(null);
       cancellaRefreshToken();
@@ -131,7 +131,7 @@ export function AuthProvider({ children }) {
   );
 }
 
-// Hook per accedere al context nelle pagine e nei componenti
+
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth deve essere usato dentro <AuthProvider>');

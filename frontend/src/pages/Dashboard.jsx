@@ -5,7 +5,7 @@ import { useNotifications } from '../context/NotificationsContext';
 import Navbar from '../components/Navbar';
 import { usersAPI, challengesAPI, warroomAPI, leaderboardAPI } from '../services/api';
 
-/* ─── Counter ─────────────────────────────────────────────────────────────── */
+
 function Counter({ target = 0, style, delay = 400 }) {
   const [val, setVal] = useState(0);
   useEffect(() => {
@@ -25,7 +25,7 @@ function Counter({ target = 0, style, delay = 400 }) {
   return <span style={style}>{val.toLocaleString('it-IT')}</span>;
 }
 
-/* ─── Helpers ─────────────────────────────────────────────────────────────── */
+
 function getInitials(name = '') {
   return (name.replace(/_/g, ' ').trim().slice(0, 2) || 'US').toUpperCase();
 }
@@ -42,8 +42,8 @@ function getRankInfo(pts = 0) {
   return { next: null, pct: 100, remaining: 0, max: pts };
 }
 
-/* ─── Static data ─────────────────────────────────────────────────────────── */
-// Colori livelli attività heatmap (0 = inattivo, 4 = massima attività)
+
+
 const HEATMAP_COLORS = [
   'var(--border2)',
   'rgba(124,111,234,0.18)',
@@ -52,7 +52,7 @@ const HEATMAP_COLORS = [
   'var(--violet)',
 ];
 
-// Categorie challenge con colori associati (ordine di visualizzazione)
+
 const CAT_CONFIG = [
   { name: 'Cryptography', alt: 'Crypto', c: 'var(--violet)'  },
   { name: 'Web',          alt: null,     c: 'var(--fuchsia)' },
@@ -87,7 +87,7 @@ const STATIC_SMALL = [
 
 
 
-/* ─── Challenge icon by category ─────────────────────────────────────────── */
+
 function ChIcon({ category, color, size = 15 }) {
   const s = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
   switch (category) {
@@ -100,7 +100,7 @@ function ChIcon({ category, color, size = 15 }) {
   }
 }
 
-/* ─── Descrizioni achievement ─────────────────────────────────────────────── */
+
 const BADGE_DESCRIZIONI = {
   'First Blood':  'Risolvi la tua prima sfida CTF.',
   'Cryptolord':   'Risolvi 3 sfide di categoria Crypto.',
@@ -112,7 +112,7 @@ const BADGE_DESCRIZIONI = {
   '???':          'Continua a esplorare per scoprire altri achievement segreti...',
 };
 
-/* ─── CSS ─────────────────────────────────────────────────────────────────── */
+
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 :root{
@@ -159,7 +159,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .delay-1{animation-delay:.1s}.delay-2{animation-delay:.2s}.delay-3{animation-delay:.3s}
 .delay-4{animation-delay:.4s}.delay-5{animation-delay:.5s}.delay-6{animation-delay:.6s}
 
-/* NAVBAR */
+
 .navbar{position:fixed;top:0;left:0;right:0;z-index:500;height:58px;padding:0 32px;display:flex;align-items:center;background:rgba(17,24,39,0.9);backdrop-filter:blur(20px);border-bottom:0.5px solid var(--border);transition:background .3s;animation:fadeInUp .5s ease both}
 [data-theme="light"] .navbar{background:rgba(248,249,252,0.95)}
 .nav-logo{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text1);text-decoration:none;margin-right:32px;transition:transform .2s}
@@ -183,11 +183,11 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .burger{display:none;width:34px;height:34px;border-radius:var(--r8);border:0.5px solid var(--border2);background:var(--bg2);align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:3px;padding:0}
 .burger span{width:14px;height:1.5px;background:var(--text2);border-radius:1px}
 
-/* PAGE */
+
 .page{padding-top:58px;min-height:100vh;max-width:1280px;margin:0 auto;padding-left:32px;padding-right:32px;padding-bottom:60px;position:relative;z-index:1}
 .grad-strip{height:2px;background:linear-gradient(90deg,var(--violet),var(--fuchsia),var(--cyan),var(--mint),var(--amber));position:fixed;top:58px;left:0;right:0;z-index:499}
 
-/* ROW 1 */
+
 .row-1{display:grid;grid-template-columns:1fr 280px;gap:14px;margin-top:32px;margin-bottom:14px}
 .welcome{background:linear-gradient(135deg,var(--violet-bg) 0%,var(--cyan-bg) 100%);border:0.5px solid var(--border2);border-radius:var(--r14);padding:24px 28px;position:relative;overflow:hidden}
 .welcome::before{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,var(--violet-bg) 0%,transparent 70%);animation:float 6s ease-in-out infinite}
@@ -205,7 +205,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .wp-bar{height:8px;border-radius:5px;background:var(--border2);overflow:hidden;position:relative}
 .wp-fill{height:8px;border-radius:5px;background:linear-gradient(90deg,var(--violet) 0%,var(--fuchsia) 25%,var(--cyan) 50%,var(--mint) 75%,var(--violet) 100%);background-size:200% 100%;animation:shimmer 2s linear infinite;position:relative}
 
-/* HEATMAP */
+
 .heatmap-mini{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r14);padding:16px;display:flex;flex-direction:column;transition:border-color .2s}
 .heatmap-mini:hover{border-color:var(--border2)}
 .hm-mini-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -218,7 +218,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .hm-mini-info{font-size:10px;color:var(--text3);margin-top:8px;display:flex;justify-content:space-between}
 .hm-mini-info strong{color:var(--violet);font-weight:600}
 
-/* STAT CARDS */
+
 .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}
 .stat-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r14);padding:16px 18px;transition:all .3s;cursor:default;position:relative;overflow:hidden}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:currentColor;opacity:0;transition:opacity .3s}
@@ -232,7 +232,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .stat-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:8px}
 .sc-spark{width:54px;height:28px;flex-shrink:0}
 
-/* CHARTS ROW */
+
 .mid-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
 .chart-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r14);padding:18px 20px;transition:border-color .2s}
 .chart-card:hover{border-color:var(--border2)}
@@ -259,7 +259,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .cat-bar-fill{height:5px;border-radius:3px;width:0;animation:fillCat 1.2s .5s ease forwards}
 .cat-bar-pct{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;min-width:30px;text-align:right}
 
-/* CHALLENGES */
+
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;margin-top:8px}
 .section-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
 .view-all{font-size:12px;color:var(--violet);text-decoration:none;font-weight:500;transition:gap .15s;display:inline-flex;align-items:center;gap:3px}
@@ -285,7 +285,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .chs-meta{font-size:10px;color:var(--text3)}
 .chs-pts{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;flex-shrink:0}
 
-/* WAR ROOM + FEED */
+
 .big-row{display:grid;grid-template-columns:1fr 320px;gap:14px;margin-bottom:24px}
 .inc-list{display:flex;flex-direction:column;gap:8px}
 .incident-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r12);padding:14px 16px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
@@ -316,7 +316,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .act-text strong{color:var(--text1);font-weight:500}
 .act-time{font-size:10px;color:var(--text3);margin-top:2px;font-family:'JetBrains Mono',monospace}
 
-/* BADGES */
+
 .badge-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
 .badge-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r12);padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:all .2s;position:relative}
 .badge-card:hover{transform:translateY(-4px);border-color:var(--border2);box-shadow:0 8px 20px var(--shadow)}
@@ -333,7 +333,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .badge-card.locked .bc-name{opacity:.5}
 .unlocked-check{position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--mint);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700}
 
-/* ACHIEVEMENT MODAL */
+
 .ach-overlay{position:fixed;inset:0;z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(7,9,15,.75);backdrop-filter:blur(14px);animation:fadeIn .2s ease}
 [data-theme="light"] .ach-overlay{background:rgba(240,242,248,.75)}
 .ach-modal{width:100%;max-width:380px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r14);padding:28px 24px 24px;position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;animation:scaleIn .25s cubic-bezier(.34,1.56,.64,1)}
@@ -353,7 +353,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .ach-status.ok{color:var(--mint);background:var(--mint-bg);border:0.5px solid rgba(92,206,138,.25)}
 .ach-status.wip{color:var(--text2);background:var(--bg3);border:0.5px solid var(--border)}
 
-/* ADMIN */
+
 .admin-pill{font-size:11px;font-weight:600;padding:5px 11px;border-radius:var(--r8);background:var(--coral-bg);color:var(--coral);border:0.5px solid rgba(240,112,96,.3);text-decoration:none;transition:all .2s;display:flex;align-items:center;gap:5px;white-space:nowrap}
 .admin-pill:hover{background:rgba(240,112,96,.18);transform:translateY(-1px)}
 .admin-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(135deg,rgba(240,112,96,.07),rgba(246,198,82,.05));border:0.5px solid rgba(240,112,96,.2);border-radius:var(--r12);padding:12px 18px;margin-bottom:14px}
@@ -364,7 +364,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .ab-btn{font-size:12px;font-weight:600;padding:8px 16px;border-radius:var(--r8);background:var(--coral-bg);color:var(--coral);border:0.5px solid rgba(240,112,96,.3);text-decoration:none;transition:all .2s;white-space:nowrap;flex-shrink:0}
 .ab-btn:hover{background:rgba(240,112,96,.18);transform:translateY(-1px)}
 
-/* LEADERBOARD */
+
 .lb-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r14);padding:18px 20px;margin-bottom:24px}
 .lb-mini{display:flex;flex-direction:column;gap:6px}
 .lbm-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r8);background:var(--bg3);border:0.5px solid var(--border);transition:all .2s;cursor:pointer}
@@ -375,7 +375,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .lbm-name{font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lbm-pts{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;flex-shrink:0}
 
-/* BELL DROPDOWN */
+
 .bell-wrap{position:relative}
 .bell-badge{position:absolute;top:4px;right:5px;min-width:15px;height:15px;border-radius:8px;background:var(--coral);border:1.5px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;line-height:1;padding:0 2px}
 .bell-drop{position:absolute;top:calc(100% + 10px);right:0;width:300px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r14);box-shadow:0 20px 48px var(--shadow);z-index:600;overflow:hidden;animation:ndFadeIn .15s ease both}
@@ -397,11 +397,11 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .bell-item-sub{font-size:10px;color:var(--text3);margin-top:2px}
 .bell-empty{padding:28px 14px;text-align:center;font-size:12px;color:var(--text3)}
 
-/* EDIT PROFILO BUTTON */
+
 .ep-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--r8);background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px;margin-top:10px}
 .ep-btn:hover{background:var(--border2);color:var(--text1)}
 
-/* EDIT PROFILO MODAL */
+
 .ep-overlay{position:fixed;inset:0;z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(7,9,15,.75);backdrop-filter:blur(14px);animation:fadeIn .2s ease}
 [data-theme="light"] .ep-overlay{background:rgba(240,242,248,.75)}
 .ep-modal{width:100%;max-width:420px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r14);padding:24px;position:relative;animation:scaleIn .25s cubic-bezier(.34,1.56,.64,1)}
@@ -417,7 +417,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .ep-cancel{font-size:12px;font-weight:600;padding:8px 20px;border-radius:var(--r8);background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);cursor:pointer;transition:all .2s}
 .ep-cancel:hover{background:var(--border2)}
 
-/* STORICO SFIDE */
+
 .storico-wrap{margin-bottom:24px}
 .storico-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto}
 .storico-list::-webkit-scrollbar{width:3px}
@@ -429,14 +429,14 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .storico-pts{font-size:12px;font-weight:600;color:var(--mint);font-family:'JetBrains Mono',monospace;flex-shrink:0}
 .storico-date{font-size:11px;color:var(--text3);flex-shrink:0;white-space:nowrap}
 
-/* RESPONSIVE */
+
 @media(max-width:1280px){.page{padding-left:24px;padding-right:24px}.row-1{grid-template-columns:1fr 240px}.big-row{grid-template-columns:1fr 280px}}
 @media(max-width:1024px){.row-1{grid-template-columns:1fr;gap:10px}.heatmap-mini-grid{grid-template-columns:repeat(20,1fr)}.badge-grid{grid-template-columns:repeat(6,1fr)}.ch-small-grid{grid-template-columns:repeat(2,1fr)}.big-row{grid-template-columns:1fr}}
 @media(max-width:768px){.navbar{padding:0 16px}.nav-items{display:none}.burger{display:flex}.page{padding-left:16px;padding-right:16px}.row-1{margin-top:24px}.welcome{padding:20px 22px}.welcome-title{font-size:20px}.stat-grid{grid-template-columns:repeat(2,1fr)}.mid-grid{grid-template-columns:1fr}.ch-featured{flex-direction:column;align-items:flex-start;gap:14px}.cf-action{align-self:stretch;justify-content:center}.badge-grid{grid-template-columns:repeat(4,1fr)}.ch-small-grid{grid-template-columns:1fr 1fr}.live-notifs{top:auto;bottom:20px;left:20px;right:20px;max-width:none}}
 @media(max-width:640px){.welcome::before,.welcome::after{display:none}.welcome-title{font-size:18px}.stat-grid{gap:6px}.stat-card{padding:12px 14px}.stat-val{font-size:20px}.sc-spark{width:42px;height:24px}.badge-grid{grid-template-columns:repeat(3,1fr)}.cat-card-content{grid-template-columns:1fr}.ch-featured{padding:16px}.cf-icon{width:44px;height:44px}.cf-name{font-size:15px}.ch-small-grid{grid-template-columns:1fr}}
 `;
 
-/* ─── Component ───────────────────────────────────────────────────────────── */
+
 export default function Dashboard() {
   const { user, loading: authLoading, aggiornaUser } = useAuth();
   const navigate   = useNavigate();
@@ -451,9 +451,9 @@ export default function Dashboard() {
   const [topClassifica, setTopClassifica] = useState([]);
   const [chartFilter,   setChartFilter]   = useState('7g');
   const [progressWidth, setProgressWidth] = useState(0);
-  const [attivita,      setAttivita]      = useState([]);  // { date, count } × 60 giorni
-  const [submissions,   setSubmissions]   = useState([]);  // { createdAt, pointsAwarded }
-  const [badgeModal,    setBadgeModal]    = useState(null); // achievement aperto nel modale
+  const [attivita,      setAttivita]      = useState([]);  
+  const [submissions,   setSubmissions]   = useState([]);  
+  const [badgeModal,    setBadgeModal]    = useState(null); 
   const [editModal,     setEditModal]     = useState(false);
   const [editForm,      setEditForm]      = useState({ username: '', bio: '', avatar: '' });
   const [editLoading,   setEditLoading]   = useState(false);
@@ -474,11 +474,11 @@ export default function Dashboard() {
     try {
       const [profRes, chRes, wrRes, lbRes, actRes, subRes] = await Promise.allSettled([
         usersAPI.getMe(),
-        challengesAPI.getAll({}),          // tutte le challenge (per analisi categorie)
+        challengesAPI.getAll({}),          
         warroomAPI.getAll(),
         leaderboardAPI.get({ page: 1, limit: 100 }),
-        usersAPI.getActivity(),            // heatmap 60 giorni
-        usersAPI.getSubmissions(),         // grafico progressione punti
+        usersAPI.getActivity(),            
+        usersAPI.getSubmissions(),         
       ]);
       if (profRes.status === 'fulfilled') {
         const prof = profRes.value.data;
@@ -507,28 +507,28 @@ export default function Dashboard() {
     } catch (err) {
       console.error('Dashboard load error:', err);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); 
 
-  // Initial load when auth is ready
+  
   useEffect(() => {
     if (authLoading) return;
     loadAllData();
   }, [authLoading, loadAllData]);
 
-  // Ricarica dati ogni volta che si naviga alla dashboard (es. ritorno dalla War Room)
+  
   useEffect(() => {
     const needsRefresh = sessionStorage.getItem('dashboard_refresh');
     if (needsRefresh) {
       sessionStorage.removeItem('dashboard_refresh');
-      // Piccolo delay per permettere al token di aggiornarsi
+      
       setTimeout(() => {
         aggiornaUser();
         loadAllData();
       }, 300);
     }
-  }, [location.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.key]); 
 
-  // Animate progress bar after profile loads
+  
   useEffect(() => {
     if (!profile) return;
     const { pct } = getRankInfo(profile.points);
@@ -536,7 +536,7 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, [profile]);
 
-  // Re-fetch all data when returning to this tab (aggiorna anche user per punti e rank)
+  
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
@@ -548,14 +548,14 @@ export default function Dashboard() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [loadAllData, aggiornaUser]);
 
-  // Aggiornamento automatico ogni 30 secondi per punti e war room attive
+  
   useEffect(() => {
     if (authLoading) return;
     const interval = setInterval(loadAllData, 30000);
     return () => clearInterval(interval);
   }, [authLoading, loadAllData]);
 
-  // Salva le modifiche al profilo (username, bio, avatar)
+  
   const handleSalvaProfilo = async () => {
     setEditLoading(true);
     setEditError('');
@@ -618,7 +618,7 @@ export default function Dashboard() {
     ];
   }, [profile, challenges, rankUtente]);
 
-  // ── Grafico progressione punti ────────────────────────────────────────────────
+  
   const barData = useMemo(() => {
     const FALLBACK = { labels: ['L','M','M','G','V','S','D'], heights: [10,15,10,20,15,25,30] };
     const oggi = new Date();
@@ -638,7 +638,7 @@ export default function Dashboard() {
     }
 
     if (chartFilter === '30g') {
-      // Aggrega le ultime 4 settimane
+      
       const settimane = [3,2,1,0].map(w => {
         const fine   = new Date(oggi.getTime() - w * 7 * 86400000);
         const inizio = new Date(fine.getTime() - 7 * 86400000);
@@ -649,7 +649,7 @@ export default function Dashboard() {
       return { labels: settimane.map(s => s.label), heights: settimane.map(s => Math.max(3, Math.round((s.pts / max) * 95))) };
     }
 
-    // 'tutto' — raggruppa per mese, ultimi 7 mesi
+    
     if (!submissions.length) return FALLBACK;
     const mesiMap = {};
     submissions.forEach(s => {
@@ -672,7 +672,7 @@ export default function Dashboard() {
     if (!challenges.length) return null;
     const solvedSet = new Set((profile?.solvedChallenges || []).map(String));
     const nonRisolte = challenges.filter(ch => !solvedSet.has(String(ch._id)));
-    if (!nonRisolte.length) return challenges[0]; // tutto risolto: mostra la prima
+    if (!nonRisolte.length) return challenges[0]; 
     const catCount = {};
     challenges.forEach(ch => {
       if (solvedSet.has(String(ch._id))) catCount[ch.category] = (catCount[ch.category] || 0) + 1;
@@ -680,7 +680,7 @@ export default function Dashboard() {
     return nonRisolte.sort((a, b) => (catCount[a.category] || 0) - (catCount[b.category] || 0))[0];
   }, [challenges, profile]);
 
-  // Sfide secondarie: escludi quella featured
+  
   const smallCh = useMemo(() => {
     const featId = featured?._id ? String(featured._id) : null;
     const rest = challenges.filter(ch => String(ch._id) !== featId);
@@ -702,7 +702,7 @@ export default function Dashboard() {
 
       <div className="page">
 
-        {/* ── ROW 1: welcome + heatmap ── */}
+        
         <div className="row-1">
           <div id="profilo" className="welcome animate-in delay-1">
             <div className="welcome-content">
@@ -758,7 +758,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── ADMIN BANNER ── */}
+        
         {user?.role === 'Admin' && (
           <div className="admin-banner animate-in delay-2">
             <div className="ab-left">
@@ -772,7 +772,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ── STAT CARDS ── */}
+        
         <div className="stat-grid">
           <div className="stat-card animate-in delay-3" style={{color:'var(--violet)'}}>
             <div className="sc-row">
@@ -834,7 +834,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── CHARTS ── */}
+        
         <div className="mid-grid">
           <div className="chart-card animate-in delay-4">
             <div className="card-title-row">
@@ -912,14 +912,14 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── FEATURED CHALLENGES ── */}
+        
         <div className="animate-in delay-5" style={{marginBottom:'14px'}}>
           <div className="section-header">
             <div className="section-title">🎯 Sfide consigliate</div>
             <Link className="view-all" to="/ctf">Vedi tutte →</Link>
           </div>
 
-          {/* Featured card */}
+          
           {(() => {
             const ch   = featured;
             const cs   = ch ? (CAT_STYLE[ch.category] || CAT_STYLE.Cryptography) : CAT_STYLE.Cryptography;
@@ -949,7 +949,7 @@ export default function Dashboard() {
             );
           })()}
 
-          {/* Small challenge grid */}
+          
           <div className="ch-small-grid">
             {smallCh.map((ch, i) => {
               const cs = CAT_STYLE[ch.category] || CAT_STYLE.Cryptography;
@@ -969,7 +969,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── WAR ROOM + ACTIVITY FEED ── */}
+        
         <div className="big-row animate-in delay-6">
           <div>
             <div className="section-header">
@@ -982,7 +982,7 @@ export default function Dashboard() {
                   Nessuna War Room attiva al momento
                 </div>
               ) : warrooms.map(wr => {
-                // Usa i campi reali del modello WARRoom (name, members, status)
+                
                 const nome = wr.name || wr.title || 'War Room';
                 const nMembri = wr.memberCount ?? wr.members?.length ?? 0;
                 return (
@@ -1034,7 +1034,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── BADGES ── */}
+        
         <div id="achievements" className="animate-in delay-6" style={{marginBottom:'24px'}}>
           <div className="section-header">
             <div className="section-title">🏅 Achievement</div>
@@ -1063,24 +1063,24 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── MODALE DETTAGLIO ACHIEVEMENT ── */}
+        
         {badgeModal && (
           <div className="ach-overlay" onClick={() => setBadgeModal(null)}>
             <div className="ach-modal" onClick={e => e.stopPropagation()}>
               <button className="ach-close" onClick={() => setBadgeModal(null)}>✕</button>
 
-              {/* Icona grande */}
+              
               <div className="ach-icon-big" style={{background: badgeModal.bg}}>
                 {badgeModal.icon}
               </div>
 
-              {/* Nome e descrizione */}
+              
               <div className="ach-modal-name">{badgeModal.name}</div>
               <div className="ach-modal-desc">
                 {BADGE_DESCRIZIONI[badgeModal.name] ?? ''}
               </div>
 
-              {/* Barra di progresso */}
+              
               {badgeModal.total > 0 && (
                 <div className="ach-progress-wrap">
                   <div className="ach-progress-row">
@@ -1099,7 +1099,7 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Stato */}
+              
               <div className={`ach-status ${badgeModal.unlocked ? 'ok' : 'wip'}`}>
                 {badgeModal.unlocked ? 'Sbloccato ✓' : 'In corso...'}
               </div>
@@ -1107,7 +1107,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ── TOP LEADERBOARD ── */}
+        
         <div className="lb-card animate-in delay-6">
           <div className="section-header" style={{marginBottom:'14px',marginTop:0}}>
             <div className="section-title">🏆 Top classifica</div>
@@ -1141,7 +1141,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── STORICO SFIDE ── */}
+        
         <div className="storico-wrap animate-in delay-6">
           <div className="section-header">
             <div className="section-title">📋 Storico flag</div>
@@ -1168,7 +1168,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* ── MODALE MODIFICA PROFILO ── */}
+        
         {editModal && (
           <div className="ep-overlay" onClick={() => setEditModal(false)}>
             <div className="ep-modal" onClick={e => e.stopPropagation()}>

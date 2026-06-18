@@ -5,14 +5,14 @@ const WARRoom   = require('../models/WARRoom');
 
 const router = express.Router();
 
-// GET /api/platform/stats — statistiche pubbliche della piattaforma (no auth)
+
 router.get('/stats', async (req, res) => {
   try {
     const [utenti, sfide, warroom, top3] = await Promise.all([
       User.countDocuments(),
       Challenge.countDocuments({ isActive: true }),
       WARRoom.countDocuments({ status: 'active' }),
-      // Top 3 per la leaderboard della landing
+      
       User.find()
         .sort({ points: -1 })
         .limit(3)

@@ -7,7 +7,7 @@ const { protect } = require('../middleware/verificaUtenti');
 
 const router = express.Router();
 
-// Rate limiter per login e registrazione: max 10 tentativi per 15 minuti per IP
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -29,7 +29,7 @@ router.post('/login',    authLimiter, login);
 router.post('/refresh',  refresh);
 router.post('/logout',   protect, logout);
 
-/* ── Google OAuth ───────────────────────────────────────────────────────────── */
+
 router.get('/google',
   passport.authenticate('google', { scope: ['profile', 'email'], session: false })
 );
@@ -41,7 +41,7 @@ router.get('/google/callback',
       const User = require('../models/User');
       const { accessToken, refreshToken } = generateTokens(req.user._id);
       await User.findByIdAndUpdate(req.user._id, { refreshToken });
-      // Invia entrambi i token al frontend così non serve un round-trip di refresh
+      
       res.redirect(`${CLIENT_ORIGIN}/oauth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`);
     } catch {
       res.redirect(`${CLIENT_ORIGIN}/login?error=oauth`);
@@ -49,7 +49,7 @@ router.get('/google/callback',
   }
 );
 
-/* ── GitHub OAuth ───────────────────────────────────────────────────────────── */
+
 router.get('/github',
   passport.authenticate('github', { scope: ['user:email'], session: false })
 );

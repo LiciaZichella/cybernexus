@@ -3,10 +3,10 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usersAPI } from '../services/api';
-// Riusa esattamente gli stili del modal già presente in Leaderboard
+
 import '../pages/Leaderboard.css';
 
-// ── Helpers identici a quelli in Leaderboard.jsx ─────────────────────────────
+
 
 const getInitials = (username = '') => username.slice(0, 2).toUpperCase();
 
@@ -65,19 +65,19 @@ const COLORI_CAT = {
   'Misc':         '#F07060',
 };
 
-// ── Componente ────────────────────────────────────────────────────────────────
-// Props:
-//   open     — boolean, controlla la visibilità
-//   onClose  — callback alla chiusura
-//   userId   — _id dell'utente da mostrare
-//   rank     — posizione in classifica (opzionale, default 0 = non mostrato)
+
+
+
+
+
+
 export default function ProfiloModal({ open, onClose, userId, rank = 0 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [profilo, setProfilo]   = useState(null);
   const [loading, setLoading]   = useState(false);
 
-  // Carica dati profilo + attività ogni volta che il modal si apre
+  
   useEffect(() => {
     if (!open || !userId) return;
     document.body.style.overflow = 'hidden';
@@ -113,7 +113,7 @@ export default function ProfiloModal({ open, onClose, userId, rank = 0 }) {
     const handler = (e) => { if (e.key === 'Escape') handleClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open]); 
 
   const handleClose = () => {
     document.body.style.overflow = '';
@@ -143,7 +143,7 @@ export default function ProfiloModal({ open, onClose, userId, rank = 0 }) {
       }))
     : CATEGORIE_BASE.map(cat => ({ ...cat, pct: 0 }));
 
-  // Controlla se il profilo aperto appartiene all'utente loggato
+  
   const isMe = user && userId &&
     userId.toString() === (user._id ?? user.id)?.toString();
 
@@ -160,7 +160,7 @@ export default function ProfiloModal({ open, onClose, userId, rank = 0 }) {
           </div>
         ) : (
           <div className="pm-body">
-            {/* Colonna sinistra: identità utente */}
+            
             <div className="pm-left">
               <div className="pm-avatar-wrap">
                 <div
@@ -242,9 +242,9 @@ export default function ProfiloModal({ open, onClose, userId, rank = 0 }) {
               </div>
             </div>
 
-            {/* Colonna destra: statistiche dettagliate */}
+            
             <div className="pm-right">
-              {/* Heatmap attività */}
+              
               <div>
                 <div className="pm-section-title">Attività</div>
                 <div className="pm-heatmap">
@@ -270,7 +270,7 @@ export default function ProfiloModal({ open, onClose, userId, rank = 0 }) {
                 </div>
               </div>
 
-              {/* Distribuzione per categoria */}
+              
               <div>
                 <div className="pm-section-title">Categorie</div>
                 <div className="pm-cats">
@@ -292,7 +292,7 @@ export default function ProfiloModal({ open, onClose, userId, rank = 0 }) {
                 </div>
               </div>
 
-              {/* Badge */}
+              
               <div>
                 <div className="pm-section-title">Badge</div>
                 <div className="pm-badges-grid">

@@ -1,7 +1,7 @@
 const User       = require('../models/User');
 const Submission = require('../models/Submission');
 
-// GET /api/users/me — profilo completo dell'utente autenticato (sempre fresco dal DB)
+
 const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -12,12 +12,12 @@ const getMe = async (req, res) => {
   }
 };
 
-// PUT /api/users/me — aggiorna username, bio e avatar
+
 const updateMe = async (req, res) => {
   try {
     const { username, bio, avatar } = req.body;
 
-    // Costruisce dinamicamente solo i campi presenti nella richiesta
+    
     const updates = {};
     if (username !== undefined) updates.username = username.trim();
     if (bio      !== undefined) updates.bio      = bio.trim();
@@ -27,15 +27,15 @@ const updateMe = async (req, res) => {
       return res.status(400).json({ error: 'Nessun campo da aggiornare fornito.' });
     }
 
-    // Controlla conflitto username con altri utenti
+    
     if (updates.username) {
       const taken = await User.findOne({ username: updates.username, _id: { $ne: req.user._id } });
       if (taken) return res.status(409).json({ error: 'Username già in uso.' });
     }
 
     const updated = await User.findByIdAndUpdate(req.user._id, updates, {
-      new: true,            // restituisce il documento aggiornato
-      runValidators: true,  // applica le validazioni dello schema
+      new: true,            
+      runValidators: true,  
     });
 
     res.json({ user: updated.toPublicJSON() });
@@ -44,7 +44,7 @@ const updateMe = async (req, res) => {
   }
 };
 
-// GET /api/users/:id — profilo pubblico di un qualsiasi utente
+
 const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -52,13 +52,13 @@ const getUserById = async (req, res) => {
 
     res.json({ user: user.toPublicJSON() });
   } catch (err) {
-    // CastError: id malformato
+    
     if (err.name === 'CastError') return res.status(400).json({ error: 'ID non valido.' });
     res.status(500).json({ error: err.message });
   }
 };
 
-// GET /api/users — lista tutti gli utenti (solo Admin)
+
 const getAllUsers = async (req, res) => {
   try {
     const page  = Math.max(1, parseInt(req.query.page)  || 1);
@@ -81,20 +81,20 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// PATCH /api/users/:id/role — cambia il ruolo di un utente (solo Admin)
+
 const changeUserRole = async (req, res) => {
   try {
     const RUOLI_VALIDI = ['Guest', 'Player', 'Analyst', 'Admin'];
     const { role } = req.body;
 
-    // Verifica che il ruolo sia uno dei valori accettati dall'enum
+    
     if (!role || !RUOLI_VALIDI.includes(role)) {
       return res.status(400).json({
         error: `Ruolo non valido. Valori ammessi: ${RUOLI_VALIDI.join(', ')}.`,
       });
     }
 
-    // Un Admin non può modificare il proprio ruolo
+    
     if (req.params.id === req.user._id.toString()) {
       return res.status(403).json({ error: 'Non puoi modificare il tuo stesso ruolo.' });
     }
@@ -109,13 +109,13 @@ const changeUserRole = async (req, res) => {
 
     res.json({ user: user.toPublicJSON() });
   } catch (err) {
-    // CastError: id malformato
+    
     if (err.name === 'CastError') return res.status(400).json({ error: 'ID non valido.' });
     res.status(500).json({ error: err.message });
   }
 };
 
-// GET /api/users/me/activity — submission corrette raggruppate per giorno (ultimi 60 giorni)
+
 const getMeActivity = async (req, res) => {
   try {
     const sessantaGiorniFa = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
@@ -126,14 +126,14 @@ const getMeActivity = async (req, res) => {
       createdAt: { $gte: sessantaGiorniFa },
     }).select('createdAt').lean();
 
-    // Raggruppa per data YYYY-MM-DD
+    
     const contaPerGiorno = {};
     submissions.forEach(s => {
       const giorno = new Date(s.createdAt).toISOString().slice(0, 10);
       contaPerGiorno[giorno] = (contaPerGiorno[giorno] || 0) + 1;
     });
 
-    // Array di 60 elementi (dal più vecchio al più recente)
+    
     const oggi = new Date();
     const attivita = Array.from({ length: 60 }, (_, i) => {
       const data   = new Date(oggi.getTime() - (59 - i) * 24 * 60 * 60 * 1000);
@@ -147,7 +147,7 @@ const getMeActivity = async (req, res) => {
   }
 };
 
-// GET /api/users/me/submissions — submission corrette con data e punti (grafico progressione)
+
 const getMeSubmissions = async (req, res) => {
   try {
     const submissions = await Submission.find({
@@ -165,7 +165,7 @@ const getMeSubmissions = async (req, res) => {
   }
 };
 
-// GET /api/users/me/attempts — tutti i tentativi (corretti e sbagliati) per lo stato "tentata"
+
 const getMeAttempts = async (req, res) => {
   try {
     const submissions = await Submission.find({ user: req.user._id })
@@ -178,14 +178,14 @@ const getMeAttempts = async (req, res) => {
   }
 };
 
-// PATCH /api/users/:id/ban — banna o sbanna un utente (solo Admin)
+
 const banUser = async (req, res) => {
   try {
     if (req.params.id === req.user._id.toString()) {
       return res.status(403).json({ error: 'Non puoi bannare il tuo account.' });
     }
 
-    const { ban } = req.body; // true = banna, false = sbanna
+    const { ban } = req.body; 
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { isBanned: !!ban },
@@ -199,16 +199,16 @@ const banUser = async (req, res) => {
   }
 };
 
-// GET /api/users/export-csv — esporta tutti gli utenti in CSV (solo Admin)
+
 const exportUsersCSV = async (req, res) => {
   try {
     const users = await User.find().sort({ points: -1 }).lean();
 
-    // Separatore punto e virgola — standard Excel italiano
+    
     const SEP = ';';
     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
 
-    // Formatta data in GG/MM/YYYY HH:MM (fuso locale server)
+    
     const formattaData = (d) => {
       const dt = new Date(d);
       const gg = String(dt.getDate()).padStart(2, '0');
@@ -230,41 +230,41 @@ const exportUsersCSV = async (req, res) => {
       ].join(SEP));
     });
 
-    // Nome file con data odierna: cybernexus_utenti_GGMMYYYY.csv
+    
     const oggi = new Date();
     const dataFile = `${String(oggi.getDate()).padStart(2, '0')}${String(oggi.getMonth() + 1).padStart(2, '0')}${oggi.getFullYear()}`;
     const nomeFile = `cybernexus_utenti_${dataFile}.csv`;
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${nomeFile}"`);
-    // BOM UTF-8: Excel lo usa per rilevare la codifica e aprire gli accenti correttamente
+    
     res.send('﻿' + righe.join('\n'));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// GET /api/users/:id/activity — heatmap e categorie per profilo pubblico
+
 const getUserActivity = async (req, res) => {
   try {
     const userId = req.params.id;
     const sessantaGiorniFa = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
 
-    // Submission corrette ultimi 60 giorni per heatmap
+    
     const submissionsHeatmap = await Submission.find({
       user:      userId,
       isCorrect: true,
       createdAt: { $gte: sessantaGiorniFa },
     }).select('createdAt').lean();
 
-    // Raggruppa per giorno
+    
     const contaPerGiorno = {};
     submissionsHeatmap.forEach(s => {
       const giorno = new Date(s.createdAt).toISOString().slice(0, 10);
       contaPerGiorno[giorno] = (contaPerGiorno[giorno] || 0) + 1;
     });
 
-    // Array 60 elementi dal più vecchio al più recente
+    
     const oggi = new Date();
     const activity = Array.from({ length: 60 }, (_, i) => {
       const data   = new Date(oggi.getTime() - (59 - i) * 24 * 60 * 60 * 1000);
@@ -272,21 +272,21 @@ const getUserActivity = async (req, res) => {
       return { date: chiave, count: contaPerGiorno[chiave] || 0 };
     });
 
-    // Submission corrette con categoria per breakdown categorie
+    
     const Challenge = require('../models/Challenge');
     const submissionsCategorie = await Submission.find({
       user:      userId,
       isCorrect: true,
     }).populate('challenge', 'category').lean();
 
-    // Conta per categoria
+    
     const conteCategorie = {};
     submissionsCategorie.forEach(s => {
       const cat = s.challenge?.category;
       if (cat) conteCategorie[cat] = (conteCategorie[cat] || 0) + 1;
     });
 
-    // Totale per calcolare percentuali
+    
     const totale = Object.values(conteCategorie).reduce((a, b) => a + b, 0);
     const categorie = Object.entries(conteCategorie).map(([nome, count]) => ({
       nome,

@@ -2,7 +2,7 @@ const jwt     = require('jsonwebtoken');
 const User    = require('../models/User');
 const WARRoom = require('../models/WARRoom');
 
-// Sequenze di eventi automatici per ogni tipo di scenario
+
 const EVENTI_SCENARIO = {
   ransomware: [
     { minuto: 0,  messaggio: '🔴 Rilevata firma ransomware su server-prod-01',        tipo: 'critico' },
@@ -24,7 +24,7 @@ const EVENTI_SCENARIO = {
   ],
 };
 
-// Normalizza il tipo di sala verso la chiave EVENTI_SCENARIO
+
 const normalizzaTipo = (tipo) => {
   if (!tipo) return 'ransomware';
   const t = tipo.toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_');
@@ -33,10 +33,10 @@ const normalizzaTipo = (tipo) => {
   return 'ransomware';
 };
 
-// Mappa roomId → array di setTimeout attivi (per cancellazione alla chiusura sala)
+
 const timeoutScenario = new Map();
 
-// Middleware Socket.IO: verifica JWT nell'handshake prima di accettare la connessione
+
 const autenticaSocket = async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
@@ -46,7 +46,7 @@ const autenticaSocket = async (socket, next) => {
     const user = await User.findById(decoded.id).select('username avatar role');
     if (!user) return next(new Error('Utente non trovato.'));
 
-    // Attacca i dati utente al socket per usarli negli handler
+    
     socket.data.user = user;
     next();
   } catch {
@@ -54,9 +54,9 @@ const autenticaSocket = async (socket, next) => {
   }
 };
 
-// Handler principale — riceve l'istanza io e registra tutti gli eventi
+
 const warroomSocket = (io) => {
-  // Namespace dedicato alle War Room
+  
   const warNS = io.of('/warroom');
 
   warNS.use(autenticaSocket);
@@ -65,14 +65,14 @@ const warroomSocket = (io) => {
     const { user } = socket.data;
     console.log(`Socket connesso: ${user.username} (${socket.id})`);
 
-    // join-room — entra nella stanza Socket.IO corrispondente alla War Room
+    
     socket.on('join-room', async ({ roomId }, ack) => {
       try {
         const room = await WARRoom.findById(roomId);
         if (!room) return ack?.({ error: 'War Room non trovata.' });
         if (room.status !== 'active') return ack?.({ error: 'La sala è chiusa.' });
 
-        // Verifica che l'utente sia membro registrato della War Room
+        
         if (!room.hasMember(user._id)) {
           return ack?.({ error: 'Non sei membro di questa sala.' });
         }
@@ -80,13 +80,13 @@ const warroomSocket = (io) => {
         socket.join(roomId);
         socket.data.roomId = roomId;
 
-        // Notifica gli altri membri dell'ingresso
+        
         socket.to(roomId).emit('user-joined', {
           username: user.username,
           avatar:   user.avatar,
         });
 
-        // Avvia eventi automatici scenario solo per il primo utente nella stanza
+        
         const stanza = warNS.adapter.rooms.get(roomId);
         if (stanza && stanza.size === 1 && !timeoutScenario.has(roomId)) {
           const chiave = normalizzaTipo(room.tipo || '');
@@ -110,13 +110,13 @@ const warroomSocket = (io) => {
       }
     });
 
-    // leave-room — lascia la stanza corrente
+    
     socket.on('leave-room', ({ roomId }) => {
       socket.leave(roomId);
       socket.to(roomId).emit('user-left', { username: user.username });
     });
 
-    // chat-message — salva nel DB e fa broadcast a tutta la stanza
+    
     socket.on('chat-message', async ({ roomId, content }, ack) => {
       try {
         if (!content?.trim()) return ack?.({ error: 'Messaggio vuoto.' });
@@ -133,7 +133,7 @@ const warroomSocket = (io) => {
         room.messages.push(nuovoMessaggio);
         await room.save();
 
-        // Recupera il documento appena inserito (ha _id e timestamps)
+        
         const salvato = room.messages[room.messages.length - 1];
 
         const payload = {
@@ -144,7 +144,7 @@ const warroomSocket = (io) => {
           author: { username: user.username, avatar: user.avatar },
         };
 
-        // Invia a tutti nella stanza, mittente incluso
+        
         warNS.to(roomId).emit('chat-message', payload);
         ack?.({ ok: true });
       } catch (err) {
@@ -152,7 +152,7 @@ const warroomSocket = (io) => {
       }
     });
 
-    // step-completed — broadcast a TUTTI i client (warNS.to include il mittente)
+    
     socket.on('step-completed', async ({ roomId, stepIndex }, ack) => {
       try {
         const room = await WARRoom.findById(roomId);
@@ -171,7 +171,7 @@ const warroomSocket = (io) => {
       }
     });
 
-    // log-event — registra un evento di sistema; tipo='terminal' per output terminale
+    
     socket.on('log-event', async ({ roomId, content, tipo }, ack) => {
       try {
         if (!content?.trim()) return ack?.({ error: 'Contenuto evento vuoto.' });
@@ -180,8 +180,8 @@ const warroomSocket = (io) => {
         if (!room) return ack?.({ error: 'War Room non trovata.' });
         if (!room.hasMember(user._id)) return ack?.({ error: 'Accesso negato.' });
 
-        // Per gli eventi terminale il content è JSON — salviamo una stringa leggibile
-        // senza JSON grezzo, così non compare nella chat al ricaricamento
+        
+        
         const testoDB = tipo === 'terminal'
           ? `[terminale] ${user.username} ha eseguito un comando`
           : content.trim();
@@ -206,13 +206,13 @@ const warroomSocket = (io) => {
       }
     });
 
-    // Pulizia alla disconnessione
+    
     socket.on('disconnect', () => {
       console.log(`Socket disconnesso: ${user.username} (${socket.id})`);
       if (socket.data.roomId) {
         socket.to(socket.data.roomId).emit('user-left', { username: user.username });
 
-        // Cancella i timer se non ci sono più utenti nella stanza
+        
         const stanza = warNS.adapter.rooms.get(socket.data.roomId);
         if (!stanza || stanza.size === 0) {
           const timers = timeoutScenario.get(socket.data.roomId);

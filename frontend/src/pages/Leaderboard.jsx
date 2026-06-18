@@ -6,7 +6,7 @@ import ProfiloModal from '../components/ProfiloModal';
 import { leaderboardAPI } from '../services/api';
 import './Leaderboard.css';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+
 
 const getInitials = (username = '') =>
   username.slice(0, 2).toUpperCase();
@@ -34,7 +34,7 @@ const getRoleStyle = (role) => {
   }
 };
 
-// Visualizza il rank: emoji medaglia per i top-3, numero per gli altri
+
 const displayRank = (rank) => {
   if (rank === 1) return '🥇';
   if (rank === 2) return '🥈';
@@ -48,12 +48,12 @@ const radarPoint = (values, idx, cx, cy, r) => {
   return `${cx + r * values[idx] * Math.cos(a)},${cy + r * values[idx] * Math.sin(a)}`;
 };
 
-// ── Componente principale ─────────────────────────────────────────────────────
+
 
 export default function Leaderboard() {
   const { user, loading: authLoading } = useAuth();
 
-  // Dati classifica
+  
   const [classifica, setClassifica]     = useState([]);
   const [loading, setLoading]           = useState(true);
   const [errore, setErrore]             = useState(null);
@@ -61,10 +61,10 @@ export default function Leaderboard() {
   const [totalePagine, setTotalePagine] = useState(1);
   const [totale, setTotale]             = useState(0);
 
-  // Profilo modale — contiene solo l'item base dalla classifica (id + username + points)
+  
   const [profiloAperto, setProfiloAperto] = useState(null);
 
-  // UI
+  
   const [filterAttivo, setFilterAttivo] = useState('global');
   const [ricerca, setRicerca]           = useState('');
   const [compareIdx, setCompareIdx]     = useState(0);
@@ -96,14 +96,14 @@ export default function Leaderboard() {
     caricaClassifica(pagina, filterAttivo);
   }, [pagina, caricaClassifica, authLoading, filterAttivo]);
 
-  // Aggiornamento automatico ogni 60 secondi
+  
   useEffect(() => {
     if (authLoading) return;
     const interval = setInterval(() => caricaClassifica(1, filterAttivo), 60000);
     return () => clearInterval(interval);
   }, [authLoading, caricaClassifica, filterAttivo]);
 
-  // Re-fetch page 1 when returning to this tab (e.g. after a CTF solve)
+  
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
@@ -115,17 +115,17 @@ export default function Leaderboard() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [caricaClassifica, filterAttivo]);
 
-  // ── Gestione profilo ────────────────────────────────────────────────────────
+  
 
-  // Apre il modal con l'item base dalla riga classifica
+  
   const handleOpenProfile = (item) => setProfiloAperto(item);
 
-  // Chiude il modal — ProfiloModal gestisce internamente body.overflow ed ESC
+  
   const handleCloseProfile = () => setProfiloAperto(null);
 
-  // ── Tema ────────────────────────────────────────────────────────────────────
+  
 
-  // ── Dati derivati ───────────────────────────────────────────────────────────
+  
 
   const classificaFiltrata = classifica.filter((c) =>
     c.username?.toLowerCase().includes(ricerca.toLowerCase())
@@ -143,12 +143,12 @@ export default function Leaderboard() {
   const isMe = (item) =>
     user && (item.id ?? item._id) === (user.id ?? user._id);
 
-  // Giocatori disponibili per compare (esclude il #1)
+  
   const comparePool     = classifica.slice(1);
   const compareCorrente = comparePool[compareIdx] ?? comparePool[0];
 
 
-  // Calcola valori radar [0‥1] da metriche aggregate disponibili in classifica
+  
   const calcRadar = (giocatore) => {
     if (!giocatore) return [0, 0, 0, 0, 0, 0];
     const maxPts     = classifica[0]?.points || 1;
@@ -166,15 +166,15 @@ export default function Leaderboard() {
   const RADAR_P1 = calcRadar(top3[0]);
   const RADAR_P2 = calcRadar(compareCorrente);
 
-  // ── JSX ─────────────────────────────────────────────────────────────────────
+  
 
   return (
     <>
-      {/* Elementi decorativi di sfondo */}
+      
       <div className="orb orb-1" />
       <div className="orb orb-2" />
 
-      {/* ── Modale profilo — componente riutilizzabile ── */}
+      
       <ProfiloModal
         open={!!profiloAperto}
         onClose={handleCloseProfile}
@@ -184,10 +184,10 @@ export default function Leaderboard() {
 
       <Navbar />
 
-      {/* ── Corpo pagina ── */}
+      
       <main className="page">
 
-        {/* Header pagina */}
+        
         <header className="lb-page-header ai d1">
           <div>
             <div className="lbph-eyebrow">🏆 Stagione 1 — Global Ranking</div>
@@ -223,7 +223,7 @@ export default function Leaderboard() {
           </div>
         </header>
 
-        {/* Stato di caricamento */}
+        
         {loading && (
           <div className="lb-loading">
             <div className="lb-spinner" />
@@ -231,18 +231,18 @@ export default function Leaderboard() {
           </div>
         )}
 
-        {/* Stato di errore */}
+        
         {errore && !loading && (
           <div className="lb-error">{errore}</div>
         )}
 
-        {/* Contenuto principale */}
+        
         {!loading && !errore && classifica.length > 0 && (
           <>
-            {/* Griglia: podio + pannello compare */}
+            
             <div className="lb-main ai d2">
 
-              {/* Sezione podio */}
+              
               <div className="podium-section">
                 <div className="ps-label">
                   Podio
@@ -252,7 +252,7 @@ export default function Leaderboard() {
                 </div>
                 <div className="podium-stage">
 
-                  {/* 2° posto — a sinistra del primo */}
+                  
                   {top3[1] && (
                     <div
                       className="podium-player place-2"
@@ -270,7 +270,7 @@ export default function Leaderboard() {
                     </div>
                   )}
 
-                  {/* 1° posto — al centro e più alto */}
+                  
                   {top3[0] && (
                     <div
                       className="podium-player place-1"
@@ -289,7 +289,7 @@ export default function Leaderboard() {
                     </div>
                   )}
 
-                  {/* 3° posto — a destra */}
+                  
                   {top3[2] && (
                     <div
                       className="podium-player place-3"
@@ -309,7 +309,7 @@ export default function Leaderboard() {
                 </div>
               </div>
 
-              {/* Pannello destra: mini-stats + compare */}
+              
               <div className="compare-panel">
                 <div className="lb-stats-mini">
                   <div className="lbsm-card">
@@ -342,7 +342,7 @@ export default function Leaderboard() {
                   </div>
                 </div>
 
-                {/* Compare card con radar SVG statico */}
+                
                 {top3[0] && compareCorrente && (
                   <div className="compare-card">
                     <div className="cc-title">Confronto</div>
@@ -376,10 +376,10 @@ export default function Leaderboard() {
                       </button>
                     </div>
 
-                    {/* Radar chart SVG statico */}
+                    
                     <div className="radar-wrap">
                       <svg width="140" height="140" viewBox="0 0 140 140">
-                        {/* Griglie esagonali */}
+                        
                         {[0.25, 0.5, 0.75, 1].map((r) => (
                           <polygon
                             key={r}
@@ -392,7 +392,7 @@ export default function Leaderboard() {
                             strokeWidth="0.5"
                           />
                         ))}
-                        {/* Assi */}
+                        
                         {[0,1,2,3,4,5].map((i) => {
                           const a = (Math.PI / 3) * i - Math.PI / 2;
                           return (
@@ -406,14 +406,14 @@ export default function Leaderboard() {
                             />
                           );
                         })}
-                        {/* Dati giocatore 1 */}
+                        
                         <polygon
                           points={RADAR_P1.map((v, i) => radarPoint(RADAR_P1, i, 70, 70, 60)).join(' ')}
                           fill="rgba(124,111,234,.25)"
                           stroke="#7C6FEA"
                           strokeWidth="1.5"
                         />
-                        {/* Dati giocatore 2 */}
+                        
                         <polygon
                           points={RADAR_P2.map((v, i) => radarPoint(RADAR_P2, i, 70, 70, 60)).join(' ')}
                           fill="rgba(91,196,212,.2)"
@@ -438,7 +438,7 @@ export default function Leaderboard() {
               </div>
             </div>
 
-            {/* Classifica completa */}
+            
             <div className="ranked-section ai d3">
               <div className="rs-header">
                 <div className="rs-title">Classifica completa</div>
@@ -456,7 +456,7 @@ export default function Leaderboard() {
                 </div>
               </div>
 
-              {/* Righe top-3 con stili speciali */}
+              
               {classificaFiltrata.slice(0, 3).map((item, idx) => {
                 const rank      = idx + 1;
                 const pct       = Math.round((item.points / maxPunti) * 100);
@@ -500,7 +500,7 @@ export default function Leaderboard() {
                 );
               })}
 
-              {/* Separatore visivo tra top-3 e il resto */}
+              
               {classificaFiltrata.length > 3 && (
                 <div className="lb-separator">
                   <div className="lbs-line" />
@@ -509,7 +509,7 @@ export default function Leaderboard() {
                 </div>
               )}
 
-              {/* Righe dal 4° posto in poi */}
+              
               {classificaFiltrata.slice(3).map((item, idx) => {
                 const rank      = idx + 4;
                 const pct       = Math.round((item.points / maxPunti) * 100);
@@ -552,7 +552,7 @@ export default function Leaderboard() {
                 );
               })}
 
-              {/* Pulsante per caricare la pagina successiva */}
+              
               {pagina < totalePagine && (
                 <div style={{ padding: '16px 20px', textAlign: 'center' }}>
                   <button
@@ -569,7 +569,7 @@ export default function Leaderboard() {
                 </div>
               )}
 
-              {/* Stato vuoto dopo ricerca */}
+              
               {classificaFiltrata.length === 0 && (
                 <div
                   className="pm-empty"

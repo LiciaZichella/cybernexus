@@ -1,25 +1,25 @@
 import axios from 'axios';
 
-// Access token in memoria — mai in localStorage/sessionStorage.
-// Variabile di modulo: accessibile dagli interceptor senza dipendenze React.
+
+
 let tokenInMemoria = null;
 
-// Callback registrata da AuthContext per rinnovare il token su 401.
-// Pattern "setter esterno": api.js non importa da AuthContext (evita circular dep).
+
+
 let onRefreshCallback = null;
 
-// Aggiorna il token in memoria (chiamato da AuthContext)
+
 export const setMemoryToken = (token) => { tokenInMemoria = token; };
 export const getMemoryToken = () => tokenInMemoria;
 
-// Registra la funzione refreshToken di AuthContext
+
 export const setRefreshCallback = (fn) => { onRefreshCallback = fn; };
 
-// ─── Istanza Axios ────────────────────────────────────────────────────────────
+
 
 export const api = axios.create({ baseURL: (import.meta.env.VITE_API_URL || '') + '/api' });
 
-// Interceptor in uscita: inietta il Bearer token in ogni richiesta
+
 api.interceptors.request.use((config) => {
   if (tokenInMemoria) {
     config.headers.Authorization = `Bearer ${tokenInMemoria}`;
@@ -27,7 +27,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor in entrata: su 401 tenta il refresh e riprova la richiesta originale
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -44,17 +44,17 @@ api.interceptors.response.use(
   }
 );
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
+
 
 export const authAPI = {
   register: (data)            => api.post('/auth/register', data),
   login:    (data)            => api.post('/auth/login',    data),
   logout:   ()                => api.post('/auth/logout'),
-  // Il refresh usa axios diretto per non passare dall'interceptor 401 (evita loop)
+  
   refresh:  (refreshToken)    => axios.post((import.meta.env.VITE_API_URL || '') + '/api/auth/refresh', { refreshToken }),
 };
 
-// ─── Utenti ───────────────────────────────────────────────────────────────────
+
 
 export const usersAPI = {
   getMe:           ()           => api.get('/users/me'),
@@ -68,7 +68,7 @@ export const usersAPI = {
   banUser:         (id, ban)    => api.patch(`/users/${id}/ban`, { ban }),
 };
 
-// ─── Challenge ────────────────────────────────────────────────────────────────
+
 
 export const challengesAPI = {
   getAll:     (params)         => api.get('/challenges', { params }),
@@ -79,7 +79,7 @@ export const challengesAPI = {
   getHint:    (id, index)      => api.get(`/challenges/${id}/hint`, { params: { index } }),
 };
 
-// ─── War Room ─────────────────────────────────────────────────────────────────
+
 
 export const warroomAPI = {
   getAll:     ()                   => api.get('/warroom'),
@@ -96,7 +96,7 @@ export const warroomAPI = {
   deleteWR:   (id)                 => api.delete(`/warroom/${id}`),
 };
 
-// ─── Leaderboard ──────────────────────────────────────────────────────────────
+
 
 export const leaderboardAPI = {
   get: (params) => api.get('/leaderboard', { params }),

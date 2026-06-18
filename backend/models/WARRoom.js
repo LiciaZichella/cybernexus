@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-// Schema task per la Kanban board
+
 const TaskSchema = new mongoose.Schema(
   {
     titolo:      { type: String, required: true, trim: true },
@@ -12,7 +12,7 @@ const TaskSchema = new mongoose.Schema(
   { _id: true }
 );
 
-// Singolo messaggio della chat di sala
+
 const MessageSchema = new mongoose.Schema(
   {
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -22,7 +22,7 @@ const MessageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Nota condivisa fissata nella lavagna della sala
+
 const NoteSchema = new mongoose.Schema(
   {
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -54,7 +54,7 @@ const WARRoomSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Membri con ruolo interno alla sala
+    
     members: [
       {
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -63,7 +63,7 @@ const WARRoomSchema = new mongoose.Schema(
       },
     ],
 
-    // Challenge su cui la sala sta lavorando
+    
     challenges: [
       {
         challenge: { type: mongoose.Schema.Types.ObjectId, ref: 'Challenge', required: true },
@@ -73,17 +73,17 @@ const WARRoomSchema = new mongoose.Schema(
       },
     ],
 
-    // Chat interna della sala
+    
     messages: [MessageSchema],
 
-    // Lavagna condivisa con note e appunti
+    
     notes: [NoteSchema],
 
-    // Codice invito per accesso diretto alla sala privata
+    
     inviteCode: {
       type: String,
       unique: true,
-      sparse: true, // null ammesso senza violare unique
+      sparse: true, 
     },
 
     isPrivate: {
@@ -91,7 +91,7 @@ const WARRoomSchema = new mongoose.Schema(
       default: false,
     },
 
-    // Tipo di scenario — usato per selezionare gli eventi automatici nel socket
+    
     tipo: {
       type: String,
       enum: ['Ransomware', 'DDoS', 'Phishing', 'Data Breach', 'Supply Chain', 'Zero-Day'],
@@ -111,20 +111,20 @@ const WARRoomSchema = new mongoose.Schema(
       max: [480, 'Durata massima 480 minuti'],
     },
 
-    // Stato operativo della sala
+    
     status: {
       type: String,
       enum: ['draft', 'active', 'closed'],
       default: 'active',
     },
 
-    // Accesso libero (true) o su invito con codice (false)
+    
     accessoLibero: {
       type: Boolean,
       default: true,
     },
 
-    // Indici dei passi playbook completati (sincronizzazione multi-utente)
+    
     passiCompletati: {
       type: [Number],
       default: [],
@@ -137,10 +137,10 @@ const WARRoomSchema = new mongoose.Schema(
       max: [50, 'Massimo 50 membri'],
     },
 
-    // Task Kanban board
+    
     tasks: [TaskSchema],
 
-    // Comandi terminale personalizzati per questo scenario
+    
     comandiTerminale: [
       {
         comando:  { type: String, required: true, trim: true },
@@ -148,7 +148,7 @@ const WARRoomSchema = new mongoose.Schema(
       },
     ],
 
-    // Passi del playbook personalizzato per questo scenario (opzionale)
+    
     playbook: [
       {
         step:        { type: String, required: true, trim: true },
@@ -173,17 +173,17 @@ const WARRoomSchema = new mongoose.Schema(
   }
 );
 
-// Virtual: numero corrente di membri
+
 WARRoomSchema.virtual('memberCount').get(function () {
   return this.members.length;
 });
 
-// Virtual: sala piena o no
+
 WARRoomSchema.virtual('isFull').get(function () {
   return this.members.length >= this.maxMembers;
 });
 
-// Metodo d'istanza: verifica se un utente è già membro
+
 WARRoomSchema.methods.hasMember = function (userId) {
   return this.members.some((m) => m.user.equals(userId));
 };

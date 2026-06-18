@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const HintSchema = new mongoose.Schema({
   text: { type: String, required: true },
-  cost: { type: Number, default: 0, min: 0 }, // punti sottratti per sbloccarla
+  cost: { type: Number, default: 0, min: 0 }, 
 });
 
 const ChallengeSchema = new mongoose.Schema(
@@ -20,7 +20,7 @@ const ChallengeSchema = new mongoose.Schema(
       required: [true, 'Descrizione obbligatoria'],
     },
 
-    // Categoria tecnica della challenge
+    
     category: {
       type: String,
       required: [true, 'Categoria obbligatoria'],
@@ -39,17 +39,17 @@ const ChallengeSchema = new mongoose.Schema(
       min: [1, 'Il punteggio deve essere almeno 1'],
     },
 
-    // Flag corretta — esclusa di default dalle query
+    
     flag: {
       type: String,
       required: [true, 'Flag obbligatoria'],
       select: false,
     },
 
-    // Suggerimenti opzionali con costo in punti
+    
     hints: [HintSchema],
 
-    // File allegati (URL o percorso relativo)
+    
     attachments: [
       {
         name: { type: String, required: true },
@@ -57,10 +57,10 @@ const ChallengeSchema = new mongoose.Schema(
       },
     ],
 
-    // Tag liberi (es. 'sql-injection', 'jwt', 'buffer-overflow')
+    
     tags: [{ type: String, trim: true, lowercase: true }],
 
-    // Utenti che hanno risolto la challenge
+    
     solvedBy: [
       {
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -68,14 +68,14 @@ const ChallengeSchema = new mongoose.Schema(
       },
     ],
 
-    // Autore/creatore della challenge
+    
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
 
-    // Visibile agli utenti o ancora in draft
+    
     isActive: {
       type: Boolean,
       default: false,
@@ -87,7 +87,7 @@ const ChallengeSchema = new mongoose.Schema(
   }
 );
 
-// Virtual: numero totale di solve
+
 ChallengeSchema.virtual('solveCount').get(function () {
   return (this.solvedBy ?? []).length;
 });

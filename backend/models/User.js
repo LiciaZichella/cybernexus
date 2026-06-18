@@ -25,33 +25,33 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: false,
       minlength: [8, 'Password minimo 8 caratteri'],
-      select: false, // esclusa di default dalle query
+      select: false, 
     },
 
     oauthProvider: { type: String, default: null },
     oauthId:       { type: String, default: null, select: false },
 
-    // Ruolo per controllo accessi
+    
     role: {
       type: String,
       enum: ['Guest', 'Player', 'Analyst', 'Admin'],
       default: 'Player',
     },
 
-    // Punteggio accumulato risolvendo le CTF challenge
+    
     points: {
       type: Number,
       default: 0,
       min: 0,
     },
 
-    // Challenge risolte: riferimenti ai documenti Challenge
+    
     solvedChallenges: {
       type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Challenge' }],
       default: [],
     },
 
-    // Avatar scelto dall'utente (URL o percorso relativo)
+    
     avatar: {
       type: String,
       default: '',
@@ -76,42 +76,42 @@ const UserSchema = new mongoose.Schema(
       default: null,
     },
 
-    // Numero di War Room completate come membro attivo (per badge War Hero)
+    
     warRoomsCompleted: {
       type: Number,
       default: 0,
     },
 
-    // Account sospeso dall'amministratore
+    
     isBanned: {
       type: Boolean,
       default: false,
     },
 
-    // Refresh token per rotazione JWT
+    
     refreshToken: {
       type: String,
       select: false,
     },
   },
   {
-    timestamps: true, // aggiunge createdAt e updatedAt automaticamente
+    timestamps: true, 
   }
 );
 
-// Hash della password prima del salvataggio (solo se presente e modificata)
+
 UserSchema.pre('save', async function () {
   if (!this.passwordHash || !this.isModified('passwordHash')) return;
   const salt = await bcrypt.genSalt(12);
   this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
 });
 
-// Metodo d'istanza: confronta password in chiaro con l'hash
+
 UserSchema.methods.comparePassword = async function (plainPassword) {
   return bcrypt.compare(plainPassword, this.passwordHash);
 };
 
-// Metodo d'istanza: rappresentazione pubblica senza campi sensibili
+
 UserSchema.methods.toPublicJSON = function () {
   return {
     id: this._id,

@@ -16,7 +16,7 @@ const { protect, authorize } = require('../middleware/verificaUtenti');
 
 const router = express.Router();
 
-// Tutte le route richiedono autenticazione
+
 router.use(protect);
 
 router.get('/',     getWARRooms);

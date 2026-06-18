@@ -1,6 +1,6 @@
-/* Navbar.css — stili del componente condiviso, prefix cn- per evitare conflitti */
 
-/* ── Barra di navigazione ── */
+
+
 .cn-navbar {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -21,7 +21,7 @@
   border-bottom-color: rgba(0,0,0,0.08);
 }
 
-/* ── Logo ── */
+
 .cn-logo {
   display: flex;
   align-items: center;
@@ -38,14 +38,14 @@
 [data-theme="light"] .cn-logo { color: #0f1623; }
 .cn-logo:hover { transform: translateY(-1px); }
 
-/* ── Lista voci ── */
+
 .cn-items {
   display: flex;
   gap: 24px;
   flex: 1;
 }
 
-/* ── Singola voce ── */
+
 .cn-item {
   font-size: 12px;
   color: #8a96b0;
@@ -73,13 +73,13 @@
   background: rgba(124,111,234,0.10);
   font-weight: 500;
 }
-/* Bottone Accedi con bordo */
+
 .cn-item.cn-accedi {
   border: 0.5px solid rgba(255,255,255,0.13);
 }
 [data-theme="light"] .cn-item.cn-accedi { border-color: rgba(0,0,0,0.12); }
 
-/* ── Centro opzionale (War Room incident info) ── */
+
 .cn-center {
   flex: 1;
   display: flex;
@@ -88,7 +88,7 @@
   min-width: 0;
 }
 
-/* ── Lato destro ── */
+
 .cn-right {
   display: flex;
   align-items: center;
@@ -97,7 +97,7 @@
   flex-shrink: 0;
 }
 
-/* ── Toggle dark/light ── */
+
 .cn-toggle {
   display: flex;
   align-items: center;
@@ -139,7 +139,7 @@
 }
 .cn-thumb.light { transform: translateX(11px); }
 
-/* ── Campanella notifiche ── */
+
 .cn-bell-wrap { position: relative; flex-shrink: 0; }
 .cn-bell-btn {
   position: relative;
@@ -168,7 +168,7 @@
 }
 [data-theme="light"] .cn-bell-badge { border-color: #f8f9fc; }
 
-/* Dropdown campanella */
+
 @keyframes cn-fadeIn {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -231,7 +231,7 @@
   color: #4a5568;
 }
 
-/* ── Admin pill ── */
+
 .cn-admin-pill {
   font-size: 11px; font-weight: 600;
   padding: 5px 11px;
@@ -249,7 +249,7 @@
   transform: translateY(-1px);
 }
 
-/* ── Striscia cromatica ── */
+
 .cn-grad-strip {
   position: fixed;
   top: 58px; left: 0; right: 0;
@@ -259,7 +259,7 @@
   pointer-events: none;
 }
 
-/* ── Responsive ── */
+
 @media (max-width: 768px) {
   .cn-navbar { padding: 0 16px; }
   .cn-items .cn-item span:not(svg):not(.cn-item) { display: none; }

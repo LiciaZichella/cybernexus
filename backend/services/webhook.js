@@ -3,12 +3,8 @@
 const https = require('https');
 const http  = require('http');
 
-/**
- * Invia un webhook POST in fire-and-forget.
- * Gli errori sono solo loggati — non bloccano il flusso chiamante.
- *
- * @param {object} payload  Oggetto che verrà serializzato come JSON nel body
- */
+
+
 const inviaWebhook = (payload) => {
   const url = process.env.WEBHOOK_URL;
   if (!url) return;
@@ -30,7 +26,7 @@ const inviaWebhook = (payload) => {
         },
       },
       (res) => {
-        res.resume(); // consuma la risposta per liberare il socket
+        res.resume(); 
       }
     );
 

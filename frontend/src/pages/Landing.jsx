@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { authAPI, api } from '../services/api';
 import Navbar from '../components/Navbar';
+import LegalModal from '../components/LegalModal';
 import './Landing.css';
 
 const FLAG_STR = 'FLAG{sql_1nj3ct10n_m4st3r}';
@@ -27,7 +28,7 @@ export default function Landing() {
     document.documentElement.setAttribute('data-theme', 'dark');
   }, []);
 
-  // Carica statistiche pubbliche e top-3 da endpoint senza autenticazione
+  
   useEffect(() => {
     api.get('/platform/stats')
       .then(({ data }) => {
@@ -38,10 +39,10 @@ export default function Landing() {
         });
         if (Array.isArray(data.top3)) setTopUtenti(data.top3);
       })
-      .catch(() => {}); // server non raggiungibile — mantieni valori di default
+      .catch(() => {}); 
   }, []);
 
-  // Animazione di digitazione nel terminale
+  
   useEffect(() => {
     let mounted = true;
     let timerId;
@@ -93,22 +94,22 @@ export default function Landing() {
     }
   };
 
-  // Scroll fluido verso una sezione della pagina
+  
   const scrollTo = (id) =>
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <>
-      {/* Sfere di luce di sfondo */}
+      
       <div className="orb orb-1" />
       <div className="orb orb-2" />
       <div className="orb orb-3" />
 
       <Navbar />
 
-      {/* ── HERO ── */}
+      
       <section className="hero">
-        {/* Colonna sinistra */}
+        
         <div className="hero-left">
           <div className="hero-badge">
             <div className="badge-pulse" />
@@ -151,11 +152,11 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Colonna destra — cards animate */}
+        
         <div className="hero-right">
           <div className="hero-right-inner">
 
-            {/* Card punteggio */}
+            
             <div className="fcard f1">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
@@ -178,7 +179,7 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Leaderboard live */}
+            
             <div className="fcard f2">
               <div className="live-label">
                 <div className="live-d" />
@@ -217,7 +218,7 @@ export default function Landing() {
               )}
             </div>
 
-            {/* Allerta war room */}
+            
             <div className="war-card f3">
               <div className="war-pulse" />
               <div className="war-info">
@@ -227,7 +228,7 @@ export default function Landing() {
               <button className="war-enter" onClick={() => navigate('/warroom')}>Entra →</button>
             </div>
 
-            {/* Notifica flag catturata */}
+            
             <div className="notif-card notif-bar">
               <div className="notif-ico">🚩</div>
               <div>
@@ -242,7 +243,7 @@ export default function Landing() {
 
       <div className="grad-line" />
 
-      {/* ── STATS STRIP ── */}
+      
       <div className="stats-strip">
         <div className="ss-item">
           <div className="ss-lbl">Utenti attivi</div>
@@ -261,7 +262,7 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* ── COME FUNZIONA ── */}
+      
       <div className="how-section" id="how">
         <div className="how-inner">
           <div className="sec-eye"><div className="eye-line" />Come funziona</div>
@@ -273,7 +274,7 @@ export default function Landing() {
           </p>
 
           <div className="steps-grid">
-            {/* Step 1 */}
+            
             <div className="step-card">
               <div className="step-num-bg">01</div>
               <div className="step-icon" style={{ background: 'var(--violet-bg)' }}>
@@ -293,7 +294,7 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Step 2 */}
+            
             <div className="step-card">
               <div className="step-num-bg">02</div>
               <div className="step-icon" style={{ background: 'var(--mint-bg)' }}>
@@ -313,7 +314,7 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Step 3 */}
+            
             <div className="step-card">
               <div className="step-num-bg">03</div>
               <div className="step-icon" style={{ background: 'var(--coral-bg)' }}>
@@ -337,7 +338,7 @@ export default function Landing() {
 
       <div className="grad-line" />
 
-      {/* ── CTF ARENA ── */}
+      
       <div className="ctf-section" id="ctf">
         <div className="ctf-inner">
           <div className="ctf-header">
@@ -348,9 +349,9 @@ export default function Landing() {
             <a className="ctf-link" href="#" onClick={(e) => { e.preventDefault(); navigate('/ctf'); }}>Vedi tutte le sfide →</a>
           </div>
 
-          {/* Podio top 3 */}
+          
           <div className="podium-row">
-            {/* 2° posto */}
+            
             <div className="pod-card second">
               <div className="pod-header" style={{ background: 'linear-gradient(135deg,rgba(124,111,234,0.08),transparent)' }}>
                 <div className="pod-rank">🥈</div>
@@ -371,7 +372,7 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* 1° posto */}
+            
             <div className="pod-card first">
               <div className="pod-header" style={{ background: 'linear-gradient(135deg,rgba(246,198,82,0.10),transparent)' }}>
                 <div className="pod-rank">🥇</div>
@@ -390,7 +391,7 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* 3° posto */}
+            
             <div className="pod-card third">
               <div className="pod-header" style={{ background: 'linear-gradient(135deg,rgba(91,196,212,0.08),transparent)' }}>
                 <div className="pod-rank">🥉</div>
@@ -411,7 +412,7 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Griglia categorie */}
+          
           <div className="cat-grid">
             <div className="cat-card">
               <div className="cat-icon-box" style={{ background: 'var(--violet-bg)' }}>
@@ -478,7 +479,7 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* ── SEZIONE TERMINALE ── */}
+      
       <div className="term-section">
         <div className="term-inner">
           <div>
@@ -508,7 +509,7 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Finestra terminale con animazione di digitazione */}
+          
           <div className="terminal-win">
             <div className="term-bar">
               <div className="tbar-dot" style={{ background: '#F07060' }} />
@@ -548,10 +549,10 @@ export default function Landing() {
 
       <div className="grad-line" />
 
-      {/* ── WAR ROOM ── */}
+      
       <div className="wr-section" id="warroom">
         <div className="wr-inner">
-          {/* Preview interattiva */}
+          
           <div className="wr-preview">
             <div className="wr-header">
               <div className="wr-pulse-dot" />
@@ -560,7 +561,7 @@ export default function Landing() {
             </div>
 
             <div className="wr-body">
-              {/* Timeline eventi */}
+              
               <div className="wr-col">
                 <div className="wr-col-title">Timeline eventi</div>
                 <div className="tl-item">
@@ -594,7 +595,7 @@ export default function Landing() {
                 </div>
               </div>
 
-              {/* Task in corso */}
+              
               <div className="wr-col">
                 <div className="wr-col-title">Task in corso</div>
                 <div className="task-item">
@@ -612,7 +613,7 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Chat war room */}
+            
             <div className="chat-preview">
               <div className="chat-msg">
                 <div className="chat-av" style={{ background: 'var(--violet)' }}>AL</div>
@@ -635,7 +636,7 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Testo descrittivo */}
+          
           <div>
             <div className="sec-eye">
               <div className="eye-line" style={{ background: 'var(--coral)' }} />
@@ -697,7 +698,7 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* ── REGISTRAZIONE ── */}
+      
       <div className="login-section" id="login">
         <div className="login-inner">
           <div>
@@ -737,7 +738,7 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Card registrazione */}
+          
           <div className="login-card">
             <div className="login-card-title">Crea il tuo account</div>
             <div className="login-card-sub">
@@ -804,96 +805,9 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* ── MODAL LEGALE ── */}
-      {modalLegale && (
-        <div
-          onClick={() => setModalLegale(null)}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 1000,
-            background: 'rgba(7,9,15,.82)', backdropFilter: 'blur(12px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-          }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: 'var(--bg2,#0d1117)', border: '0.5px solid rgba(255,255,255,.12)',
-              borderRadius: 16, maxWidth: 580, width: '100%', maxHeight: '80vh',
-              display: 'flex', flexDirection: 'column', overflow: 'hidden',
-              boxShadow: '0 24px 72px rgba(0,0,0,.5)',
-            }}
-          >
-            <div style={{
-              padding: '18px 24px', borderBottom: '0.5px solid rgba(255,255,255,.06)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
-            }}>
-              <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 17, color: '#f0f4ff' }}>
-                {modalLegale === 'privacy' ? '🔒 Privacy Policy' : '📋 Termini di Servizio'}
-              </div>
-              <button onClick={() => setModalLegale(null)} style={{
-                width: 28, height: 28, borderRadius: '50%', border: '0.5px solid rgba(255,255,255,.13)',
-                background: 'transparent', color: '#8a96b0', cursor: 'pointer', fontSize: 14, lineHeight: 1,
-              }}>✕</button>
-            </div>
-            <div style={{ padding: '20px 24px', overflowY: 'auto', fontSize: 13, color: '#8a96b0', lineHeight: 1.75 }}>
-              {modalLegale === 'privacy' ? (
-                /* ── Privacy Policy ── */
-                <>
-                  <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>Dati raccolti.</strong>{' '}
-                    CyberNexus raccoglie esclusivamente i dati necessari al funzionamento della piattaforma educativa: indirizzo email, username, progressi nelle sfide CTF e punti accumulati. Le password non vengono mai memorizzate in chiaro — viene conservato unicamente l'hash bcrypt.
-                  </p>
-                  <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>Utilizzo dei dati.</strong>{' '}
-                    I dati sono usati esclusivamente per autenticare l'utente, calcolare la classifica e mostrare i progressi personali. I dati <strong style={{ color: '#f0f4ff' }}>non vengono venduti né ceduti a terzi</strong> in alcuna forma. Non è presente pubblicità né tracciamento a scopo commerciale.
-                  </p>
-                  <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>Autenticazione (JWT).</strong>{' '}
-                    La piattaforma utilizza token JWT per gestire le sessioni: l'access token ha scadenza di 15 minuti, il refresh token di 7 giorni e viene conservato in <code>localStorage</code>. Non vengono usati cookie di profilazione né tracker di terze parti.
-                  </p>
-                  <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>Archiviazione.</strong>{' '}
-                    I dati sono archiviati su <strong style={{ color: '#f0f4ff' }}>MongoDB Atlas</strong>, servizio cloud con crittografia a riposo. Non vengono archiviati dati bancari, di pagamento o documenti d'identità — la piattaforma è completamente gratuita.
-                  </p>
-                  <p style={{ color: '#4a5568', fontSize: 11, marginTop: 18 }}>
-                    Ultimo aggiornamento: Giugno 2026 · CyberNexus — Ingegneria Informatica.
-                  </p>
-                  <p style={{ marginTop: 8, fontSize: 12, color: '#7a8aaa' }}>
-                    Per informazioni: <strong style={{ color: '#f0f4ff' }}>info@cybernexus.io</strong>
-                  </p>
-                </>
-              ) : (
-                /* ── Termini di servizio ── */
-                <>
-                  <p style={{ marginBottom: 14 }}>
-                    Utilizzando <strong style={{ color: '#f0f4ff' }}>CyberNexus</strong> accetti di impiegare la piattaforma esclusivamente per scopi educativi e di formazione nel campo della cybersecurity. È vietato usare le competenze acquisite per danneggiare sistemi reali o violare la privacy altrui.
-                  </p>
-                  <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>Condotta.</strong>{' '}
-                    Gli utenti si impegnano a mantenere un comportamento rispettoso all'interno delle War Room e nella community. Comportamenti abusivi, tentativi di cheating o sabotaggio delle sfide comportano la sospensione dell'account.
-                  </p>
-                  <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>Contenuti CTF.</strong>{' '}
-                    Le sfide CTF sono progettate a scopo didattico. È vietato condividere soluzioni, flag o walkthrough al di fuori della piattaforma, per rispetto degli altri partecipanti.
-                  </p>
-                  <p style={{ marginBottom: 14 }}>
-                    <strong style={{ color: '#f0f4ff' }}>Account e gratuità.</strong>{' '}
-                    Ogni utente è responsabile della sicurezza del proprio account. La piattaforma è <strong style={{ color: '#f0f4ff' }}>completamente gratuita</strong> e non prevede pagamenti, abbonamenti o transazioni di alcun tipo.
-                  </p>
-                  <p style={{ color: '#4a5568', fontSize: 11, marginTop: 18 }}>
-                    Ultimo aggiornamento: Giugno 2026 · CyberNexus — Ingegneria Informatica.
-                  </p>
-                  <p style={{ marginTop: 8, fontSize: 12, color: '#7a8aaa' }}>
-                    Per informazioni: <strong style={{ color: '#f0f4ff' }}>info@cybernexus.io</strong>
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <LegalModal tipo={modalLegale} onClose={() => setModalLegale(null)} />
 
-      {/* ── FOOTER ── */}
+      
       <footer>
         <div className="foot-logo">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">

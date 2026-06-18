@@ -5,10 +5,10 @@ const mongoose  = require('mongoose');
 const User      = require('./models/User');
 const Challenge = require('./models/Challenge');
 
-// Utility: hash SHA-256 della flag (stesso algoritmo del controller)
+
 const sha256 = (str) => crypto.createHash('sha256').update(str.trim()).digest('hex');
 
-// Dati utenti di esempio
+
 const utenti = [
   {
     username:     'admin',
@@ -36,7 +36,7 @@ const utenti = [
   },
 ];
 
-// Dati challenge di esempio (flag in chiaro — lo script fa l'hash prima di salvare)
+
 const challengeData = [
   {
     title:       'Cookie Monster',
@@ -84,20 +84,20 @@ const seed = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     console.log('Connesso a MongoDB.');
 
-    // Pulizia collezioni esistenti
+    
     await User.deleteMany({});
     await Challenge.deleteMany({});
     console.log('Collezioni User e Challenge azzerate.');
 
-    // Inserimento utenti (il pre-save hook di User fa l'hash della passwordHash)
+    
     const utentiCreati = await User.create(utenti);
     console.log(`${utentiCreati.length} utenti inseriti:`);
     utentiCreati.forEach((u) => console.log(`  - ${u.role.padEnd(7)} ${u.username} (${u.email})`));
 
-    // L'admin è il primo della lista — sarà l'autore delle challenge
+    
     const admin = utentiCreati[0];
 
-    // Hash SHA-256 delle flag prima dell'inserimento
+    
     const challenges = challengeData.map((c) => ({
       ...c,
       flag:     sha256(c.flag),

@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-/* ── Variabili scoped — non inquinano le altre pagine ── */
+
 .admin-app {
   --bg:#09090f;--bg2:#0d0d18;--bg3:#121220;--bg4:#16162a;
   --border:rgba(124,111,234,0.08);--border2:rgba(124,111,234,0.16);
@@ -17,7 +17,7 @@
   --v1:rgba(124,111,234,0.10);--v2:rgba(124,111,234,0.06);--v3:rgba(124,111,234,0.03);
 }
 .admin-app *{box-sizing:border-box;margin:0;padding:0}
-/* Ripristina il margine del logo Navbar — azzerato dal reset wildcard sopra */
+
 .admin-app .cn-logo{margin-right:40px}
 
 @keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -35,10 +35,10 @@
 .admin-app .d3{animation-delay:.15s}.admin-app .d4{animation-delay:.2s}
 .admin-app .d5{animation-delay:.25s}
 
-/* ── LAYOUT ── */
+
 .admin-app .app{display:flex;height:100%;position:relative;z-index:1}
 
-/* ── SIDEBAR ── */
+
 .admin-app .sidebar{
   width:var(--sidebar-w);flex-shrink:0;background:var(--bg2);
   border-right:0.5px solid var(--border);
@@ -68,10 +68,10 @@
 .admin-app .mode-btn{width:26px;height:26px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;font-size:14px}
 .admin-app .mode-btn:hover{background:var(--v1);border-color:var(--v)}
 
-/* ── MAIN ── */
+
 .admin-app .main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 
-/* ── TOPBAR ── */
+
 .admin-app .topbar{
   height:56px;padding:0 24px;display:flex;align-items:center;gap:14px;
   background:var(--bg2);border-bottom:0.5px solid var(--border);
@@ -112,7 +112,7 @@
 .admin-app .se-sub{font-size:12px;color:var(--text2)}
 .admin-app .se-badge{font-size:10px;font-weight:600;padding:4px 11px;border-radius:20px;font-family:'JetBrains Mono',monospace;flex-shrink:0;border:0.5px solid var(--border2)}
 
-/* ── STAT CARDS ── */
+
 .admin-app .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
 .admin-app .stat-card{border-radius:13px;padding:18px 16px;border:0.5px solid var(--border2);background:var(--bg2);position:relative;overflow:hidden;transition:all .25s;cursor:default}
 .admin-app .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--v),rgba(124,111,234,.2));opacity:0;transition:opacity .2s}
@@ -125,10 +125,10 @@
 .admin-app .sc-lbl{font-size:11px;color:var(--text2);font-weight:500}
 .admin-app .sc-val-shimmer{background:linear-gradient(90deg,var(--v),#b5b0f5,var(--v));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:200%;animation:shimmer 3s linear infinite}
 
-/* ── LAYOUT ── */
+
 .admin-app .two-col{display:grid;grid-template-columns:1fr 360px;gap:16px;margin-bottom:22px}
 
-/* ── CARD ── */
+
 .admin-app .card{background:var(--bg2);border:0.5px solid var(--border);border-radius:13px;overflow:hidden;transition:border-color .2s;margin-bottom:22px}
 [data-theme="light"] .admin-app .card{background:#fff}
 .admin-app .card:hover{border-color:var(--border2)}
@@ -138,13 +138,13 @@
 .admin-app .card-sub{font-size:11px;color:var(--text2)}
 .admin-app .card-body{padding:14px 18px}
 
-/* ── SPARK BAR ── */
+
 .admin-app .spark-wrap{display:flex;align-items:flex-end;gap:5px;height:64px;padding:0 2px}
 .admin-app .spark-b{border-radius:4px 4px 0 0;flex:1;transition:height .8s ease,background .2s;cursor:pointer;min-width:0;height:0}
 .admin-app .spark-b:hover{filter:brightness(1.2)}
 .admin-app .spark-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:5px;padding:0 2px}
 
-/* ── BAR ORIZZONTALI ── */
+
 .admin-app .bar-h-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
 .admin-app .bar-h-row:last-child{margin:0}
 .admin-app .bar-h-lbl{font-size:12px;color:var(--text2);min-width:96px}
@@ -153,7 +153,7 @@
 .admin-app .bar-h-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);background-size:200%;animation:shimmer 2s linear infinite}
 .admin-app .bar-h-val{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--v);min-width:30px;text-align:right}
 
-/* ── ACTIVITY FEED ── */
+
 .admin-app .act-feed{padding:8px 0}
 .admin-app .act-item{display:flex;gap:11px;padding:10px 18px;border-bottom:0.5px solid var(--border);transition:background .15s;cursor:default}
 .admin-app .act-item:last-child{border:none}
@@ -167,7 +167,7 @@
 .admin-app .live-pill{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--v);font-family:'JetBrains Mono',monospace;padding:2px 8px;border-radius:10px;background:var(--v1);border:0.5px solid var(--border2)}
 .admin-app .live-dot{width:5px;height:5px;border-radius:50%;background:var(--v);animation:liveBlip 1.5s infinite}
 
-/* ── TABELLA ── */
+
 .admin-app .tbl-wrap{overflow-x:auto}
 .admin-app table{width:100%;border-collapse:collapse;font-size:13px}
 .admin-app th{padding:11px 16px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:600;border-bottom:0.5px solid var(--border);background:var(--bg3);position:sticky;top:0}
@@ -192,7 +192,7 @@
 .admin-app .wr-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600}
 .admin-app .wr-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 
-/* ── FORM ── */
+
 .admin-app .form-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:13px;padding:0;overflow:hidden;margin-bottom:16px;position:relative}
 [data-theme="light"] .admin-app .form-card{background:#fff}
 .admin-app .form-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--v),rgba(124,111,234,.2))}
@@ -216,7 +216,7 @@
 .admin-app .form-actions{display:flex;gap:8px;padding:14px 20px;border-top:0.5px solid var(--border);background:var(--bg3)}
 [data-theme="light"] .admin-app .form-actions{background:var(--bg4)}
 
-/* ── WEBHOOK ── */
+
 .admin-app .wh-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
 .admin-app .wh-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:13px;padding:18px;position:relative;overflow:hidden;transition:all .2s}
 [data-theme="light"] .admin-app .wh-card{background:#fff}
@@ -237,8 +237,8 @@
 .admin-app .wh-test.testing{border-color:rgba(246,198,82,.4);color:#F6C652;animation:pulse 1s infinite}
 .admin-app .wh-test.ok{border-color:rgba(92,206,138,.3);color:#5CCE8A;background:rgba(92,206,138,.06)}
 
-/* ── MODAL ── */
-/* React usa rendering condizionale — display:flex fisso quando presente nel DOM */
+
+
 .admin-app .modal-overlay{
   position:fixed;inset:0;z-index:900;
   background:rgba(9,9,15,.85);backdrop-filter:blur(10px);
@@ -257,13 +257,13 @@
 .admin-app .modal-footer{padding:12px 18px;border-top:0.5px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--bg3)}
 [data-theme="light"] .admin-app .modal-footer{background:var(--bg4)}
 
-/* ── TOAST ── */
+
 .admin-app .toast-wrap{position:fixed;top:68px;right:20px;z-index:950;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .admin-app .toast{padding:11px 15px;border-radius:10px;background:var(--bg2);border:0.5px solid var(--border2);font-size:13px;color:var(--text1);display:flex;align-items:center;gap:9px;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:slideInRight .3s ease both;pointer-events:all}
 .admin-app .toast.tok{border-color:rgba(92,206,138,.3)}
 .admin-app .toast.terr{border-color:rgba(240,112,96,.3)}
 
-/* ── MISC ── */
+
 .admin-app .dot-live{width:7px;height:7px;border-radius:50%;display:inline-block;animation:liveBlip 1.5s infinite;flex-shrink:0}
 .admin-app .text-v{color:var(--v)}
 .admin-app .text-sm{font-size:12px;color:var(--text2)}

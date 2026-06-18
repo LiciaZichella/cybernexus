@@ -4,21 +4,21 @@ const User    = require('../models/User');
 const { inviaWebhook } = require('../services/webhook');
 const { timeoutScenario } = require('../sockets/warroom');
 
-// Istanza Socket.IO iniettata da server.js dopo l'avvio
+
 let io = null;
 const setIo = (ioInstance) => { io = ioInstance; };
 
-// Utility: genera un codice invito casuale di 8 caratteri
+
 const generaInviteCode = () => crypto.randomBytes(4).toString('hex');
 
-// GET /api/warroom — lista War Room (attive per utenti, tutte per Admin)
+
 const getWARRooms = async (req, res) => {
   try {
     const isStaff = req.user.role === 'Admin';
     const filter  = isStaff ? {} : { status: 'active' };
 
     const rooms = await WARRoom.find(filter)
-      .select('-messages -notes')     // escludi chat e lavagna dalla lista
+      .select('-messages -notes')     
       .populate('owner', 'username')
       .sort({ createdAt: -1 });
 
@@ -28,7 +28,7 @@ const getWARRooms = async (req, res) => {
   }
 };
 
-// GET /api/warroom/:id — dettaglio completo di una War Room
+
 const getWARRoomById = async (req, res) => {
   try {
     const room = await WARRoom.findById(req.params.id)
@@ -40,7 +40,7 @@ const getWARRoomById = async (req, res) => {
 
     if (!room) return res.status(404).json({ error: 'War Room non trovata.' });
 
-    // Sala privata: solo membri e Admin possono vederla
+    
     const isStaff  = req.user.role === 'Admin';
     const isMember = room.hasMember(req.user._id);
     if (room.isPrivate && !isMember && !isStaff) {
@@ -54,7 +54,7 @@ const getWARRoomById = async (req, res) => {
   }
 };
 
-// POST /api/warroom — crea War Room (solo Admin)
+
 const createWARRoom = async (req, res) => {
   try {
     const { name, description, isPrivate, maxMembers, challenges, comandiTerminale, tasks, tipo } = req.body;
@@ -63,18 +63,18 @@ const createWARRoom = async (req, res) => {
       name,
       description,
       isPrivate:     !!isPrivate,
-      accessoLibero: req.body.accessoLibero !== false, // default true
+      accessoLibero: req.body.accessoLibero !== false, 
       maxMembers,
       challenges,
       tipo:      tipo || 'Ransomware',
       owner:     req.user._id,
-      // Il creatore entra automaticamente come Lead
+      
       members:          [{ user: req.user._id, role: 'Lead' }],
       comandiTerminale: Array.isArray(comandiTerminale) ? comandiTerminale : [],
       tasks:            Array.isArray(tasks) ? tasks : [],
     };
 
-    // Sala privata: genera codice invito univoco
+    
     if (isPrivate) {
       roomData.inviteCode = generaInviteCode();
     }
@@ -86,10 +86,10 @@ const createWARRoom = async (req, res) => {
   }
 };
 
-// POST /api/warroom/:id/join — entra in una War Room
+
 const joinWARRoom = async (req, res) => {
   try {
-    // Ruolo minimo: Analyst per entrare come membro attivo
+    
     const ruoliAmmessi = ['Analyst', 'Admin'];
     if (!ruoliAmmessi.includes(req.user.role)) {
       return res.status(403).json({
@@ -105,7 +105,7 @@ const joinWARRoom = async (req, res) => {
       return res.status(400).json({ error: 'Sei già membro di questa sala.' });
     }
 
-    // Sala privata: richiede inviteCode nel body (il check ruolo è già stato fatto sopra)
+    
     if (!room.accessoLibero || room.isPrivate) {
       if (!req.body.inviteCode || req.body.inviteCode !== room.inviteCode) {
         return res.status(403).json({ error: 'Codice invito non valido.' });
@@ -114,7 +114,7 @@ const joinWARRoom = async (req, res) => {
 
     room.members.push({ user: req.user._id, role: 'Member' });
 
-    // Messaggio di sistema nella chat della sala
+    
     room.messages.push({
       author:  req.user._id,
       content: `${req.user.username} è entrato nella sala.`,
@@ -129,7 +129,7 @@ const joinWARRoom = async (req, res) => {
   }
 };
 
-// POST /api/warroom/:id/resolve — chiude la sala e notifica via webhook
+
 const resolveWARRoom = async (req, res) => {
   try {
     const room = await WARRoom.findById(req.params.id)
@@ -141,7 +141,7 @@ const resolveWARRoom = async (req, res) => {
       return res.status(400).json({ error: 'La sala è già chiusa.' });
     }
 
-    // Solo owner o Admin possono risolvere la sala
+    
     const isStaff  = req.user.role === 'Admin';
     const isOwner  = room.owner._id.equals(req.user._id);
     if (!isOwner && !isStaff) {
@@ -151,14 +151,14 @@ const resolveWARRoom = async (req, res) => {
     room.status = 'closed';
     await room.save();
 
-    // Calcola punti reali prima di emettere l'evento
+    
     const puntiBase = (room.passiCompletati?.length || 0) * 150;
     const durataMs  = Date.now() - new Date(room.createdAt).getTime();
     const durataMin = Math.floor(durataMs / 60000);
     const bonus     = durataMin < 30 ? 350 : durataMin < 60 ? 150 : 0;
     const puntiTotali = puntiBase + bonus;
 
-    // Notifica tutti i client nella sala che l'incidente è risolto
+    
     if (io) {
       io.of('/warroom').to(req.params.id).emit('room-resolved', {
         roomId:          req.params.id,
@@ -170,14 +170,14 @@ const resolveWARRoom = async (req, res) => {
       });
     }
 
-    // Cancella i timer degli eventi automatici scenario
+    
     const timers = timeoutScenario.get(req.params.id);
     if (timers) {
       timers.forEach(clearTimeout);
       timeoutScenario.delete(req.params.id);
     }
 
-    // Assegna punti e incrementa warRoomsCompleted a tutti i membri
+    
     await Promise.all(
       room.members.map(m => User.findByIdAndUpdate(m.user, {
         $inc: {
@@ -187,7 +187,7 @@ const resolveWARRoom = async (req, res) => {
       }))
     );
 
-    // Payload del webhook con il riepilogo della sessione
+    
     const webhookPayload = {
       event:      'warroom.resolved',
       resolvedAt: new Date().toISOString(),
@@ -207,7 +207,7 @@ const resolveWARRoom = async (req, res) => {
       },
     };
 
-    // Fire-and-forget: la risposta non aspetta il webhook
+    
     inviaWebhook(webhookPayload);
 
     res.json({ message: 'War Room chiusa con successo.', room: webhookPayload.room });
@@ -217,7 +217,7 @@ const resolveWARRoom = async (req, res) => {
   }
 };
 
-// Utility: controlla che l'utente sia membro o Admin
+
 const isMembroOStaff = (room, userId, userRole) => {
   if (userRole === 'Admin') return true;
   const membro = room.members.find(m => {
@@ -250,7 +250,7 @@ const patchTask = async (req, res) => {
     task.stato = stato;
     await room.save();
 
-    // Notifica in real-time tutti i client nella stanza
+    
     if (io) {
       io.of('/warroom').to(id).emit('task:update', {
         taskId,
@@ -267,7 +267,7 @@ const patchTask = async (req, res) => {
 };
 
 
-// GET /api/warroom/:id/report — riepilogo dati reali per il PDF
+
 const getReport = async (req, res) => {
   try {
     const room = await WARRoom.findById(req.params.id)
@@ -278,7 +278,7 @@ const getReport = async (req, res) => {
       return res.status(403).json({ error: 'Devi essere membro della sala per scaricare il report.' });
     }
 
-    // Calcola durata in formato leggibile
+    
     let durata = '—';
     if (room.createdAt) {
       const fine = room.status === 'closed' ? (room.updatedAt || new Date()) : new Date();
@@ -312,7 +312,7 @@ const getReport = async (req, res) => {
   }
 };
 
-// POST /api/warroom/draft — salva bozza War Room (solo Admin)
+
 const saveDraft = async (req, res) => {
   try {
     const { name, description, isPrivate, maxMembers, challenges, comandiTerminale, tasks, tipo, accessoLibero } = req.body;
@@ -325,7 +325,7 @@ const saveDraft = async (req, res) => {
       challenges:    challenges || [],
       tipo:          tipo || 'Ransomware',
       owner:         req.user._id,
-      members:       [],  // bozza: nessun membro attivo
+      members:       [],  
       comandiTerminale: Array.isArray(comandiTerminale) ? comandiTerminale : [],
       tasks:            Array.isArray(tasks) ? tasks : [],
       status:        'draft',
@@ -336,7 +336,7 @@ const saveDraft = async (req, res) => {
   }
 };
 
-// PATCH /api/warroom/:id/status — cambia stato (es. draft → active)
+
 const updateStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -351,7 +351,7 @@ const updateStatus = async (req, res) => {
   }
 };
 
-// PATCH /api/warroom/:id/step — segna un passo playbook come completato
+
 const markStep = async (req, res) => {
   try {
     const { stepIndex } = req.body;
@@ -365,7 +365,7 @@ const markStep = async (req, res) => {
       return res.status(403).json({ error: 'Devi essere membro della sala per segnare i passi.' });
     }
 
-    // Aggiungi solo se non già presente
+    
     if (!room.passiCompletati.includes(stepIndex)) {
       room.passiCompletati.push(stepIndex);
       await room.save();
@@ -378,7 +378,7 @@ const markStep = async (req, res) => {
   }
 };
 
-// DELETE /api/warroom/:id — elimina una War Room (solo Admin)
+
 const deleteWARRoom = async (req, res) => {
   try {
     const room = await WARRoom.findByIdAndDelete(req.params.id);

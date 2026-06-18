@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Genera access token (breve durata) e refresh token (lunga durata)
+
 const generateTokens = (userId) => {
   const accessToken = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: '15m',
@@ -12,7 +12,7 @@ const generateTokens = (userId) => {
   return { accessToken, refreshToken };
 };
 
-// POST /api/auth/register
+
 const register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -27,12 +27,12 @@ const register = async (req, res) => {
       return res.status(409).json({ error: `${field} già in uso.` });
     }
 
-    // passwordHash viene hashata dal pre-save hook del modello
+    
     const user = await User.create({ username, email, passwordHash: password });
 
     const { accessToken, refreshToken } = generateTokens(user._id);
 
-    // Salva il refresh token sul documento utente
+    
     user.refreshToken = refreshToken;
     await user.save({ validateModifiedOnly: true });
 
@@ -42,7 +42,7 @@ const register = async (req, res) => {
   }
 };
 
-// POST /api/auth/login
+
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -51,7 +51,7 @@ const login = async (req, res) => {
       return res.status(400).json({ error: 'Email e password sono obbligatorie.' });
     }
 
-    // Carica esplicitamente passwordHash (select: false nel modello)
+    
     const user = await User.findOne({ email }).select('+passwordHash +refreshToken');
     if (!user) {
       return res.status(401).json({ error: 'Credenziali non valide.' });
@@ -73,7 +73,7 @@ const login = async (req, res) => {
   }
 };
 
-// POST /api/auth/refresh
+
 const refresh = async (req, res) => {
   try {
     const { refreshToken } = req.body;
@@ -82,7 +82,7 @@ const refresh = async (req, res) => {
       return res.status(400).json({ error: 'Refresh token mancante.' });
     }
 
-    // Verifica firma e scadenza
+    
     let decoded;
     try {
       decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
@@ -90,7 +90,7 @@ const refresh = async (req, res) => {
       return res.status(401).json({ error: 'Refresh token non valido o scaduto.' });
     }
 
-    // Controlla che corrisponda a quello salvato (rotazione token)
+    
     const user = await User.findById(decoded.id).select('+refreshToken');
     if (!user || user.refreshToken !== refreshToken) {
       return res.status(401).json({ error: 'Refresh token non riconosciuto.' });
@@ -107,10 +107,10 @@ const refresh = async (req, res) => {
   }
 };
 
-// POST /api/auth/logout
+
 const logout = async (req, res) => {
   try {
-    // req.user è disponibile grazie al middleware protect
+    
     await User.findByIdAndUpdate(req.user._id, { refreshToken: null });
     res.json({ message: 'Logout effettuato.' });
   } catch (err) {

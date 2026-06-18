@@ -12,12 +12,12 @@ import Admin         from './pages/Admin';
 export default function App() {
   return (
     <Routes>
-      {/* Route pubbliche */}
+      
       <Route path="/"               element={<Landing />} />
       <Route path="/login"          element={<Login />} />
       <Route path="/oauth/callback" element={<OAuthCallback />} />
 
-      {/* Route protette — richiedono autenticazione */}
+      
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard"   element={<Dashboard />} />
         <Route path="/ctf"         element={<CTFArena />} />
@@ -26,7 +26,7 @@ export default function App() {
         <Route path="/warroom/:id" element={<WarRoom />} />
       </Route>
 
-      {/* Route protetta — solo ruolo Admin */}
+      
       <Route element={<ProtectedRoute requiredRole="Admin" />}>
         <Route path="/admin" element={<Admin />} />
       </Route>

@@ -5,7 +5,7 @@ import { useNotifications } from '../context/NotificationsContext';
 import NavDropdown from './NavDropdown';
 import './Navbar.css';
 
-// Voci di navigazione — Dashboard è protetta (solo utenti loggati)
+
 const VOCI = [
   {
     path: '/', label: 'Home',
@@ -42,24 +42,19 @@ const VOCI = [
       <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
       <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
     </svg>,
-    pubblica: false, // nascosta se non loggato
+    pubblica: false, 
   },
 ];
 
-/**
- * Navbar condivisa — usata da tutte le pagine dell'app.
- *
- * Props:
- *   centerContent — nodo React opzionale per contenuto centrale (es. War Room incident info)
- *   rightExtra    — nodo React opzionale aggiunto prima del toggle (es. avatar online)
- */
+
+
 export default function Navbar({ centerContent, rightExtra }) {
   const { user } = useAuth();
   const { notifiche = [], segnaLetta, segnaLetteTutte, nonLette = 0 } = useNotifications() ?? {};
   const location  = useLocation();
   const bellRef   = useRef(null);
 
-  // Legge il tema corrente dal documento per mostrare lo stato corretto sin dall'inizio
+  
   const [theme, setTheme] = useState(
     () => document.documentElement.getAttribute('data-theme') || 'dark'
   );
@@ -71,7 +66,7 @@ export default function Navbar({ centerContent, rightExtra }) {
     document.documentElement.setAttribute('data-theme', next);
   };
 
-  // Chiude il dropdown notifiche al click esterno
+  
   useEffect(() => {
     if (!bellOpen) return;
     const h = (e) => { if (bellRef.current && !bellRef.current.contains(e.target)) setBellOpen(false); };
@@ -79,7 +74,7 @@ export default function Navbar({ centerContent, rightExtra }) {
     return () => document.removeEventListener('mousedown', h);
   }, [bellOpen]);
 
-  // Voce attiva: corrispondenza esatta per Home, startsWith per le altre
+  
   const isActive = (path) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
@@ -88,7 +83,7 @@ export default function Navbar({ centerContent, rightExtra }) {
   return (
     <>
       <nav className="cn-navbar">
-        {/* Logo */}
+        
         <Link to="/" className="cn-logo">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
             <defs>
@@ -103,7 +98,7 @@ export default function Navbar({ centerContent, rightExtra }) {
           CyberNexus
         </Link>
 
-        {/* Voci di navigazione */}
+        
         <div className="cn-items">
           {VOCI
             .filter(v => v.pubblica || !!user)
@@ -120,15 +115,15 @@ export default function Navbar({ centerContent, rightExtra }) {
           }
         </div>
 
-        {/* Contenuto centrale opzionale (War Room: titolo incidente + timer) */}
+        
         {centerContent && <div className="cn-center">{centerContent}</div>}
 
-        {/* Lato destro */}
+        
         <div className="cn-right">
-          {/* Extra destro opzionale (War Room: avatar membri online) */}
+          
           {rightExtra}
 
-          {/* Toggle dark/light */}
+          
           <div className="cn-toggle" onClick={toggleTheme}>
             <div className="cn-track">
               <div className={`cn-thumb${theme === 'light' ? ' light' : ''}`}/>
@@ -136,7 +131,7 @@ export default function Navbar({ centerContent, rightExtra }) {
             <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
           </div>
 
-          {/* Campanella notifiche — solo se loggato */}
+          
           {user && (
             <div ref={bellRef} className="cn-bell-wrap">
               <div className="cn-bell-btn" onClick={() => setBellOpen(o => !o)}>
@@ -182,7 +177,7 @@ export default function Navbar({ centerContent, rightExtra }) {
             </div>
           )}
 
-          {/* Admin pill — visibile solo agli Admin */}
+          
           {user?.role === 'Admin' && (
             <Link to="/admin" className="cn-admin-pill">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -194,7 +189,7 @@ export default function Navbar({ centerContent, rightExtra }) {
             </Link>
           )}
 
-          {/* Avatar con dropdown (loggato) oppure link Accedi (ospite) */}
+          
           {user ? (
             <NavDropdown user={user} initials={initials}/>
           ) : (
@@ -203,7 +198,7 @@ export default function Navbar({ centerContent, rightExtra }) {
         </div>
       </nav>
 
-      {/* Striscia cromatica sotto la navbar */}
+      
       <div className="cn-grad-strip"/>
     </>
   );

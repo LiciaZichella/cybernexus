@@ -1,6 +1,6 @@
 const User = require('../models/User');
 
-// GET /api/leaderboard — classifica globale con aggregation pipeline
+
 const getLeaderboard = async (req, res) => {
   try {
     const page  = Math.max(1, parseInt(req.query.page)  || 1);
@@ -8,7 +8,7 @@ const getLeaderboard = async (req, res) => {
     const skip  = (page - 1) * limit;
 
     const pipeline = [
-      // Raggruppa ogni utente su se stesso calcolando solvedCount dall'array
+      
       {
         $group: {
           _id:               '$_id',
@@ -18,24 +18,24 @@ const getLeaderboard = async (req, res) => {
           role:              { $first: '$role' },
           streak:            { $first: '$streak' },
           warRoomsCompleted: { $first: '$warRoomsCompleted' },
-          // $ifNull gestisce utenti con array non ancora inizializzato
+          
           solvedCount: {
             $sum: { $size: { $ifNull: ['$solvedChallenges', []] } },
           },
         },
       },
 
-      // Ordina per punti decrescenti; a parità ordine alfabetico username
+      
       { $sort: { points: -1, username: 1 } },
 
-      // $facet esegue in parallelo conteggio totale e slice paginata
+      
       {
         $facet: {
           metadata: [{ $count: 'total' }],
           classifica: [
             { $skip: skip },
             { $limit: limit },
-            // Rinomina _id in id per coerenza con il resto delle API
+            
             {
               $project: {
                 _id:        0,
