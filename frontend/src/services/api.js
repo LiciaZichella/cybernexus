@@ -51,7 +51,7 @@ export const authAPI = {
   login:    (data)            => api.post('/auth/login',    data),
   logout:   ()                => api.post('/auth/logout'),
   // Il refresh usa axios diretto per non passare dall'interceptor 401 (evita loop)
-  refresh:  (refreshToken)    => axios.post('/api/auth/refresh', { refreshToken }),
+  refresh:  (refreshToken)    => axios.post((import.meta.env.VITE_API_URL || '') + '/api/auth/refresh', { refreshToken }),
 };
 
 // ─── Utenti ───────────────────────────────────────────────────────────────────

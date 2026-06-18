@@ -31,20 +31,13 @@ function getInitials(name = '') {
 }
 
 function getRankInfo(pts = 0) {
-  const tiers = [
-    { r: 'Analyst', max: 500 },
-    { r: 'Admin', max: 2000 },
-  ];
-  for (let i = 0; i < tiers.length; i++) {
-    if (pts < tiers[i].max) {
-      const prev = tiers[i - 1]?.max || 0;
-      return {
-        next: tiers[i].r,
-        pct: Math.min(Math.round(((pts - prev) / (tiers[i].max - prev)) * 100), 100),
-        remaining: tiers[i].max - pts,
-        max: tiers[i].max,
-      };
-    }
+  if (pts < 500) {
+    return {
+      next: 'Analyst',
+      pct: Math.min(Math.round((pts / 500) * 100), 100),
+      remaining: 500 - pts,
+      max: 500,
+    };
   }
   return { next: null, pct: 100, remaining: 0, max: pts };
 }
@@ -723,11 +716,11 @@ export default function Dashboard() {
               <p className="welcome-msg">
                 Hai catturato <strong style={{color:'var(--mint)'}}>{solved} flag</strong> finora
                 e hai guadagnato <strong style={{color:'var(--violet)'}}>{(profile?.points || 0).toLocaleString('it-IT')} punti</strong>.
-                {rank.next && <>
+                {rank.next && user?.role !== 'Admin' && <>
                   {' '}Mancano solo <strong style={{color:'var(--amber)'}}>{rank.remaining} punti</strong> al rank <strong>{rank.next}</strong> — sei quasi lì!
                 </>}
               </p>
-              {rank.next && (
+              {rank.next && user?.role !== 'Admin' && (
                 <div className="welcome-progress">
                   <div className="wp-row">
                     <span>Verso <span className="wp-strong">{rank.next}</span></span>
@@ -821,7 +814,6 @@ export default function Dashboard() {
                     ? <>#<Counter target={rankUtente} style={{color:'var(--amber)'}} delay={560}/></>
                     : <span style={{color:'var(--amber)'}}>—</span>}
                 </div>
-                <div className="stat-badge" style={{background:'var(--amber-bg)',color:'var(--amber)'}}>▲ +3 settimana</div>
               </div>
               <svg className="sc-spark" viewBox="0 0 60 30"><polyline points="0,8 10,12 20,10 30,16 40,14 50,18 60,22" fill="none" stroke="var(--amber)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="60" cy="22" r="2.5" fill="var(--amber)"/></svg>
             </div>
@@ -876,15 +868,34 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="cat-card-content">
-              <svg className="donut-svg" width="100" height="100" viewBox="0 0 80 80">
-                <circle cx="40" cy="40" r="30" fill="none" stroke="var(--border2)" strokeWidth="10"/>
-                <circle cx="40" cy="40" r="30" fill="none" stroke="var(--violet)"  strokeWidth="10" strokeDasharray="66 123"  strokeDashoffset="0"    strokeLinecap="round" transform="rotate(-90 40 40)"/>
-                <circle cx="40" cy="40" r="30" fill="none" stroke="var(--fuchsia)" strokeWidth="10" strokeDasharray="47 142"  strokeDashoffset="-66"  strokeLinecap="round" transform="rotate(-90 40 40)"/>
-                <circle cx="40" cy="40" r="30" fill="none" stroke="var(--cyan)"    strokeWidth="10" strokeDasharray="38 151"  strokeDashoffset="-113" strokeLinecap="round" transform="rotate(-90 40 40)"/>
-                <circle cx="40" cy="40" r="30" fill="none" stroke="var(--mint)"    strokeWidth="10" strokeDasharray="23 166"  strokeDashoffset="-151" strokeLinecap="round" transform="rotate(-90 40 40)"/>
-                <circle cx="40" cy="40" r="30" fill="none" stroke="var(--amber)"   strokeWidth="10" strokeDasharray="15 174"  strokeDashoffset="-174" strokeLinecap="round" transform="rotate(-90 40 40)"/>
-                <text x="40" y="44" textAnchor="middle" fontFamily="Syne,sans-serif" fontSize="13" fontWeight="700" fill="var(--text1)">{solved || 17}</text>
-              </svg>
+              {(() => {
+                const C = 2 * Math.PI * 30;
+                const totRisolte = catBars.reduce((s, c) => s + (c.risolte || 0), 0);
+                let prevArc = 0;
+                const segs = totRisolte > 0
+                  ? catBars.filter(c => c.risolte > 0).map(c => {
+                      const arc = (c.risolte / totRisolte) * C;
+                      const s = { color: c.c, arc, offset: prevArc };
+                      prevArc += arc;
+                      return s;
+                    })
+                  : [];
+                return (
+                  <svg className="donut-svg" width="100" height="100" viewBox="0 0 80 80">
+                    <circle cx="40" cy="40" r="30" fill="none" stroke="var(--border2)" strokeWidth="10"/>
+                    {segs.map((s, i) => (
+                      <circle key={i} cx="40" cy="40" r="30" fill="none"
+                        stroke={s.color} strokeWidth="10"
+                        strokeDasharray={`${s.arc.toFixed(1)} ${(C - s.arc).toFixed(1)}`}
+                        strokeDashoffset={`${(-s.offset).toFixed(1)}`}
+                        strokeLinecap="round"
+                        transform="rotate(-90 40 40)"
+                      />
+                    ))}
+                    <text x="40" y="44" textAnchor="middle" fontFamily="Syne,sans-serif" fontSize="13" fontWeight="700" fill="var(--text1)">{solved}</text>
+                  </svg>
+                );
+              })()}
               <div className="cat-bars">
                 {(catBars.length ? catBars : CAT_CONFIG.slice(0, 5).map(c => ({ name: c.name, c: c.c, pct: 0, w: '0%' }))).map(cat => (
                   <div key={cat.name} className="cat-bar-row">
