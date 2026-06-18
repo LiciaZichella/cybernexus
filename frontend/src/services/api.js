@@ -17,7 +17,7 @@ export const setRefreshCallback = (fn) => { onRefreshCallback = fn; };
 
 // ─── Istanza Axios ────────────────────────────────────────────────────────────
 
-export const api = axios.create({ baseURL: '/api' });
+export const api = axios.create({ baseURL: (import.meta.env.VITE_API_URL || '') + '/api' });
 
 // Interceptor in uscita: inietta il Bearer token in ogni richiesta
 api.interceptors.request.use((config) => {
