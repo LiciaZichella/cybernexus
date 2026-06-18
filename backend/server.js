@@ -50,6 +50,9 @@ app.use(passport.initialize());
 const swaggerDoc = YAML.load('./swagger.yaml');
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
+// Necessario per leggere correttamente X-Forwarded-For dietro il proxy di Render
+app.set('trust proxy', 1);
+
 // Rate limiting globale: 500 req/15min in sviluppo, 100 in produzione
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
