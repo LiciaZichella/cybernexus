@@ -154,12 +154,47 @@ const getMeSubmissions = async (req, res) => {
       user:      req.user._id,
       isCorrect: true,
     })
-      .select('createdAt pointsAwarded')
-      .sort({ createdAt: 1 })
+      .select('createdAt pointsAwarded challenge')
+      .sort({ createdAt: -1 })
+      .populate('challenge', 'title category')
       .lean();
 
     res.json({ submissions });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET /api/users/me/attempts — tutti i tentativi (corretti e sbagliati) per lo stato "tentata"
+const getMeAttempts = async (req, res) => {
+  try {
+    const submissions = await Submission.find({ user: req.user._id })
+      .select('challenge isCorrect')
+      .lean();
+
+    res.json({ submissions });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// PATCH /api/users/:id/ban — banna o sbanna un utente (solo Admin)
+const banUser = async (req, res) => {
+  try {
+    if (req.params.id === req.user._id.toString()) {
+      return res.status(403).json({ error: 'Non puoi bannare il tuo account.' });
+    }
+
+    const { ban } = req.body; // true = banna, false = sbanna
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isBanned: !!ban },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ error: 'Utente non trovato.' });
+    res.json({ user: user.toPublicJSON() });
+  } catch (err) {
+    if (err.name === 'CastError') return res.status(400).json({ error: 'ID non valido.' });
     res.status(500).json({ error: err.message });
   }
 };
@@ -266,4 +301,4 @@ const getUserActivity = async (req, res) => {
   }
 };
 
-module.exports = { getMe, updateMe, getUserById, getAllUsers, changeUserRole, getMeActivity, getMeSubmissions, exportUsersCSV, getUserActivity };
+module.exports = { getMe, updateMe, getUserById, getAllUsers, changeUserRole, getMeActivity, getMeSubmissions, getMeAttempts, exportUsersCSV, getUserActivity, banUser };

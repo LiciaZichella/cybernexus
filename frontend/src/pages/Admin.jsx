@@ -69,6 +69,7 @@ export default function Admin() {
   // Form crea sfida
   const [formCTF, setFormCTF] = useState({
     titolo: '', categoria: 'Web', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '',
+    hints: [], // array di { text: '', cost: 0 }
   });
   const [flagHashPreview, setFlagHashPreview] = useState('');
   const [invioSfida, setInvioSfida]           = useState(false);
@@ -80,6 +81,7 @@ export default function Admin() {
     accessoLibero: true,
   });
   const [invioWR, setInvioWR] = useState(false);
+  const [inviteCodeGenerato, setInviteCodeGenerato] = useState(null); // codice invito dopo creazione stanza privata
 
   // Feed attività
   const [feedAttivita, setFeedAttivita] = useState([]);
@@ -326,9 +328,10 @@ export default function Admin() {
           title: formCTF.titolo, description: formCTF.descrizione,
           category: formCTF.categoria, difficulty: formCTF.difficolta,
           points: Number(formCTF.punti),
+          hints: formCTF.hints.filter(h => h.text.trim()),
         };
         if (formCTF.flag) payload.flag = formCTF.flag;
-        await api.patch(`/challenges/${sfidaInModifica._id ?? sfidaInModifica.id}`, payload);
+        await challengesAPI.update(sfidaInModifica._id ?? sfidaInModifica.id, payload);
         mostraToast('Sfida aggiornata ✓', 'tok');
         setSfidaInModifica(null);
       } else {
@@ -336,10 +339,11 @@ export default function Admin() {
           title: formCTF.titolo, description: formCTF.descrizione,
           category: formCTF.categoria, difficulty: formCTF.difficolta,
           points: Number(formCTF.punti), flag: formCTF.flag,
+          hints: formCTF.hints.filter(h => h.text.trim()),
         });
         mostraToast('Sfida creata! Flag SHA-256 salvata ✓', 'tok');
       }
-      setFormCTF({ titolo: '', categoria: 'Web', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '' });
+      setFormCTF({ titolo: '', categoria: 'Web', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '', hints: [] });
       setFlagHashPreview('');
       caricaSfide();
     } catch (err) {
@@ -371,7 +375,7 @@ export default function Admin() {
         .filter(r => r.length > 0)
         .map(titolo => ({ titolo, stato: 'todo' }));
 
-      await warroomAPI.create({
+      const risposta = await warroomAPI.create({
         name:             formWR.nome,
         tipo:             formWR.tipo,
         description:      formWR.briefing,
@@ -382,6 +386,9 @@ export default function Admin() {
         comandiTerminale: comandiParsati,
         tasks:            tasksParsati,
       });
+      // Se la stanza è privata, mostra il codice invito generato
+      const codice = risposta.data?.inviteCode ?? risposta.data?.room?.inviteCode ?? null;
+      if (codice) setInviteCodeGenerato(codice);
       mostraToast('War Room creata! Playbook generato ✓', 'tok');
       setFormWR({ nome: '', tipo: 'Ransomware', severita: 'Critical', punti: 1500, briefing: '', playbook: '', comandiTerminale: '', tasks: '', accessoLibero: true });
       caricaWarrooms();
@@ -637,8 +644,14 @@ export default function Admin() {
                                 className="act-btn"
                                 onClick={() => setConfirmModal({
                                   aperto: true, titolo: 'Sbanna utente', testo: `Riabilitare ${u.username}?`,
-                                  onConferma: () => {
-                                    mostraToast('Funzionalità non disponibile', '');
+                                  onConferma: async () => {
+                                    try {
+                                      await usersAPI.banUser(u._id ?? u.id, false);
+                                      mostraToast(`${u.username} riabilitato ✓`, 'tok');
+                                      caricaUtenti();
+                                    } catch (err) {
+                                      mostraToast(err.response?.data?.error ?? 'Errore', 'terr');
+                                    }
                                   },
                                 })}
                               >
@@ -649,8 +662,14 @@ export default function Admin() {
                                 className="act-btn danger"
                                 onClick={() => setConfirmModal({
                                   aperto: true, titolo: 'Banna utente', testo: `Vuoi bannare ${u.username}?`,
-                                  onConferma: () => {
-                                    mostraToast('Funzionalità non disponibile', '');
+                                  onConferma: async () => {
+                                    try {
+                                      await usersAPI.banUser(u._id ?? u.id, true);
+                                      mostraToast(`${u.username} bannato ✓`, 'tok');
+                                      caricaUtenti();
+                                    } catch (err) {
+                                      mostraToast(err.response?.data?.error ?? 'Errore', 'terr');
+                                    }
                                   },
                                 })}
                               >
@@ -733,6 +752,23 @@ export default function Admin() {
               <input className="fg-input" type="text" placeholder="es. challenge.zip — max 10MB"
                 value={formCTF.file} onChange={(e) => setFormCTF((f) => ({ ...f, file: e.target.value }))} />
             </div>
+            <div className="fg full">
+              <div className="fg-lbl" style={{marginBottom:'8px'}}>Suggerimenti (hint)</div>
+              {formCTF.hints.map((hint, hi) => (
+                <div key={hi} style={{display:'flex',gap:'8px',marginBottom:'6px',alignItems:'center'}}>
+                  <input className="fg-input" type="text" placeholder={`Testo hint ${hi + 1}`} style={{flex:1}}
+                    value={hint.text} onChange={e => setFormCTF(f => ({ ...f, hints: f.hints.map((h, i) => i === hi ? { ...h, text: e.target.value } : h) }))} />
+                  <input className="fg-input" type="number" min="0" step="10" placeholder="pts" style={{width:'80px'}}
+                    value={hint.cost} onChange={e => setFormCTF(f => ({ ...f, hints: f.hints.map((h, i) => i === hi ? { ...h, cost: Number(e.target.value) } : h) }))} />
+                  <button className="act-btn danger" style={{flexShrink:0}} onClick={() => setFormCTF(f => ({ ...f, hints: f.hints.filter((_, i) => i !== hi) }))}>✕</button>
+                </div>
+              ))}
+              <button className="tb-btn tb-ghost" style={{fontSize:'11px',padding:'5px 12px',marginTop:'2px'}}
+                onClick={() => setFormCTF(f => ({ ...f, hints: [...f.hints, { text: '', cost: 0 }] }))}>
+                + Aggiungi hint
+              </button>
+              <div className="fg-note">Ogni hint verrà sottratta i punti indicati al click dell'utente</div>
+            </div>
           </div>
         </div>
         <div className="form-actions">
@@ -743,7 +779,7 @@ export default function Admin() {
             </span>
           </button>
           {sfidaInModifica && (
-            <button className="tb-btn tb-ghost" onClick={() => { setSfidaInModifica(null); setFormCTF({ titolo: '', categoria: 'Web', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '' }); setFlagHashPreview(''); }}>Annulla</button>
+            <button className="tb-btn tb-ghost" onClick={() => { setSfidaInModifica(null); setFormCTF({ titolo: '', categoria: 'Web', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '', hints: [] }); setFlagHashPreview(''); }}>Annulla</button>
           )}
           {!sfidaInModifica && (
             <button className="tb-btn tb-ghost" onClick={() => mostraToast('Anteprima — funzionalità in sviluppo', '')}>Anteprima</button>
@@ -779,7 +815,7 @@ export default function Admin() {
                       <div className="act-btns">
                         <button className="act-btn" onClick={() => {
                           setSfidaInModifica(s);
-                          setFormCTF({ titolo: s.title, categoria: s.category, difficolta: s.difficulty, punti: s.points, descrizione: s.description || '', flag: '', file: '' });
+                          setFormCTF({ titolo: s.title, categoria: s.category, difficolta: s.difficulty, punti: s.points, descrizione: s.description || '', flag: '', file: '', hints: (s.hints || []).map(h => ({ text: h.text || '', cost: h.cost ?? 0 })) });
                           setSezione('ctf');
                           setTimeout(() => document.querySelector('.form-card')?.scrollIntoView({ behavior: 'smooth' }), 50);
                         }}>Modifica</button>
@@ -906,6 +942,29 @@ export default function Admin() {
             </button>
             <button className="tb-btn tb-ghost" onClick={handleSalvaBozza} disabled={invioWR}>Salva bozza</button>
           </div>
+          {/* Codice invito generato dopo la creazione di una stanza privata */}
+          {inviteCodeGenerato && (
+            <div style={{ margin: '0 24px 18px', padding: '12px 16px', borderRadius: 10, background: 'rgba(246,198,82,.08)', border: '0.5px solid rgba(246,198,82,.3)', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 18 }}>🔒</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: 'var(--amber)', fontWeight: 600, marginBottom: 4 }}>CODICE INVITO GENERATO</div>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 16, fontWeight: 700, color: 'var(--text1)', letterSpacing: '0.1em' }}>{inviteCodeGenerato}</div>
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>Condividilo solo con i partecipanti autorizzati</div>
+              </div>
+              <button
+                style={{ fontSize: 11, padding: '6px 14px', borderRadius: 6, border: '0.5px solid var(--amber)', background: 'rgba(246,198,82,.12)', color: 'var(--amber)', cursor: 'pointer', fontWeight: 600 }}
+                onClick={() => { navigator.clipboard.writeText(inviteCodeGenerato); mostraToast('Codice copiato!', 'tok'); }}
+              >
+                Copia
+              </button>
+              <button
+                style={{ fontSize: 14, padding: '4px 8px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text3)', cursor: 'pointer' }}
+                onClick={() => setInviteCodeGenerato(null)}
+              >
+                ✕
+              </button>
+            </div>
+          )}
         </div>
 
         {warroomsLoading && <div className="a-loading"><div className="a-spinner" />Caricamento War Room…</div>}
@@ -926,6 +985,7 @@ export default function Admin() {
                     return (
                       <tr key={wr._id ?? wr.id} style={{ opacity: isDraft ? 0.75 : !isLive ? 0.6 : 1 }}>
                         <td style={{ color: 'var(--text1)', fontWeight: 500 }}>
+                          {wr.isPrivate && <span title="Sala privata — richiede codice invito" style={{ marginRight: 6 }}>🔒</span>}
                           {wr.name}
                           {isDraft && (
                             <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: 'rgba(90,100,128,0.15)', color: 'var(--text3)', border: '0.5px solid var(--border2)', fontFamily: "'JetBrains Mono',monospace" }}>BOZZA</span>

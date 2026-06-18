@@ -11,11 +11,13 @@ const getLeaderboard = async (req, res) => {
       // Raggruppa ogni utente su se stesso calcolando solvedCount dall'array
       {
         $group: {
-          _id:        '$_id',
-          username:   { $first: '$username' },
-          avatar:     { $first: '$avatar' },
-          points:     { $first: '$points' },
-          role:       { $first: '$role' },
+          _id:               '$_id',
+          username:          { $first: '$username' },
+          avatar:            { $first: '$avatar' },
+          points:            { $first: '$points' },
+          role:              { $first: '$role' },
+          streak:            { $first: '$streak' },
+          warRoomsCompleted: { $first: '$warRoomsCompleted' },
           // $ifNull gestisce utenti con array non ancora inizializzato
           solvedCount: {
             $sum: { $size: { $ifNull: ['$solvedChallenges', []] } },
@@ -37,12 +39,14 @@ const getLeaderboard = async (req, res) => {
             {
               $project: {
                 _id:        0,
-                id:         '$_id',
-                username:   1,
-                avatar:     1,
-                points:     1,
-                role:       1,
-                solvedCount: 1,
+                id:                '$_id',
+                username:          1,
+                avatar:            1,
+                points:            1,
+                role:              1,
+                streak:            1,
+                warRoomsCompleted: 1,
+                solvedCount:       1,
               },
             },
           ],

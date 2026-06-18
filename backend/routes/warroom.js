@@ -21,8 +21,8 @@ const router = express.Router();
 router.use(protect);
 
 router.get('/',     getWARRooms);
-router.post('/',    authorize('Admin', 'Manager'), createWARRoom);
-router.post('/draft', authorize('Admin', 'Manager'), saveDraft);
+router.post('/',    authorize('Admin'), createWARRoom);
+router.post('/draft', authorize('Admin'), saveDraft);
 
 router.get('/:id',               getWARRoomById);
 router.get('/:id/report',        getReport);

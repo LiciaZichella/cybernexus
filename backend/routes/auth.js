@@ -1,10 +1,20 @@
-const express  = require('express');
-const jwt      = require('jsonwebtoken');
-const passport = require('../config/passport');
+const express    = require('express');
+const jwt        = require('jsonwebtoken');
+const rateLimit  = require('express-rate-limit');
+const passport   = require('../config/passport');
 const { register, login, refresh, logout } = require('../controllers/authController');
 const { protect } = require('../middleware/verificaUtenti');
 
 const router = express.Router();
+
+// Rate limiter per login e registrazione: max 10 tentativi per 15 minuti per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Troppi tentativi. Riprova tra qualche minuto.' },
+});
 
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 
@@ -14,8 +24,8 @@ const generateTokens = (userId) => {
   return { accessToken, refreshToken };
 };
 
-router.post('/register', register);
-router.post('/login',    login);
+router.post('/register', authLimiter, register);
+router.post('/login',    authLimiter, login);
 router.post('/refresh',  refresh);
 router.post('/logout',   protect, logout);
 

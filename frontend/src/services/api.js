@@ -57,13 +57,15 @@ export const authAPI = {
 // ─── Utenti ───────────────────────────────────────────────────────────────────
 
 export const usersAPI = {
-  getMe:          ()       => api.get('/users/me'),
-  updateMe:       (data)   => api.put('/users/me', data),
-  getById:        (id)     => api.get(`/users/${id}`),
-  getAll:         (params) => api.get('/users', { params }),
-  getActivity:    ()       => api.get('/users/me/activity'),
-  getSubmissions: ()       => api.get('/users/me/submissions'),
-  getActivityById: (id)   => api.get(`/users/${id}/activity`),
+  getMe:           ()           => api.get('/users/me'),
+  updateMe:        (data)       => api.put('/users/me', data),
+  getById:         (id)         => api.get(`/users/${id}`),
+  getAll:          (params)     => api.get('/users', { params }),
+  getActivity:     ()           => api.get('/users/me/activity'),
+  getSubmissions:  ()           => api.get('/users/me/submissions'),
+  getAttempts:     ()           => api.get('/users/me/attempts'),
+  getActivityById: (id)         => api.get(`/users/${id}/activity`),
+  banUser:         (id, ban)    => api.patch(`/users/${id}/ban`, { ban }),
 };
 
 // ─── Challenge ────────────────────────────────────────────────────────────────
@@ -72,6 +74,7 @@ export const challengesAPI = {
   getAll:     (params)         => api.get('/challenges', { params }),
   getById:    (id)             => api.get(`/challenges/${id}`),
   create:     (data)           => api.post('/challenges', data),
+  update:     (id, data)       => api.patch(`/challenges/${id}`, data),
   submitFlag: (id, data)       => api.post(`/challenges/${id}/submit`, data),
   getHint:    (id, index)      => api.get(`/challenges/${id}/hint`, { params: { index } }),
 };

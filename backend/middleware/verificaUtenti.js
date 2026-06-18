@@ -20,6 +20,10 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ error: 'Utente non trovato.' });
     }
 
+    if (user.isBanned) {
+      return res.status(403).json({ error: 'Account sospeso. Contatta l\'amministratore.' });
+    }
+
     req.user = user;
     next();
   } catch (err) {
@@ -30,14 +34,18 @@ const protect = async (req, res, next) => {
   }
 };
 
-// Limita l'accesso ai soli ruoli specificati
-// Uso: authorize('Admin', 'Manager')
+// Gerarchia ruoli: indice più alto = più permessi
+const RANK = { Guest: 0, Player: 1, Analyst: 2, Manager: 3, Admin: 4 };
+
+// Limita l'accesso ai ruoli con rango >= al minimo tra quelli specificati.
+// authorize('Admin','Manager') → soglia Manager(3) → Manager e Admin passano.
+// authorize('Admin') → soglia Admin(4) → solo Admin.
+// Retrocompatibile: non serve modificare le chiamate esistenti nelle route.
 const authorize = (...roles) => {
+  const sogliaMinima = Math.min(...roles.map(r => RANK[r] ?? 99));
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        error: `Accesso riservato a: ${roles.join(', ')}.`,
-      });
+    if ((RANK[req.user.role] ?? -1) < sogliaMinima) {
+      return res.status(403).json({ error: 'Permessi insufficienti.' });
     }
     next();
   };

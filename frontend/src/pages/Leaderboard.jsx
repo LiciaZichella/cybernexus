@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
-import { leaderboardAPI, usersAPI } from '../services/api';
+import ProfiloModal from '../components/ProfiloModal';
+import { leaderboardAPI } from '../services/api';
 import './Leaderboard.css';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -41,32 +42,6 @@ const displayRank = (rank) => {
   return `#${rank}`;
 };
 
-const HEATMAP_COLORS = [
-  'var(--border2)',
-  'rgba(92,206,138,.25)',
-  'rgba(92,206,138,.5)',
-  'rgba(92,206,138,.75)',
-  'var(--mint)',
-];
-
-// Definizioni badge con soglie di sblocco calcolate a runtime
-const BADGE_DEFS = [
-  { emoji: '🔑', label: 'First Blood',   check: (p, rank) => (p.solvedCount ?? (p.solvedChallenges?.length ?? 0)) >= 1 },
-  { emoji: '💎', label: 'Gem Collector', check: (p)       => (p.solvedCount ?? (p.solvedChallenges?.length ?? 0)) >= 20 },
-  { emoji: '⚡', label: 'Speed Run',     check: (p)       => (p.points ?? 0) >= 5000 },
-  { emoji: '🔥', label: 'On Fire',       check: (p)       => (p.streak ?? 0) >= 7 },
-  { emoji: '👑', label: 'Champion',      check: (p, rank) => rank > 0 && rank <= 3 },
-  { emoji: '🕵️', label: 'Ghost',         check: (p)       => (p.points ?? 0) >= 1000 && (p.streak ?? 0) === 0 },
-];
-
-// Categorie profilo con pct a 0 — non abbiamo dati per-categoria dall'API utente
-const CATEGORIE_PROFILO_BASE = [
-  { nome: 'Web',       colore: '#7C6FEA' },
-  { nome: 'Crypto',    colore: '#5BC4D4' },
-  { nome: 'Forensics', colore: '#5CCE8A' },
-  { nome: 'Rev/Pwn',   colore: '#F6C652' },
-  { nome: 'OSINT',     colore: '#E870B8' },
-];
 
 const radarPoint = (values, idx, cx, cy, r) => {
   const a = (Math.PI / 3) * idx - Math.PI / 2;
@@ -76,7 +51,6 @@ const radarPoint = (values, idx, cx, cy, r) => {
 // ── Componente principale ─────────────────────────────────────────────────────
 
 export default function Leaderboard() {
-  const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
 
   // Dati classifica
@@ -87,9 +61,8 @@ export default function Leaderboard() {
   const [totalePagine, setTotalePagine] = useState(1);
   const [totale, setTotale]             = useState(0);
 
-  // Profilo modale
-  const [profiloAperto, setProfiloAperto]   = useState(null);
-  const [profiloLoading, setProfiloLoading] = useState(false);
+  // Profilo modale — contiene solo l'item base dalla classifica (id + username + points)
+  const [profiloAperto, setProfiloAperto] = useState(null);
 
   // UI
   const [filterAttivo, setFilterAttivo] = useState('global');
@@ -142,57 +115,13 @@ export default function Leaderboard() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [caricaClassifica, filterAttivo]);
 
-  // ── Chiusura modale con tasto ESC ───────────────────────────────────────────
-
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') handleCloseProfile();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   // ── Gestione profilo ────────────────────────────────────────────────────────
 
-  const handleOpenProfile = async (item) => {
-    document.body.style.overflow = 'hidden';
-    setProfiloAperto(item);
-    setProfiloLoading(true);
-    try {
-      const userId = item.id ?? item._id;
+  // Apre il modal con l'item base dalla riga classifica
+  const handleOpenProfile = (item) => setProfiloAperto(item);
 
-      // Carica profilo e attività in parallelo
-      const [profiloRes, activityRes] = await Promise.allSettled([
-        usersAPI.getById(userId),
-        usersAPI.getActivityById(userId),
-      ]);
-
-      let nuovoProfilo = { ...item };
-
-      if (profiloRes.status === 'fulfilled') {
-        nuovoProfilo = { ...nuovoProfilo, ...profiloRes.value.data };
-      }
-      if (activityRes.status === 'fulfilled') {
-        nuovoProfilo._activity  = activityRes.value.data.activity  ?? [];
-        nuovoProfilo._categorie = activityRes.value.data.categorie ?? [];
-      }
-
-      setProfiloAperto(nuovoProfilo);
-    } catch {
-      // Mostra i dati già disponibili dalla riga classifica
-    } finally {
-      setProfiloLoading(false);
-    }
-  };
-
-  const handleCloseProfile = () => {
-    document.body.style.overflow = '';
-    setProfiloAperto(null);
-    setProfiloLoading(false);
-  };
+  // Chiude il modal — ProfiloModal gestisce internamente body.overflow ed ESC
+  const handleCloseProfile = () => setProfiloAperto(null);
 
   // ── Tema ────────────────────────────────────────────────────────────────────
 
@@ -218,30 +147,6 @@ export default function Leaderboard() {
   const comparePool     = classifica.slice(1);
   const compareCorrente = comparePool[compareIdx] ?? comparePool[0];
 
-  // Badge calcolati dai dati reali del profilo aperto
-  const BADGES = BADGE_DEFS.map(def => ({
-    emoji:    def.emoji,
-    label:    def.label,
-    unlocked: profiloAperto ? def.check(profiloAperto, rankProfilo) : false,
-  }));
-
-  // Categorie: dati reali se disponibili, altrimenti base con pct 0
-  const coloriCat = {
-    'Web':          '#7C6FEA',
-    'Crypto':       '#5BC4D4',
-    'Cryptography': '#5BC4D4',
-    'Forensics':    '#5CCE8A',
-    'Reverse':      '#F6C652',
-    'OSINT':        '#E870B8',
-    'Misc':         '#F07060',
-  };
-  const CATEGORIE_PROFILO = profiloAperto?._categorie?.length
-    ? profiloAperto._categorie.map(cat => ({
-        nome:   cat.nome,
-        colore: coloriCat[cat.nome] || '#7C6FEA',
-        pct:    cat.pct,
-      }))
-    : CATEGORIE_PROFILO_BASE.map(cat => ({ ...cat, pct: 0 }));
 
   // Calcola valori radar [0‥1] da metriche aggregate disponibili in classifica
   const calcRadar = (giocatore) => {
@@ -269,183 +174,13 @@ export default function Leaderboard() {
       <div className="orb orb-1" />
       <div className="orb orb-2" />
 
-      {/* ── Modale profilo ── */}
-      {profiloAperto && (
-        <div className="profile-overlay" onClick={handleCloseProfile}>
-          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="pm-topbar" />
-            <button className="pm-close" onClick={handleCloseProfile}>✕</button>
-
-            <div className="pm-body">
-              {/* Colonna sinistra: identità utente */}
-              <div className="pm-left">
-                <div className="pm-avatar-wrap">
-                  <div
-                    className="pm-avatar"
-                    style={{ background: getAvatarGradient(rankProfilo || 4) }}
-                  >
-                    {getInitials(profiloAperto.username)}
-                  </div>
-                  {rankProfilo > 0 && (
-                    <div
-                      className="pm-rank-pill"
-                      style={{
-                        background:
-                          rankProfilo === 1 ? 'var(--amber-bg)'
-                          : rankProfilo === 2 ? 'rgba(176,184,204,.2)'
-                          : rankProfilo === 3 ? 'rgba(200,124,58,.2)'
-                          : 'var(--violet-bg)',
-                        color:
-                          rankProfilo === 1 ? 'var(--gold)'
-                          : rankProfilo === 2 ? 'var(--silver)'
-                          : rankProfilo === 3 ? 'var(--bronze)'
-                          : 'var(--violet)',
-                      }}
-                    >
-                      {displayRank(rankProfilo)}
-                    </div>
-                  )}
-                </div>
-
-                <div className="pm-name">{profiloAperto.username}</div>
-                <div className="pm-handle">@{(profiloAperto.username ?? '').toLowerCase()}</div>
-
-                {profiloAperto.bio && (
-                  <div className="pm-bio">{profiloAperto.bio}</div>
-                )}
-
-                <div className="pm-stats-grid">
-                  <div className="pmsg-item">
-                    <div className="pmsg-val" style={{ color: 'var(--violet)' }}>
-                      {profiloAperto.points ?? 0}
-                    </div>
-                    <div className="pmsg-lbl">Punti</div>
-                  </div>
-                  <div className="pmsg-item">
-                    <div className="pmsg-val" style={{ color: 'var(--mint)' }}>
-                      {profiloAperto.solvedCount ?? profiloAperto.solved ?? 0}
-                    </div>
-                    <div className="pmsg-lbl">Flag</div>
-                  </div>
-                  <div className="pmsg-item">
-                    <div className="pmsg-val" style={{ color: 'var(--amber)' }}>
-                      {rankProfilo > 0 ? `#${rankProfilo}` : '–'}
-                    </div>
-                    <div className="pmsg-lbl">Rank</div>
-                  </div>
-                  <div className="pmsg-item">
-                    <div className="pmsg-val" style={{ color: 'var(--cyan)' }}>
-                      {profiloAperto.streak ?? '–'}
-                    </div>
-                    <div className="pmsg-lbl">Streak</div>
-                  </div>
-                </div>
-
-                <div className="pm-socials">
-                  {isMe(profiloAperto) ? (
-                    <button
-                      className="pm-social-btn primary"
-                      onClick={() => { handleCloseProfile(); navigate('/dashboard'); }}
-                    >
-                      Vai alla dashboard
-                    </button>
-                  ) : (
-                    <>
-                      {profiloAperto.github && (
-                        <button className="pm-social-btn">GitHub</button>
-                      )}
-                      {profiloAperto.twitter && (
-                        <button className="pm-social-btn">Twitter</button>
-                      )}
-                      {!profiloAperto.github && !profiloAperto.twitter && (
-                        <span className="pm-empty">Nessun social collegato</span>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Colonna destra: statistiche dettagliate */}
-              <div className="pm-right">
-                {profiloLoading ? (
-                  <div className="lb-loading" style={{ padding: '40px 0' }}>
-                    <div className="lb-spinner" />
-                    <span>Caricamento dati…</span>
-                  </div>
-                ) : (
-                  <>
-                    {/* Heatmap attività */}
-                    <div>
-                      <div className="pm-section-title">Attività</div>
-                      <div className="pm-heatmap">
-                        <div className="pmh-header">
-                          <span className="pmh-title">Ultimi 80 giorni</span>
-                          <span className="pmh-streak">
-                            🔥 {profiloAperto.streak ?? 0} giorni
-                          </span>
-                        </div>
-                        <div className="pm-hm-grid">
-                          {(() => {
-                            const cells = profiloAperto?._activity?.length
-                              ? profiloAperto._activity.map(a => Math.min(a.count, 4))
-                              : Array.from({ length: 60 }, () => 0);
-                            return cells.map((livello, i) => (
-                              <div
-                                key={i}
-                                className="pm-hm-cell"
-                                style={{ background: HEATMAP_COLORS[livello] }}
-                                title={`Giorno ${i + 1}: ${livello} solve`}
-                              />
-                            ));
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Distribuzione per categoria */}
-                    <div>
-                      <div className="pm-section-title">Categorie</div>
-                      <div className="pm-cats">
-                        {CATEGORIE_PROFILO.map((cat) => (
-                          <div key={cat.nome} className="pm-cat-row">
-                            <div className="pm-cat-dot" style={{ background: cat.colore }} />
-                            <div className="pm-cat-name">{cat.nome}</div>
-                            <div className="pm-cat-bar">
-                              <div
-                                className="pm-cat-fill"
-                                style={{ width: `${cat.pct}%`, background: cat.colore }}
-                              />
-                            </div>
-                            <div className="pm-cat-pct" style={{ color: cat.colore }}>
-                              {cat.pct}%
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Badge */}
-                    <div>
-                      <div className="pm-section-title">Badge</div>
-                      <div className="pm-badges-grid">
-                        {BADGES.map((badge) => (
-                          <div
-                            key={badge.label}
-                            className={`pm-badge ${badge.unlocked ? 'unlocked' : 'locked'}`}
-                            title={badge.label}
-                          >
-                            {badge.emoji}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── Modale profilo — componente riutilizzabile ── */}
+      <ProfiloModal
+        open={!!profiloAperto}
+        onClose={handleCloseProfile}
+        userId={profiloAperto?.id ?? profiloAperto?._id}
+        rank={rankProfilo}
+      />
 
       <Navbar />
 

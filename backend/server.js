@@ -25,6 +25,7 @@ const io = new Server(httpServer, {
 });
 warroomSocket(io);
 warroomController.setIo(io);   // inietta io nel controller per task:update
+app.set('io', io);             // accessibile dai controller via req.app.get('io')
 
 // Connessione al database
 connectDB();

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
 import Navbar from '../components/Navbar';
@@ -133,6 +134,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .ch-card:hover::before{opacity:1}
 .ch-card.solved{border-color:rgba(92,206,138,.2)}
 .ch-card.solved::after{content:'✓';position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:50%;background:var(--mint);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0a1a10}
+.ch-card.attempted{border-color:rgba(246,198,82,.25)}
+.ch-card.attempted::after{content:'⟳';position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#1a1000}
 .cc-crypto::before{background:linear-gradient(90deg,var(--violet),var(--fuchsia))}
 .cc-web::before{background:linear-gradient(90deg,var(--fuchsia),var(--coral))}
 .cc-osint::before{background:linear-gradient(90deg,var(--cyan),var(--mint))}
@@ -271,6 +274,14 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .pm-empty{font-size:12px;color:var(--text3);padding:8px 0}
 .pm-spinner{width:24px;height:24px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--violet);animation:spin 0.8s linear infinite}
 @media(max-width:700px){.pm-body{grid-template-columns:1fr}.pm-left{border-right:none;border-bottom:0.5px solid var(--border);padding:20px}}
+
+/* LIVE FLAG FEED */
+.live-flag-feed{position:fixed;bottom:24px;left:24px;z-index:700;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.lff-item{display:flex;align-items:center;gap:8px;background:var(--bg2);border:0.5px solid rgba(92,206,138,.3);border-radius:var(--r8);padding:9px 14px;min-width:220px;max-width:320px;box-shadow:0 4px 16px rgba(0,0,0,.3);animation:slideInLeft .35s ease;font-size:12px}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+.lff-ico{font-size:14px;flex-shrink:0}
+.lff-txt{flex:1;color:var(--text1);line-height:1.4;min-width:0}
+.lff-pts{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--mint);flex-shrink:0}
 `;
 
 /* ─── Profile modal helpers ───────────────────────────────────────────────── */
@@ -287,7 +298,8 @@ export default function CTFArena() {
   const [challenges, setChallenges] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, pages: 1, page: 1 });
   const [loading,    setLoading]    = useState(true);
-  const [solvedIds,  setSolvedIds]  = useState(new Set());
+  const [solvedIds,    setSolvedIds]    = useState(new Set());
+  const [attemptedIds, setAttemptedIds] = useState(new Set());
 
   const [selectedCat,     setSelectedCat]     = useState('all');
   const [selectedDiff,    setSelectedDiff]    = useState('all');
@@ -312,13 +324,41 @@ export default function CTFArena() {
   const [profiloLoading, setProfiloLoading] = useState(false);
   const [rankUtente, setRankUtente]         = useState(null);
 
+  // Notifiche real-time flag catturate da altri utenti
+  const [liveNotifiche, setLiveNotifiche]   = useState([]);
+
+  // Socket.IO: ascolta flag:catturata da qualsiasi utente sulla piattaforma
+  useEffect(() => {
+    const socket = io(window.location.origin, { path: '/socket.io', transports: ['websocket', 'polling'] });
+    socket.on('flag:catturata', (data) => {
+      const id = Date.now();
+      setLiveNotifiche(prev => [{ ...data, id }, ...prev].slice(0, 5));
+      setTimeout(() => setLiveNotifiche(prev => prev.filter(n => n.id !== id)), 5000);
+    });
+    return () => socket.disconnect();
+  }, []);
+
   useEffect(() => {
     if (authLoading) return;
-    usersAPI.getMe().then(({ data }) => {
-      const me = data.user ?? data;
-      setProfile(me);
-      setSolvedIds(new Set((me.solvedChallenges || []).map(String)));
-    }).catch(() => {});
+    // Carica profilo e submission in parallelo per popolare solved + attempted
+    Promise.allSettled([
+      usersAPI.getMe(),
+      usersAPI.getAttempts(),
+    ]).then(([meRes, subRes]) => {
+      if (meRes.status === 'fulfilled') {
+        const me = meRes.value.data.user ?? meRes.value.data;
+        setProfile(me);
+        setSolvedIds(new Set((me.solvedChallenges || []).map(String)));
+      }
+      if (subRes.status === 'fulfilled') {
+        // Challenge tentate ma non risolte (submission errate)
+        const subs = subRes.value.data.submissions ?? [];
+        const tentate = new Set(
+          subs.filter(s => !s.isCorrect).map(s => String(s.challenge?._id ?? s.challenge))
+        );
+        setAttemptedIds(tentate);
+      }
+    });
   }, [authLoading]);
 
   // Calcola il rank reale dell'utente dalla leaderboard
@@ -864,12 +904,13 @@ export default function CTFArena() {
             <div className="grid-empty"><span style={{ fontSize: '32px' }}>🔍</span><span>Nessuna sfida trovata</span></div>
           ) : displayed.map((ch, i) => {
             const cs     = CAT_STYLE[ch.category] || CAT_STYLE.Cryptography;
-            const ds     = DIFF_STYLE[ch.difficulty] || DIFF_STYLE.Easy;
-            const solved = solvedIds.has(String(ch._id));
+            const ds       = DIFF_STYLE[ch.difficulty] || DIFF_STYLE.Easy;
+            const solved   = solvedIds.has(String(ch._id));
+            const attempted = !solved && attemptedIds.has(String(ch._id));
             return (
               <div
                 key={ch._id}
-                className={`ch-card ${cs.cls}${solved ? ' solved' : ''}`}
+                className={`ch-card ${cs.cls}${solved ? ' solved' : attempted ? ' attempted' : ''}`}
                 style={{ opacity: 0, animation: `fadeInUp .4s ${i * 0.04}s ease forwards` }}
                 onClick={() => openModal(ch)}
               >
@@ -910,6 +951,21 @@ export default function CTFArena() {
         )}
 
       </div>
+
+      {/* ── Live flag feed — angolo in basso a sinistra ── */}
+      {liveNotifiche.length > 0 && (
+        <div className="live-flag-feed">
+          {liveNotifiche.map(n => (
+            <div key={n.id} className="lff-item">
+              <span className="lff-ico">🚩</span>
+              <span className="lff-txt">
+                <strong>{n.username}</strong> ha catturato <strong>{n.challenge}</strong>
+              </span>
+              <span className="lff-pts">+{n.points}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

@@ -70,6 +70,24 @@ const UserSchema = new mongoose.Schema(
       default: 0,
     },
 
+    // Data dell'ultima attività (per calcolo streak giornaliero)
+    lastActivityDate: {
+      type: Date,
+      default: null,
+    },
+
+    // Numero di War Room completate come membro attivo (per badge War Hero)
+    warRoomsCompleted: {
+      type: Number,
+      default: 0,
+    },
+
+    // Account sospeso dall'amministratore
+    isBanned: {
+      type: Boolean,
+      default: false,
+    },
+
     // Refresh token per rotazione JWT
     refreshToken: {
       type: String,
@@ -103,8 +121,10 @@ UserSchema.methods.toPublicJSON = function () {
     points: this.points,
     solvedChallenges: this.solvedChallenges,
     streak: this.streak,
+    warRoomsCompleted: this.warRoomsCompleted,
     avatar: this.avatar,
     bio: this.bio,
+    isBanned: this.isBanned,
     createdAt: this.createdAt,
   };
 };

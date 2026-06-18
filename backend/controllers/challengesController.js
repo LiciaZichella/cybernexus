@@ -135,27 +135,94 @@ const submitFlag = async (req, res) => {
       challenge.solvedBy.push({ user: req.user._id });
       await challenge.save();
 
-      // Aggiorna punti e challenge risolte sull'utente
-      console.log('[submitFlag] req.user._id:', req.user._id, 'tipo:', typeof req.user._id);
-      console.log('[submitFlag] challenge._id:', challenge._id);
-      console.log(`[submitFlag] Aggiornamento utente – _id: ${req.user._id} | points da aggiungere: ${challenge.points}`);
-      const updateResult = await User.findByIdAndUpdate(
-        req.user._id,
-        {
-          $inc:      { points: challenge.points },
-          $addToSet: { solvedChallenges: challenge._id },
-        },
-        { new: true }
-      );
-      console.log(`[submitFlag] Risultato update – points ora: ${updateResult?.points} | solvedChallenges: ${updateResult?.solvedChallenges?.length}`);
-      if (!updateResult) {
-        console.error(`[submitFlag] ERRORE: utente ${req.user._id} non trovato nel DB per l'update`);
+      // Carica utente per aggiornare streak e ruolo
+      const utente = await User.findById(req.user._id);
+      if (!utente) return res.status(404).json({ error: 'Utente non trovato.' });
+
+      // Calcolo streak giornaliero
+      const oggi       = new Date();
+      const oggiStr    = oggi.toISOString().slice(0, 10);
+      const ultimaStr  = utente.lastActivityDate
+        ? new Date(utente.lastActivityDate).toISOString().slice(0, 10)
+        : null;
+
+      let nuovoStreak = utente.streak;
+      if (ultimaStr === null || ultimaStr < oggiStr) {
+        // Controlla se ieri era l'ultimo giorno attivo (streak continua) o no (reset)
+        const ieri = new Date(oggi.getTime() - 86400000).toISOString().slice(0, 10);
+        nuovoStreak = ultimaStr === ieri ? utente.streak + 1 : 1;
       }
 
-      return res.json({ correct: true, points: challenge.points, pointsAwarded: challenge.points, message: 'Flag corretta! Punti assegnati.' });
+      // Promozione automatica a Analyst a 500 punti (solo se ruolo attuale è Player o Guest)
+      const nuoviPunti = utente.points + challenge.points;
+      const promuovi   = nuoviPunti >= 500 && ['Player', 'Guest'].includes(utente.role);
+
+      // Aggiorna tutto in una sola operazione
+      utente.points += challenge.points;
+      utente.solvedChallenges.addToSet(challenge._id);
+      utente.streak           = nuovoStreak;
+      utente.lastActivityDate = oggi;
+      if (promuovi) utente.role = 'Analyst';
+      await utente.save();
+
+      // Notifica real-time a tutti i client connessi (CTFArena live feed)
+      req.app.get('io')?.emit('flag:catturata', {
+        username:  utente.username,
+        challenge: challenge.title,
+        category:  challenge.category,
+        points:    challenge.points,
+      });
+
+      return res.json({
+        correct:       true,
+        points:        challenge.points,
+        pointsAwarded: challenge.points,
+        message:       'Flag corretta! Punti assegnati.',
+        nuovoStreak,
+        promosso:      promuovi ? 'Analyst' : null,
+      });
     }
 
     res.json({ correct: false, pointsAwarded: 0, message: 'Flag errata.' });
+  } catch (err) {
+    if (err.name === 'CastError') return res.status(400).json({ error: 'ID non valido.' });
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// PATCH /api/challenges/:id — aggiorna una challenge esistente (Admin o Manager)
+const updateChallenge = async (req, res) => {
+  try {
+    const { title, description, category, difficulty, points, flag, hints, isActive } = req.body;
+    const updates = {};
+    if (title       !== undefined) updates.title       = title;
+    if (description !== undefined) updates.description = description;
+    if (category    !== undefined) updates.category    = category;
+    if (difficulty  !== undefined) updates.difficulty  = difficulty;
+    if (points      !== undefined) updates.points      = Number(points);
+    if (isActive    !== undefined) updates.isActive    = isActive;
+    if (hints       !== undefined) updates.hints       = hints;
+    if (flag)                      updates.flag        = sha256(flag);
+
+    const challenge = await Challenge.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true, runValidators: true }
+    );
+    if (!challenge) return res.status(404).json({ error: 'Challenge non trovata.' });
+    res.json({ challenge });
+  } catch (err) {
+    if (err.name === 'CastError') return res.status(400).json({ error: 'ID non valido.' });
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// DELETE /api/challenges/:id — elimina una challenge (solo Admin)
+const deleteChallenge = async (req, res) => {
+  try {
+    const challenge = await Challenge.findByIdAndDelete(req.params.id);
+    if (!challenge) return res.status(404).json({ error: 'Sfida non trovata.' });
+    res.json({ message: 'Sfida eliminata.' });
   } catch (err) {
     if (err.name === 'CastError') return res.status(400).json({ error: 'ID non valido.' });
     res.status(500).json({ error: err.message });
@@ -196,4 +263,4 @@ const getHint = async (req, res) => {
   }
 };
 
-module.exports = { getChallenges, getChallengeById, createChallenge, submitFlag, getHint };
+module.exports = { getChallenges, getChallengeById, createChallenge, updateChallenge, deleteChallenge, submitFlag, getHint };

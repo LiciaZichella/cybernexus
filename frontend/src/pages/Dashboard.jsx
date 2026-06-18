@@ -405,6 +405,38 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .bell-item-sub{font-size:10px;color:var(--text3);margin-top:2px}
 .bell-empty{padding:28px 14px;text-align:center;font-size:12px;color:var(--text3)}
 
+/* EDIT PROFILO BUTTON */
+.ep-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--r8);background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px;margin-top:10px}
+.ep-btn:hover{background:var(--border2);color:var(--text1)}
+
+/* EDIT PROFILO MODAL */
+.ep-overlay{position:fixed;inset:0;z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(7,9,15,.75);backdrop-filter:blur(14px);animation:fadeIn .2s ease}
+[data-theme="light"] .ep-overlay{background:rgba(240,242,248,.75)}
+.ep-modal{width:100%;max-width:420px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r14);padding:24px;position:relative;animation:scaleIn .25s cubic-bezier(.34,1.56,.64,1)}
+.ep-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text1);margin-bottom:18px}
+.ep-field{margin-bottom:14px}
+.ep-lbl{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.ep-input{width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--r8);padding:9px 12px;font-size:13px;color:var(--text1);font-family:inherit;resize:none;outline:none;transition:border-color .2s;box-sizing:border-box}
+.ep-input:focus{border-color:var(--violet)}
+.ep-error{font-size:11px;color:var(--coral);margin-top:6px;margin-bottom:6px}
+.ep-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+.ep-save{font-size:12px;font-weight:600;padding:8px 20px;border-radius:var(--r8);background:var(--violet);color:#fff;border:none;cursor:pointer;transition:opacity .2s}
+.ep-save:disabled{opacity:.5;cursor:default}
+.ep-cancel{font-size:12px;font-weight:600;padding:8px 20px;border-radius:var(--r8);background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);cursor:pointer;transition:all .2s}
+.ep-cancel:hover{background:var(--border2)}
+
+/* STORICO SFIDE */
+.storico-wrap{margin-bottom:24px}
+.storico-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto}
+.storico-list::-webkit-scrollbar{width:3px}
+.storico-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.storico-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r8);background:var(--bg2);border:0.5px solid var(--border);transition:all .2s}
+.storico-item:hover{border-color:var(--border2);transform:translateX(3px)}
+.storico-cat{font-size:10px;font-weight:600;padding:2px 8px;border-radius:12px;flex-shrink:0}
+.storico-title{flex:1;font-size:13px;font-weight:500;color:var(--text1);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.storico-pts{font-size:12px;font-weight:600;color:var(--mint);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.storico-date{font-size:11px;color:var(--text3);flex-shrink:0;white-space:nowrap}
+
 /* RESPONSIVE */
 @media(max-width:1280px){.page{padding-left:24px;padding-right:24px}.row-1{grid-template-columns:1fr 240px}.big-row{grid-template-columns:1fr 280px}}
 @media(max-width:1024px){.row-1{grid-template-columns:1fr;gap:10px}.heatmap-mini-grid{grid-template-columns:repeat(20,1fr)}.badge-grid{grid-template-columns:repeat(6,1fr)}.ch-small-grid{grid-template-columns:repeat(2,1fr)}.big-row{grid-template-columns:1fr}}
@@ -430,6 +462,10 @@ export default function Dashboard() {
   const [attivita,      setAttivita]      = useState([]);  // { date, count } × 60 giorni
   const [submissions,   setSubmissions]   = useState([]);  // { createdAt, pointsAwarded }
   const [badgeModal,    setBadgeModal]    = useState(null); // achievement aperto nel modale
+  const [editModal,     setEditModal]     = useState(false);
+  const [editForm,      setEditForm]      = useState({ username: '', bio: '', avatar: '' });
+  const [editLoading,   setEditLoading]   = useState(false);
+  const [editError,     setEditError]     = useState('');
 
   const userRef = useRef(user);
 
@@ -527,6 +563,23 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [authLoading, loadAllData]);
 
+  // Salva le modifiche al profilo (username, bio, avatar)
+  const handleSalvaProfilo = async () => {
+    setEditLoading(true);
+    setEditError('');
+    try {
+      const res = await usersAPI.updateMe(editForm);
+      const updated = res.data?.user ?? res.data;
+      setProfile(updated);
+      setEditModal(false);
+      aggiornaUser();
+    } catch (err) {
+      setEditError(err.response?.data?.error ?? 'Errore durante il salvataggio.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   // ── Heatmap 60 giorni ─────────────────────────────────────────────────────────
   const heatmap = useMemo(() =>
     attivita.length
@@ -566,7 +619,7 @@ export default function Dashboard() {
       mk('🔐','Cryptolord',   cryptoRisolte >= 3,   Math.min(cryptoRisolte, 3),  3,   'var(--violet-bg)',        'var(--violet)'  ),
       mk('⚡','Streak 7',     streak >= 7,           Math.min(streak, 7),         7,   'var(--mint-bg)',          'var(--mint)'    ),
       mk('🔍','OSINT Pro',    osintRisolte >= 3,     Math.min(osintRisolte, 3),   3,   'var(--cyan-bg)',          'var(--cyan)'    ),
-      mk('🚨','War Hero',     false,                 0,                           5,   'var(--coral-bg)',         'var(--coral)'   ),
+      mk('🚨','War Hero',     (profile?.warRoomsCompleted || 0) >= 5, Math.min(profile?.warRoomsCompleted || 0, 5), 5, 'var(--coral-bg)', 'var(--coral)'),
       mk('🎯','Analyst',      points >= 500,         Math.min(points, 500),       500, 'var(--amber-bg)',         'var(--amber)'   ),
       mk('📊','Top 10',       isTop10,               Math.max(0, 11 - Math.max(rankUtente,1)), 10, 'var(--fuchsia-bg)', 'var(--fuchsia)' ),
       mk('🔒','???',           false,                 0,                           0,   'rgba(255,255,255,0.03)', 'transparent'    ),
@@ -622,8 +675,25 @@ export default function Dashboard() {
   const rank      = getRankInfo(profile?.points || 0);
   const initials  = getInitials(profile?.username || '');
   const solved    = profile?.solvedChallenges?.length || 0;
-  const featured  = challenges[0] || null;
-  const smallCh   = challenges.length > 1 ? challenges.slice(1, 5) : STATIC_SMALL;
+  // Sfida consigliata: prima non risolta nella categoria meno esplorata dall'utente
+  const featured = useMemo(() => {
+    if (!challenges.length) return null;
+    const solvedSet = new Set((profile?.solvedChallenges || []).map(String));
+    const nonRisolte = challenges.filter(ch => !solvedSet.has(String(ch._id)));
+    if (!nonRisolte.length) return challenges[0]; // tutto risolto: mostra la prima
+    const catCount = {};
+    challenges.forEach(ch => {
+      if (solvedSet.has(String(ch._id))) catCount[ch.category] = (catCount[ch.category] || 0) + 1;
+    });
+    return nonRisolte.sort((a, b) => (catCount[a.category] || 0) - (catCount[b.category] || 0))[0];
+  }, [challenges, profile]);
+
+  // Sfide secondarie: escludi quella featured
+  const smallCh = useMemo(() => {
+    const featId = featured?._id ? String(featured._id) : null;
+    const rest = challenges.filter(ch => String(ch._id) !== featId);
+    return rest.slice(0, 4).length ? rest.slice(0, 4) : STATIC_SMALL;
+  }, [challenges, featured]);
 
   const today = new Date().toLocaleDateString('it-IT', {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
@@ -669,6 +739,13 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
+              <button className="ep-btn" onClick={() => {
+                setEditForm({ username: profile?.username || '', bio: profile?.bio || '', avatar: profile?.avatar || '' });
+                setEditError('');
+                setEditModal(true);
+              }}>
+                ✏ Modifica profilo
+              </button>
             </div>
           </div>
 
@@ -1053,6 +1130,68 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {/* ── STORICO SFIDE ── */}
+        <div className="storico-wrap animate-in delay-6">
+          <div className="section-header">
+            <div className="section-title">📋 Storico flag</div>
+            <span style={{fontSize:'12px',color:'var(--text3)'}}>{submissions.length} flag catturate</span>
+          </div>
+          {submissions.length === 0 ? (
+            <div style={{padding:'16px',textAlign:'center',fontSize:'12px',color:'var(--text3)'}}>
+              Nessuna flag ancora — vai a risolvere qualcosa!
+            </div>
+          ) : (
+            <div className="storico-list">
+              {submissions.map((s, i) => {
+                const cs = CAT_STYLE[s.challenge?.category] || CAT_STYLE.Cryptography;
+                return (
+                  <div key={s._id || i} className="storico-item">
+                    <span className="storico-cat" style={{background: cs.bg, color: cs.c}}>{s.challenge?.category || '—'}</span>
+                    <span className="storico-title">{s.challenge?.title || 'Challenge'}</span>
+                    <span className="storico-pts">+{s.pointsAwarded} pts</span>
+                    <span className="storico-date">{new Date(s.createdAt).toLocaleDateString('it-IT', {day:'2-digit',month:'short',year:'numeric'})}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── MODALE MODIFICA PROFILO ── */}
+        {editModal && (
+          <div className="ep-overlay" onClick={() => setEditModal(false)}>
+            <div className="ep-modal" onClick={e => e.stopPropagation()}>
+              <div className="ep-title">Modifica profilo</div>
+              <div className="ep-field">
+                <div className="ep-lbl">Username</div>
+                <input className="ep-input" type="text" maxLength={30}
+                  value={editForm.username}
+                  onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))} />
+              </div>
+              <div className="ep-field">
+                <div className="ep-lbl">Bio</div>
+                <textarea className="ep-input" rows={3} maxLength={300}
+                  placeholder="Presentati in max 300 caratteri…"
+                  value={editForm.bio}
+                  onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} />
+              </div>
+              <div className="ep-field">
+                <div className="ep-lbl">Avatar (URL o emoji)</div>
+                <input className="ep-input" type="text" placeholder="es. https://… oppure 🦊"
+                  value={editForm.avatar}
+                  onChange={e => setEditForm(f => ({ ...f, avatar: e.target.value }))} />
+              </div>
+              {editError && <div className="ep-error">{editError}</div>}
+              <div className="ep-actions">
+                <button className="ep-cancel" onClick={() => setEditModal(false)}>Annulla</button>
+                <button className="ep-save" onClick={handleSalvaProfilo} disabled={editLoading || !editForm.username.trim()}>
+                  {editLoading ? 'Salvataggio…' : 'Salva'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </>

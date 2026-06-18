@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ProfiloModal from './ProfiloModal';
 
 const ROLE_COLORS = {
   Admin:   { bg: 'rgba(240,112,96,.18)',  c: '#F07060', b: 'rgba(240,112,96,.4)'  },
@@ -53,6 +54,9 @@ export default function NavDropdown({ initials, user: userProp }) {
   const user = userProp ?? authUser;
   const ini  = initials ?? (user?.username || 'US').slice(0, 2).toUpperCase();
 
+  // Stato per il modal profilo
+  const [profiloAperto, setProfiloAperto] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     const handler = (e) => {
@@ -73,6 +77,12 @@ export default function NavDropdown({ initials, user: userProp }) {
   return (
     <>
       <style>{DROP_CSS}</style>
+      {/* Modal profilo — si apre al click "Il mio profilo" */}
+      <ProfiloModal
+        open={profiloAperto}
+        onClose={() => setProfiloAperto(false)}
+        userId={user?._id}
+      />
       <div ref={ref} className="nd-wrap">
         <div className="nd-av" onClick={() => setOpen(o => !o)} title={user?.username}>
           {ini}
@@ -92,7 +102,7 @@ export default function NavDropdown({ initials, user: userProp }) {
               </span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <button className="nd-btn nd-btn-text" onClick={() => { setOpen(false); navigate('/dashboard'); }}>
+              <button className="nd-btn nd-btn-text" onClick={() => { setOpen(false); setProfiloAperto(true); }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
                 </svg>

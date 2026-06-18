@@ -4,6 +4,8 @@ const {
   getChallenges,
   getChallengeById,
   createChallenge,
+  updateChallenge,
+  deleteChallenge,
   submitFlag,
   getHint,
 } = require('../controllers/challengesController');
@@ -27,6 +29,8 @@ router.get('/',    getChallenges);
 router.post('/',   authorize('Admin', 'Manager'), createChallenge);
 
 router.get('/:id',              getChallengeById);
+router.patch('/:id',            authorize('Admin', 'Manager'), updateChallenge);
+router.delete('/:id',           authorize('Admin'), deleteChallenge);
 router.post('/:id/submit',      submitLimiter, submitFlag);
 router.get('/:id/hint',         getHint);
 

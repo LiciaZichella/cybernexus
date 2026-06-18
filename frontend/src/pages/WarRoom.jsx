@@ -264,12 +264,20 @@ export default function WarRoom() {
         const inizioSala   = new Date(room.createdAt).getTime();
         const secTrascorsi = Math.floor((Date.now() - inizioSala) / 1000);
         setTempoRimanente(Math.max(0, durataSec - secTrascorsi));
-        // Entra nella sala solo se non già membro (evita di sovrascrivere il ruolo Observer)
-        const membro = room.members?.find(m =>
-          (m.user?._id ?? m.user)?.toString() === user?._id?.toString()
-        );
+        // Non fare join se l'utente è già membro (qualsiasi ruolo incluso Observer)
+        const membro = room.members?.find(m => {
+          const mId = (m.user?._id ?? m.user)?.toString() ?? '';
+          const uId = user?._id?.toString() ?? '';
+          return mId && uId && mId === uId;
+        });
+        // Entra come Member solo se non è già nella sala
         if (!membro) {
-          warroomAPI.join(id).catch(() => {});
+          warroomAPI.join(id).catch((err) => {
+            // Ignora "già membro" (400), logga gli altri
+            if (err.response?.status !== 400) {
+              console.error('[join] errore:', err.response?.data || err.message);
+            }
+          });
         }
       })
       .catch(() => setErrore('Impossibile caricare la War Room.'))
@@ -935,7 +943,7 @@ export default function WarRoom() {
 
   // ── Vista lista / stato vuoto (nessun id nella route) ────────────────────────
   if (!id) {
-    const canCreate = user?.role === 'Admin' || user?.role === 'Manager';
+    const canCreate = user?.role === 'Admin';
     return (
       <div className="warroom-app" style={{ height: 'auto', overflow: 'visible' }}>
         <Navbar />
@@ -1023,29 +1031,55 @@ export default function WarRoom() {
                 {/* Footer azioni */}
                 <div className="wr-preview-footer">
                   <button className="wr-preview-cancel" onClick={() => { setPreviewSala(null); setCodiceInvito(''); }}>Annulla</button>
-                  <button
-                    className="wr-preview-observe"
-                    disabled={previewSala.status === 'closed'}
-                    onClick={async () => {
-                      try { await warroomAPI.observe(previewSala._id); } catch { /* già membro */ }
-                      setPreviewSala(null); setCodiceInvito('');
-                      navigate(`/warroom/${previewSala._id}`);
-                    }}
-                  >
-                    👁 Osserva
-                  </button>
-                  <button
-                    className="wr-preview-entra"
-                    disabled={previewSala.status === 'closed'}
-                    onClick={async () => {
-                      const payload = previewSala.accessoLibero === false ? { inviteCode: codiceInvito } : {};
-                      try { await warroomAPI.join(previewSala._id, payload); } catch { /* già membro */ }
-                      setPreviewSala(null); setCodiceInvito('');
-                      navigate(`/warroom/${previewSala._id}`);
-                    }}
-                  >
-                    ⚔ Entra nella sala
-                  </button>
+
+                  {/* Osserva — solo Admin e Manager */}
+                  {['Admin', 'Manager'].includes(user?.role) && (
+                    <button
+                      className="wr-preview-observe"
+                      disabled={previewSala.status === 'closed'}
+                      onClick={async () => {
+                        try {
+                          await warroomAPI.observe(previewSala._id);
+                        } catch (err) {
+                          if (err.response?.status !== 400) {
+                            alert('Errore accesso come observer: ' +
+                              (err.response?.data?.error || err.message));
+                            return;
+                          }
+                        }
+                        setPreviewSala(null);
+                        setCodiceInvito('');
+                        navigate(`/warroom/${previewSala._id}`);
+                      }}
+                    >
+                      👁 Osserva
+                    </button>
+                  )}
+
+                  {/* Entra — disabilitato per Player/Guest con tooltip */}
+                  {['Player', 'Guest'].includes(user?.role) ? (
+                    <button
+                      className="wr-preview-entra"
+                      disabled
+                      title="Risolvi sfide CTF per sbloccare (500 pts)"
+                      style={{ opacity: 0.45, cursor: 'not-allowed' }}
+                    >
+                      🔒 Entra nella sala
+                    </button>
+                  ) : (
+                    <button
+                      className="wr-preview-entra"
+                      disabled={previewSala.status === 'closed'}
+                      onClick={async () => {
+                        const payload = previewSala.accessoLibero === false ? { inviteCode: codiceInvito } : {};
+                        try { await warroomAPI.join(previewSala._id, payload); } catch { /* già membro */ }
+                        setPreviewSala(null); setCodiceInvito('');
+                        navigate(`/warroom/${previewSala._id}`);
+                      }}
+                    >
+                      ⚔ Entra nella sala
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,5 +1,5 @@
 const express = require('express');
-const { getMe, updateMe, getUserById, getAllUsers, changeUserRole, getMeActivity, getMeSubmissions, exportUsersCSV, getUserActivity } = require('../controllers/usersController');
+const { getMe, updateMe, getUserById, getAllUsers, changeUserRole, getMeActivity, getMeSubmissions, getMeAttempts, exportUsersCSV, getUserActivity, banUser } = require('../controllers/usersController');
 const { protect, authorize } = require('../middleware/verificaUtenti');
 
 const router = express.Router();
@@ -11,6 +11,7 @@ router.get('/me',              getMe);            // profilo utente loggato
 router.put('/me',              updateMe);         // aggiorna profilo utente loggato
 router.get('/me/activity',    getMeActivity);    // heatmap 60 giorni
 router.get('/me/submissions', getMeSubmissions); // submission corrette per grafico
+router.get('/me/attempts',    getMeAttempts);    // tutti i tentativi per stato "tentata"
 
 router.get('/',            authorize('Admin'), getAllUsers);     // lista utenti — solo Admin
 router.get('/export-csv', authorize('Admin'), exportUsersCSV); // export CSV — solo Admin
@@ -19,5 +20,6 @@ router.get('/export-csv', authorize('Admin'), exportUsersCSV); // export CSV —
 router.get('/:id/activity', getUserActivity);                        // heatmap + categorie profilo pubblico
 router.get('/:id',        getUserById);                          // profilo pubblico per ID
 router.patch('/:id/role', authorize('Admin'), changeUserRole);   // cambia ruolo — solo Admin
+router.patch('/:id/ban',  authorize('Admin'), banUser);          // banna/sbanna — solo Admin
 
 module.exports = router;

@@ -82,7 +82,6 @@ const createWARRoom = async (req, res) => {
     const room = await WARRoom.create(roomData);
     res.status(201).json({ room, inviteCode: room.inviteCode || null });
   } catch (err) {
-    console.error('Errore createWARRoom:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -90,6 +89,14 @@ const createWARRoom = async (req, res) => {
 // POST /api/warroom/:id/join — entra in una War Room
 const joinWARRoom = async (req, res) => {
   try {
+    // Ruolo minimo: Analyst per entrare come membro attivo
+    const ruoliAmmessi = ['Analyst', 'Manager', 'Admin'];
+    if (!ruoliAmmessi.includes(req.user.role)) {
+      return res.status(403).json({
+        error: 'Devi essere almeno Analyst per entrare in una War Room. Risolvi sfide CTF per guadagnare 500 punti.',
+      });
+    }
+
     const room = await WARRoom.findById(req.params.id);
     if (!room)                return res.status(404).json({ error: 'War Room non trovata.' });
     if (room.status !== 'active') return res.status(400).json({ error: 'La sala non è attiva.' });
@@ -98,10 +105,10 @@ const joinWARRoom = async (req, res) => {
       return res.status(400).json({ error: 'Sei già membro di questa sala.' });
     }
 
-    // Sala su invito o privata: richiede inviteCode nel body
+    // Sala privata: richiede inviteCode nel body (il check ruolo è già stato fatto sopra)
     if (!room.accessoLibero || room.isPrivate) {
       if (!req.body.inviteCode || req.body.inviteCode !== room.inviteCode) {
-        return res.status(403).json({ error: 'Codice invito errato o mancante.' });
+        return res.status(403).json({ error: 'Codice invito non valido.' });
       }
     }
 
@@ -142,9 +149,7 @@ const resolveWARRoom = async (req, res) => {
     }
 
     room.status = 'closed';
-    console.log('[resolve] room.status:', room.status);
     await room.save();
-    console.log('[resolve] salvato:', room._id);
 
     // Calcola punti reali prima di emettere l'evento
     const puntiBase = (room.passiCompletati?.length || 0) * 150;
@@ -172,14 +177,16 @@ const resolveWARRoom = async (req, res) => {
       timeoutScenario.delete(req.params.id);
     }
 
-    // Assegna punti a tutti i membri attivi (non Observer)
-    if (puntiBase > 0) {
-      const membriFull = room.members.filter(m => m.role !== 'Observer');
-      await Promise.all(
-        membriFull.map(m => User.findByIdAndUpdate(m.user, { $inc: { points: puntiTotali } }))
-      );
-      console.log('[resolve] Punti assegnati:', puntiTotali, 'a', membriFull.length, 'membri');
-    }
+    // Assegna punti e incrementa warRoomsCompleted a tutti i membri attivi (non Observer)
+    const membriFull = room.members.filter(m => m.role !== 'Observer');
+    await Promise.all(
+      membriFull.map(m => User.findByIdAndUpdate(m.user, {
+        $inc: {
+          warRoomsCompleted: 1,
+          ...(puntiBase > 0 ? { points: puntiTotali } : {}),
+        },
+      }))
+    );
 
     // Payload del webhook con il riepilogo della sessione
     const webhookPayload = {
@@ -208,6 +215,17 @@ const resolveWARRoom = async (req, res) => {
   }
 };
 
+// Utility: controlla che l'utente sia membro attivo (non Observer) o staff Admin/Manager
+const isMembroOStaff = (room, userId, userRole) => {
+  const isStaff = ['Admin', 'Manager'].includes(userRole);
+  if (isStaff) return true;
+  const membro = room.members.find(m => {
+    const mId = (m.user?._id ?? m.user)?.toString() ?? '';
+    return mId === userId.toString();
+  });
+  return membro && membro.role !== 'Observer';
+};
+
 // PATCH /api/warroom/:id/task/:taskId — aggiorna stato di un task Kanban
 const patchTask = async (req, res) => {
   try {
@@ -220,6 +238,10 @@ const patchTask = async (req, res) => {
 
     const room = await WARRoom.findById(id);
     if (!room) return res.status(404).json({ error: 'War Room non trovata.' });
+
+    if (!isMembroOStaff(room, req.user._id, req.user.role)) {
+      return res.status(403).json({ error: 'Devi essere membro della sala per aggiornare i task.' });
+    }
 
     const task = room.tasks.id(taskId);
     if (!task) return res.status(404).json({ error: 'Task non trovato.' });
@@ -246,6 +268,12 @@ const patchTask = async (req, res) => {
 // POST /api/warroom/:id/observe — entra come Observer (non conta nei maxMembers)
 const joinAsObserver = async (req, res) => {
   try {
+    // Ruolo minimo: Manager (solo Admin e Manager possono osservare)
+    const ruoliObserver = ['Admin', 'Manager'];
+    if (!ruoliObserver.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Solo Admin e Manager possono entrare come Observer.' });
+    }
+
     const room = await WARRoom.findById(req.params.id);
     if (!room) return res.status(404).json({ error: 'War Room non trovata.' });
     if (room.status !== 'active') return res.status(400).json({ error: 'La sala è chiusa.' });
@@ -276,6 +304,10 @@ const getReport = async (req, res) => {
     const room = await WARRoom.findById(req.params.id)
       .populate('members.user', 'username');
     if (!room) return res.status(404).json({ error: 'War Room non trovata.' });
+
+    if (!isMembroOStaff(room, req.user._id, req.user.role)) {
+      return res.status(403).json({ error: 'Devi essere membro della sala per scaricare il report.' });
+    }
 
     // Calcola durata in formato leggibile
     let durata = '—';
@@ -359,6 +391,10 @@ const markStep = async (req, res) => {
     }
     const room = await WARRoom.findById(req.params.id);
     if (!room) return res.status(404).json({ error: 'War Room non trovata.' });
+
+    if (!isMembroOStaff(room, req.user._id, req.user.role)) {
+      return res.status(403).json({ error: 'Devi essere membro della sala per segnare i passi.' });
+    }
 
     // Aggiungi solo se non già presente
     if (!room.passiCompletati.includes(stepIndex)) {
