@@ -68,6 +68,13 @@ app.get('/api/debug-env', (req, res) => {
   res.json({ CLIENT_ORIGIN: process.env.CLIENT_ORIGIN });
 });
 
+app.get('/api/debug-env2', (req, res) => {
+  res.json({
+    BACKEND_URL: process.env.BACKEND_URL,
+    CLIENT_ORIGIN: process.env.CLIENT_ORIGIN
+  });
+});
+
 // Route autenticazione
 app.use('/api/auth',  require('./routes/auth'));
 
