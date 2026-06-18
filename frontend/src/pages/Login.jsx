@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { authAPI } from '../services/api';
+import { authAPI, api } from '../services/api';
 import Navbar from '../components/Navbar';
 
 const CSS = `
@@ -248,6 +248,10 @@ export default function Login() {
   const [shakeKey,  setShakeKey]  = useState({ email: 0, pw: 0 });
   const [theme,     setTheme]     = useState('dark');
 
+  // Statistiche pubbliche e top-3 per il pannello sinistro
+  const [statsLogin, setStatsLogin] = useState({ utenti: 0, sfide: 0, warroom: 0 });
+  const [topLogin,   setTopLogin]   = useState([]);
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
@@ -256,6 +260,15 @@ export default function Login() {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  useEffect(() => {
+    api.get('/platform/stats')
+      .then(({ data }) => {
+        setStatsLogin({ utenti: data.utenti ?? 0, sfide: data.sfide ?? 0, warroom: data.warroom ?? 0 });
+        if (Array.isArray(data.top3)) setTopLogin(data.top3);
+      })
+      .catch(() => {});
   }, []);
 
   const switchTab = (t) => { setTab(t); setError(''); setPwScore(0); };
@@ -350,11 +363,11 @@ export default function Login() {
             </p>
 
             <div className="lp-stats">
-              <div><div className="lp-stat-val">1.2k+</div><div className="lp-stat-lbl">Analisti attivi</div></div>
+              <div><div className="lp-stat-val">{statsLogin.utenti > 0 ? `${statsLogin.utenti}+` : '—'}</div><div className="lp-stat-lbl">Analisti attivi</div></div>
               <div className="lp-stat-sep" />
-              <div><div className="lp-stat-val">380</div><div className="lp-stat-lbl">Sfide CTF</div></div>
+              <div><div className="lp-stat-val">{statsLogin.sfide > 0 ? statsLogin.sfide : '—'}</div><div className="lp-stat-lbl">Sfide CTF</div></div>
               <div className="lp-stat-sep" />
-              <div><div className="lp-stat-val">24</div><div className="lp-stat-lbl">Scenari War Room</div></div>
+              <div><div className="lp-stat-val">{statsLogin.warroom > 0 ? statsLogin.warroom : '—'}</div><div className="lp-stat-lbl">Scenari War Room</div></div>
             </div>
 
             <div className="lp-feats">
@@ -368,21 +381,23 @@ export default function Login() {
           <div className="lp-card">
             <div className="lp-card-badge">🏆 Top 3 ora</div>
             <div className="lp-card-title">Classifica live</div>
-            <div className="lp-card-row">
-              <div className="lp-card-av" style={{background:'linear-gradient(135deg,#E870B8,#F07060)'}}>SK</div>
-              <div className="lp-card-name">shadow_k1ng</div>
-              <div className="lp-card-pts" style={{color:'#F6C652'}}>8,450</div>
-            </div>
-            <div className="lp-card-row">
-              <div className="lp-card-av" style={{background:'linear-gradient(135deg,#8a9ab4,#6a7a94)'}}>NX</div>
-              <div className="lp-card-name">n3x7_g3n</div>
-              <div className="lp-card-pts" style={{color:'#b0b8cc'}}>7,200</div>
-            </div>
-            <div className="lp-card-row">
-              <div className="lp-card-av" style={{background:'linear-gradient(135deg,#F6C652,#e89a20)'}}>ZR</div>
-              <div className="lp-card-name">z3r0_d4y</div>
-              <div className="lp-card-pts" style={{color:'#c87c3a'}}>6,800</div>
-            </div>
+            {topLogin.length > 0 ? topLogin.map((u, i) => {
+              const colori = [
+                { av: 'linear-gradient(135deg,#E870B8,#F07060)', pts: '#F6C652' },
+                { av: 'linear-gradient(135deg,#8a9ab4,#6a7a94)', pts: '#b0b8cc' },
+                { av: 'linear-gradient(135deg,#F6C652,#e89a20)', pts: '#c87c3a' },
+              ];
+              const c = colori[i] || colori[2];
+              return (
+                <div className="lp-card-row" key={u._id}>
+                  <div className="lp-card-av" style={{background: c.av}}>{u.username.slice(0, 2).toUpperCase()}</div>
+                  <div className="lp-card-name">{u.username}</div>
+                  <div className="lp-card-pts" style={{color: c.pts}}>{u.points.toLocaleString('it-IT')}</div>
+                </div>
+              );
+            }) : (
+              <div className="lp-card-row" style={{justifyContent:'center',color:'var(--text2)',fontSize:12}}>Caricamento…</div>
+            )}
           </div>
         </div>
 

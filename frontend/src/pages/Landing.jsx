@@ -255,11 +255,6 @@ export default function Landing() {
           <div className="ss-sub">6 categorie · Easy → Hard</div>
         </div>
         <div className="ss-item">
-          <div className="ss-lbl">Flag catturate</div>
-          <div className="ss-val">14,820</div>
-          <div className="ss-sub">dalla community</div>
-        </div>
-        <div className="ss-item">
           <div className="ss-lbl">Incidenti IR</div>
           <div className="ss-val">{statsData.warroom > 0 ? statsData.warroom : '—'}</div>
           <div className="ss-sub">ransomware · DDoS · breach</div>
@@ -428,7 +423,6 @@ export default function Landing() {
                 </svg>
               </div>
               <div className="cat-name">Cryptography</div>
-              <div className="cat-count">64 sfide</div>
             </div>
             <div className="cat-card">
               <div className="cat-icon-box" style={{ background: 'var(--fuchsia-bg)' }}>
@@ -438,7 +432,6 @@ export default function Landing() {
                 </svg>
               </div>
               <div className="cat-name">Web Exploit</div>
-              <div className="cat-count">82 sfide</div>
             </div>
             <div className="cat-card">
               <div className="cat-icon-box" style={{ background: 'var(--cyan-bg)' }}>
@@ -449,7 +442,6 @@ export default function Landing() {
                 </svg>
               </div>
               <div className="cat-name">OSINT</div>
-              <div className="cat-count">48 sfide</div>
             </div>
             <div className="cat-card">
               <div className="cat-icon-box" style={{ background: 'var(--mint-bg)' }}>
@@ -460,7 +452,6 @@ export default function Landing() {
                 </svg>
               </div>
               <div className="cat-name">Steganography</div>
-              <div className="cat-count">56 sfide</div>
             </div>
             <div className="cat-card">
               <div className="cat-icon-box" style={{ background: 'var(--amber-bg)' }}>
@@ -471,7 +462,6 @@ export default function Landing() {
                 </svg>
               </div>
               <div className="cat-name">Forensics</div>
-              <div className="cat-count">72 sfide</div>
             </div>
             <div className="cat-card">
               <div className="cat-icon-box" style={{ background: 'var(--coral-bg)' }}>
@@ -483,7 +473,6 @@ export default function Landing() {
                 </svg>
               </div>
               <div className="cat-name">Reverse Eng.</div>
-              <div className="cat-count">58 sfide</div>
             </div>
           </div>
         </div>

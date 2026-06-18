@@ -440,19 +440,14 @@ export default function Admin() {
       {/* Stat cards */}
       <div className="stats-grid ai d2">
         {[
-          { ico: '👥', trend: '↑ +34',  cls: 'badge-ok',   lbl: 'Utenti registrati'  },
-          { ico: '🚩', trend: '↑ +12%', cls: 'badge-ok',   lbl: 'Flag catturate oggi' },
-          { ico: '🛡️', trend: 'live',   cls: 'badge-warn',  lbl: 'War Room attive'    },
-          { ico: '⚑',  trend: '+5 sett',cls: 'badge-v',    lbl: 'Sfide CTF totali'   },
+          { ico: '👥', lbl: 'Utenti registrati'  },
+          { ico: '🚩', lbl: 'Flag catturate oggi' },
+          { ico: '🛡️', lbl: 'War Room attive'    },
+          { ico: '⚑',  lbl: 'Sfide CTF totali'   },
         ].map((c, i) => (
           <div className="stat-card" key={i}>
             <div className="sc-icon-row">
               <div className="sc-icon" style={{ background: 'var(--v1)' }}>{c.ico}</div>
-              <span className={`sc-trend ${c.cls}`}>
-                {c.trend === 'live'
-                  ? <><span className="dot-live" style={{ background: '#F6C652' }} />live</>
-                  : c.trend}
-              </span>
             </div>
             <div className="sc-val sc-val-shimmer" ref={(el) => { contatoriRef.current[i] = el; }}>{dashStats ? 0 : '—'}</div>
             <div className="sc-lbl">{c.lbl}</div>
@@ -542,7 +537,7 @@ export default function Admin() {
         <div className="se-icon">👥</div>
         <div className="se-info">
           <div className="se-title">Gestione utenti</div>
-          <div className="se-sub">{utenti.length} utenti caricati · 3 azioni in attesa</div>
+          <div className="se-sub">{utenti.length} utenti caricati</div>
         </div>
         <div className="se-badge badge-err" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span className="dot-live" style={{ background: '#F07060' }} />da moderare
