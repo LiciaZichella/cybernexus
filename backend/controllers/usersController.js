@@ -84,7 +84,7 @@ const getAllUsers = async (req, res) => {
 // PATCH /api/users/:id/role — cambia il ruolo di un utente (solo Admin)
 const changeUserRole = async (req, res) => {
   try {
-    const RUOLI_VALIDI = ['Guest', 'Player', 'Analyst', 'Manager', 'Admin'];
+    const RUOLI_VALIDI = ['Guest', 'Player', 'Analyst', 'Admin'];
     const { role } = req.body;
 
     // Verifica che il ruolo sia uno dei valori accettati dall'enum

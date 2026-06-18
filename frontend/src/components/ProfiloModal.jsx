@@ -91,7 +91,7 @@ export default function ProfiloModal({ open, onClose, userId, rank = 0 }) {
         ]);
 
         let dati = {};
-        if (profiloRes.status === 'fulfilled') dati = { ...profiloRes.value.data };
+        if (profiloRes.status === 'fulfilled') dati = { ...profiloRes.value.data.user };
         if (activityRes.status === 'fulfilled') {
           dati._activity  = activityRes.value.data.activity  ?? [];
           dati._categorie = activityRes.value.data.categorie ?? [];
@@ -204,7 +204,7 @@ export default function ProfiloModal({ open, onClose, userId, rank = 0 }) {
                 </div>
                 <div className="pmsg-item">
                   <div className="pmsg-val" style={{ color: 'var(--mint)' }}>
-                    {p.solvedCount ?? p.solved ?? 0}
+                    {p.solvedChallenges?.length ?? 0}
                   </div>
                   <div className="pmsg-lbl">Flag</div>
                 </div>

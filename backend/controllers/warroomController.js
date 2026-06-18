@@ -11,10 +11,10 @@ const setIo = (ioInstance) => { io = ioInstance; };
 // Utility: genera un codice invito casuale di 8 caratteri
 const generaInviteCode = () => crypto.randomBytes(4).toString('hex');
 
-// GET /api/warroom — lista War Room (attive per utenti, tutte per Admin/Manager)
+// GET /api/warroom — lista War Room (attive per utenti, tutte per Admin)
 const getWARRooms = async (req, res) => {
   try {
-    const isStaff = ['Admin', 'Manager'].includes(req.user.role);
+    const isStaff = req.user.role === 'Admin';
     const filter  = isStaff ? {} : { status: 'active' };
 
     const rooms = await WARRoom.find(filter)
@@ -40,8 +40,8 @@ const getWARRoomById = async (req, res) => {
 
     if (!room) return res.status(404).json({ error: 'War Room non trovata.' });
 
-    // Sala privata: solo membri e staff possono vederla
-    const isStaff  = ['Admin', 'Manager'].includes(req.user.role);
+    // Sala privata: solo membri e Admin possono vederla
+    const isStaff  = req.user.role === 'Admin';
     const isMember = room.hasMember(req.user._id);
     if (room.isPrivate && !isMember && !isStaff) {
       return res.status(403).json({ error: 'Accesso negato: sala privata.' });
@@ -54,7 +54,7 @@ const getWARRoomById = async (req, res) => {
   }
 };
 
-// POST /api/warroom — crea War Room (solo Admin o Manager)
+// POST /api/warroom — crea War Room (solo Admin)
 const createWARRoom = async (req, res) => {
   try {
     const { name, description, isPrivate, maxMembers, challenges, comandiTerminale, tasks, tipo } = req.body;
@@ -90,7 +90,7 @@ const createWARRoom = async (req, res) => {
 const joinWARRoom = async (req, res) => {
   try {
     // Ruolo minimo: Analyst per entrare come membro attivo
-    const ruoliAmmessi = ['Analyst', 'Manager', 'Admin'];
+    const ruoliAmmessi = ['Analyst', 'Admin'];
     if (!ruoliAmmessi.includes(req.user.role)) {
       return res.status(403).json({
         error: 'Devi essere almeno Analyst per entrare in una War Room. Risolvi sfide CTF per guadagnare 500 punti.',
@@ -141,8 +141,8 @@ const resolveWARRoom = async (req, res) => {
       return res.status(400).json({ error: 'La sala è già chiusa.' });
     }
 
-    // Solo owner, Admin o Manager possono risolvere la sala
-    const isStaff  = ['Admin', 'Manager'].includes(req.user.role);
+    // Solo owner o Admin possono risolvere la sala
+    const isStaff  = req.user.role === 'Admin';
     const isOwner  = room.owner._id.equals(req.user._id);
     if (!isOwner && !isStaff) {
       return res.status(403).json({ error: 'Solo il proprietario o lo staff può chiudere la sala.' });
@@ -215,9 +215,9 @@ const resolveWARRoom = async (req, res) => {
   }
 };
 
-// Utility: controlla che l'utente sia membro attivo (non Observer) o staff Admin/Manager
+// Utility: controlla che l'utente sia membro attivo (non Observer) o Admin
 const isMembroOStaff = (room, userId, userRole) => {
-  const isStaff = ['Admin', 'Manager'].includes(userRole);
+  const isStaff = userRole === 'Admin';
   if (isStaff) return true;
   const membro = room.members.find(m => {
     const mId = (m.user?._id ?? m.user)?.toString() ?? '';
@@ -265,38 +265,6 @@ const patchTask = async (req, res) => {
   }
 };
 
-// POST /api/warroom/:id/observe — entra come Observer (non conta nei maxMembers)
-const joinAsObserver = async (req, res) => {
-  try {
-    // Ruolo minimo: Manager (solo Admin e Manager possono osservare)
-    const ruoliObserver = ['Admin', 'Manager'];
-    if (!ruoliObserver.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Solo Admin e Manager possono entrare come Observer.' });
-    }
-
-    const room = await WARRoom.findById(req.params.id);
-    if (!room) return res.status(404).json({ error: 'War Room non trovata.' });
-    if (room.status !== 'active') return res.status(400).json({ error: 'La sala è chiusa.' });
-
-    // Se già membro (in qualsiasi ruolo) non duplica
-    if (room.hasMember(req.user._id)) {
-      return res.json({ message: 'Già nella sala.' });
-    }
-
-    room.members.push({ user: req.user._id, role: 'Observer' });
-    room.messages.push({
-      author:  req.user._id,
-      content: `${req.user.username} sta osservando la sessione.`,
-      type:    'system',
-    });
-    await room.save();
-
-    res.json({ message: 'Accesso come Observer confermato.' });
-  } catch (err) {
-    if (err.name === 'CastError') return res.status(400).json({ error: 'ID non valido.' });
-    res.status(500).json({ error: err.message });
-  }
-};
 
 // GET /api/warroom/:id/report — riepilogo dati reali per il PDF
 const getReport = async (req, res) => {
@@ -343,7 +311,7 @@ const getReport = async (req, res) => {
   }
 };
 
-// POST /api/warroom/draft — salva bozza War Room (solo Admin/Manager)
+// POST /api/warroom/draft — salva bozza War Room (solo Admin)
 const saveDraft = async (req, res) => {
   try {
     const { name, description, isPrivate, maxMembers, challenges, comandiTerminale, tasks, tipo, accessoLibero } = req.body;
@@ -423,6 +391,6 @@ const deleteWARRoom = async (req, res) => {
 
 module.exports = {
   getWARRooms, getWARRoomById, createWARRoom, saveDraft, updateStatus,
-  joinWARRoom, resolveWARRoom, patchTask, joinAsObserver, getReport,
+  joinWARRoom, resolveWARRoom, patchTask, getReport,
   markStep, deleteWARRoom, setIo,
 };

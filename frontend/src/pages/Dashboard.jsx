@@ -33,7 +33,6 @@ function getInitials(name = '') {
 function getRankInfo(pts = 0) {
   const tiers = [
     { r: 'Analyst', max: 500 },
-    { r: 'Manager', max: 1000 },
     { r: 'Admin', max: 2000 },
   ];
   for (let i = 0; i < tiers.length; i++) {

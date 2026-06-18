@@ -5,7 +5,7 @@ import ProfiloModal from './ProfiloModal';
 
 const ROLE_COLORS = {
   Admin:   { bg: 'rgba(240,112,96,.18)',  c: '#F07060', b: 'rgba(240,112,96,.4)'  },
-  Manager: { bg: 'rgba(246,198,82,.18)',  c: '#F6C652', b: 'rgba(246,198,82,.4)'  },
+
   Analyst: { bg: 'rgba(91,196,212,.18)',  c: '#5BC4D4', b: 'rgba(91,196,212,.4)'  },
   Player:  { bg: 'rgba(124,111,234,.15)', c: '#7C6FEA', b: 'rgba(124,111,234,.4)' },
   Guest:   { bg: 'rgba(138,150,176,.12)', c: '#8a96b0', b: 'rgba(138,150,176,.4)' },
@@ -81,7 +81,7 @@ export default function NavDropdown({ initials, user: userProp }) {
       <ProfiloModal
         open={profiloAperto}
         onClose={() => setProfiloAperto(false)}
-        userId={user?._id}
+        userId={user?._id || user?.id}
       />
       <div ref={ref} className="nd-wrap">
         <div className="nd-av" onClick={() => setOpen(o => !o)} title={user?.username}>

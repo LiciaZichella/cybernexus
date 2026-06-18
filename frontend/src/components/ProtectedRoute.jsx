@@ -2,7 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 // Gerarchia ruoli — deve corrispondere al RANK nel middleware backend
-const RANK = { Guest: 0, Player: 1, Analyst: 2, Manager: 3, Admin: 4 };
+const RANK = { Guest: 0, Player: 1, Analyst: 2, Admin: 3 };
 
 export default function ProtectedRoute({ requiredRole }) {
   const { accessToken, user, loading } = useAuth();

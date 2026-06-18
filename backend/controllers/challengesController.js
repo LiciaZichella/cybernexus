@@ -71,7 +71,7 @@ const getChallengeById = async (req, res) => {
   }
 };
 
-// POST /api/challenges — crea nuova challenge (Admin o Manager)
+// POST /api/challenges — crea nuova challenge (solo Admin)
 const createChallenge = async (req, res) => {
   try {
     const { title, description, category, difficulty, points, flag, hints, attachments, tags } = req.body;
@@ -190,7 +190,7 @@ const submitFlag = async (req, res) => {
   }
 };
 
-// PATCH /api/challenges/:id — aggiorna una challenge esistente (Admin o Manager)
+// PATCH /api/challenges/:id — aggiorna una challenge esistente (solo Admin)
 const updateChallenge = async (req, res) => {
   try {
     const { title, description, category, difficulty, points, flag, hints, isActive } = req.body;

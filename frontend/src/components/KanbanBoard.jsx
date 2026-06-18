@@ -8,12 +8,11 @@ const COLONNE = [
   { id: 'fatto',     label: 'FATTO',     colore: 'var(--mint)',   bg: 'var(--mint-bg)' },
 ];
 
-export default function KanbanBoard({ tasks = [], isObserver = false, onTaskMoved }) {
+export default function KanbanBoard({ tasks = [], onTaskMoved }) {
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
 
   const handleDragStart = (e, taskId) => {
-    if (isObserver) { e.preventDefault(); return; }
     setDraggingId(taskId);
     e.dataTransfer.effectAllowed = 'move';
   };
@@ -27,7 +26,7 @@ export default function KanbanBoard({ tasks = [], isObserver = false, onTaskMove
   const handleDrop = (e, colonnaId) => {
     e.preventDefault();
     setDragOverCol(null);
-    if (!draggingId || isObserver) return;
+    if (!draggingId) return;
     const task = tasks.find(t => t._id === draggingId);
     if (!task || task.stato === colonnaId) { setDraggingId(null); return; }
     onTaskMoved(draggingId, colonnaId);
@@ -72,8 +71,8 @@ export default function KanbanBoard({ tasks = [], isObserver = false, onTaskMove
               {carteColonna.map(task => (
                 <div
                   key={task._id}
-                  className={`kb-card ${draggingId === task._id ? 'kb-card-dragging' : ''} ${isObserver ? 'kb-card-readonly' : ''}`}
-                  draggable={!isObserver}
+                  className={`kb-card ${draggingId === task._id ? 'kb-card-dragging' : ''}`}
+                  draggable
                   onDragStart={e => handleDragStart(e, task._id)}
                   onDragEnd={() => setDraggingId(null)}
                 >
@@ -102,7 +101,7 @@ export default function KanbanBoard({ tasks = [], isObserver = false, onTaskMove
               ))}
 
               {/* Indicatore drop target */}
-              {isTarget && !isObserver && (
+              {isTarget && (
                 <div className="kb-drop-hint">Rilascia qui →</div>
               )}
             </div>

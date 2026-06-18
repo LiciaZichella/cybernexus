@@ -268,7 +268,7 @@ export default function WarRoom() {
         // Non fare join se l'utente è già membro (qualsiasi ruolo incluso Observer)
         const membro = room.members?.find(m => {
           const mId = (m.user?._id ?? m.user)?.toString() ?? '';
-          const uId = user?._id?.toString() ?? '';
+          const uId = (user?._id || user?.id)?.toString() ?? '';
           return mId && uId && mId === uId;
         });
         // Entra come Member solo se non è già nella sala
@@ -463,13 +463,12 @@ export default function WarRoom() {
       { tipo: 'out', testo: "Digita 'help' per vedere i comandi disponibili" },
     ]);
 
-    // Costruisci lista membri online da sala.members (esclude Observer)
+    // Costruisci lista membri online da sala.members
     const membriDB = sala.members
-      .filter(m => m.role !== 'Observer')
       .map(m => ({
         iniziali: (m.user?.username || 'US').slice(0, 2).toUpperCase(),
         username: m.user?.username || 'Utente',
-        gradiente: m.user?._id?.toString() === user._id?.toString()
+        gradiente: m.user?._id?.toString() === (user?._id || user?.id)?.toString()
           ? 'linear-gradient(135deg,var(--violet),var(--fuchsia))'
           : 'linear-gradient(135deg,var(--cyan),var(--violet))',
       }));
@@ -590,7 +589,7 @@ export default function WarRoom() {
   };
 
   const segnaFatto = async () => {
-    if (uiBloccata || isObserver) return;
+    if (uiBloccata) return;
 
     try {
       await warroomAPI.markStep(id, passoAttivo);
@@ -769,7 +768,7 @@ export default function WarRoom() {
 
 
   const eseguiComando = () => {
-    if (timerScaduto || uiBloccata || isObserver) return;
+    if (timerScaduto || uiBloccata) return;
     const cmd = comandoInput.trim();
     if (!cmd) return;
     setComandoInput('');
@@ -847,7 +846,7 @@ export default function WarRoom() {
   };
 
   const inviaChat = () => {
-    if (timerScaduto || uiBloccata || isObserver || !inputChat.trim()) return;
+    if (timerScaduto || uiBloccata || !inputChat.trim()) return;
     const testo = inputChat.trim();
     setInputChat('');
     clearTimeout(typingDebounceRef.current);
@@ -879,12 +878,11 @@ export default function WarRoom() {
   // Ruolo dell'utente corrente nella sala
   const mioMembro = sala?.members?.find(m => {
     const mId = m.user?._id?.toString() ?? m.user?.toString() ?? '';
-    const uId = user?._id?.toString() ?? '';
+    const uId = (user?._id || user?.id)?.toString() ?? '';
     if (!mId || !uId) return false;
     return mId === uId;
   });
-  // Se l'utente non è tra i membri (non ancora caricato) isObserver è false
-  const isObserver = mioMembro?.role === 'Observer';
+
 
 
   // ── Render riga terminale ────────────────────────────────────────────────────
@@ -1032,29 +1030,6 @@ export default function WarRoom() {
                 <div className="wr-preview-footer">
                   <button className="wr-preview-cancel" onClick={() => { setPreviewSala(null); setCodiceInvito(''); }}>Annulla</button>
 
-                  {/* Osserva — solo Admin e Manager */}
-                  {['Admin', 'Manager'].includes(user?.role) && (
-                    <button
-                      className="wr-preview-observe"
-                      disabled={previewSala.status === 'closed'}
-                      onClick={async () => {
-                        try {
-                          await warroomAPI.observe(previewSala._id);
-                        } catch (err) {
-                          if (err.response?.status !== 400) {
-                            alert('Errore accesso come observer: ' +
-                              (err.response?.data?.error || err.message));
-                            return;
-                          }
-                        }
-                        setPreviewSala(null);
-                        setCodiceInvito('');
-                        navigate(`/warroom/${previewSala._id}`);
-                      }}
-                    >
-                      👁 Osserva
-                    </button>
-                  )}
 
                   {/* Entra — disabilitato per Player/Guest con tooltip */}
                   {['Player', 'Guest'].includes(user?.role) ? (
@@ -1190,7 +1165,7 @@ export default function WarRoom() {
 
   // ── JSX principale ────────────────────────────────────────────────────────────
   return (
-    <div className={`warroom-app${isObserver ? ' observer-mode' : ''}`}>
+    <div className="warroom-app">
       <div className="scan-line" />
 
       {/* ── Timeout overlay ── */}
@@ -1370,11 +1345,7 @@ export default function WarRoom() {
           <div className="ni-dot" />
           <div className="ni-title">{titoloSala}</div>
           <div className="ni-badge">{severita}</div>
-          {isObserver && (
-            <div className="ni-badge" style={{ background: 'rgba(91,196,212,0.15)', color: 'var(--cyan)', border: '0.5px solid rgba(91,196,212,0.3)', marginLeft: 4 }}>
-              👁 OBSERVER
-            </div>
-          )}
+
           <div className="ni-sep" />
           <div className="ni-timer-wrap">
             <div className={`ni-timer ${timerWarning ? 'warning' : ''}`}>{formatTime(tempoRimanente)}</div>
@@ -1418,12 +1389,6 @@ export default function WarRoom() {
         </button>
       </div>
 
-      {/* Banner observer — solo lettura */}
-      {isObserver && (
-        <div className="observer-banner">
-          👁 Stai osservando questa sessione — solo lettura
-        </div>
-      )}
 
       {/* ── War shell ── */}
       <div className="war-shell">
@@ -1574,10 +1539,10 @@ export default function WarRoom() {
                     value={comandoInput}
                     onChange={e => setComandoInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && eseguiComando()}
-                    placeholder={isObserver ? 'Modalità observer — solo lettura' : 'inserisci comando...'}
-                    disabled={isObserver || uiBloccata}
+                    placeholder="inserisci comando..."
+                    disabled={uiBloccata}
                   />
-                  <button className="t-run" onClick={eseguiComando} disabled={isObserver || uiBloccata}>RUN ↵</button>
+                  <button className="t-run" onClick={eseguiComando} disabled={uiBloccata}>RUN ↵</button>
                 </div>
               </div>
             </div>
@@ -1660,17 +1625,17 @@ export default function WarRoom() {
                 onChange={e => {
                   setInputChat(e.target.value);
                   clearTimeout(typingDebounceRef.current);
-                  if (e.target.value.trim() && !isObserver) {
+                  if (e.target.value.trim()) {
                     typingDebounceRef.current = setTimeout(() => {
                       socketRef.current?.emit('log-event', { roomId: id, content: 'sta scrivendo...' });
                     }, 1000);
                   }
                 }}
                 onKeyDown={e => e.key === 'Enter' && inviaChat()}
-                placeholder={uiBloccata ? 'Sala chiusa' : isObserver ? 'Modalità observer — solo lettura' : 'Scrivi al team...'}
-                disabled={isObserver || uiBloccata}
+                placeholder={uiBloccata ? 'Sala chiusa' : 'Scrivi al team...'}
+                disabled={uiBloccata}
               />
-              <button className="chat-send" onClick={inviaChat} disabled={isObserver || uiBloccata}>
+              <button className="chat-send" onClick={inviaChat} disabled={uiBloccata}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13"/>
                   <polygon points="22 2 15 22 11 13 2 9 22 2"/>

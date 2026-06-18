@@ -95,7 +95,6 @@ export default function Admin() {
   const [confirmModal, setConfirmModal] = useState({ aperto: false, titolo: '', testo: '', onConferma: null });
 
   // Ricerca e modifica sfide
-  const [searchQuery, setSearchQuery]       = useState('');
   const [sfidaInModifica, setSfidaInModifica] = useState(null);
 
   // Toast
@@ -599,7 +598,7 @@ export default function Admin() {
             <table>
               <thead><tr><th>Utente</th><th>Ruolo</th><th>Punti</th><th>Stato</th><th>Azioni</th></tr></thead>
               <tbody>
-                {utenti.filter(u => !searchQuery || u.username?.toLowerCase().includes(searchQuery.toLowerCase()) || u.email?.toLowerCase().includes(searchQuery.toLowerCase())).map((u) => {
+                {utenti.map((u) => {
                   const bannato = u.isBanned ?? u.status === 'banned';
                   const me      = isMe(u);
                   return (
@@ -781,9 +780,6 @@ export default function Admin() {
           {sfidaInModifica && (
             <button className="tb-btn tb-ghost" onClick={() => { setSfidaInModifica(null); setFormCTF({ titolo: '', categoria: 'Web', difficolta: 'Easy', punti: 150, descrizione: '', flag: '', file: '', hints: [] }); setFlagHashPreview(''); }}>Annulla</button>
           )}
-          {!sfidaInModifica && (
-            <button className="tb-btn tb-ghost" onClick={() => mostraToast('Anteprima — funzionalità in sviluppo', '')}>Anteprima</button>
-          )}
         </div>
       </div>
 
@@ -800,7 +796,7 @@ export default function Admin() {
             <table>
               <thead><tr><th>Nome</th><th>Categoria</th><th>Difficoltà</th><th>Punti</th><th>Risolte da</th><th>Azioni</th></tr></thead>
               <tbody>
-                {sfide.filter(s => !searchQuery || s.title?.toLowerCase().includes(searchQuery.toLowerCase()) || s.category?.toLowerCase().includes(searchQuery.toLowerCase())).map((s) => (
+                {sfide.map((s) => (
                   <tr key={s._id ?? s.id}>
                     <td style={{ color: 'var(--text1)', fontWeight: 500 }}>{s.title}</td>
                     <td><span style={{ color: 'var(--v)', fontSize: 12 }}>{s.category}</span></td>
@@ -1029,7 +1025,7 @@ export default function Admin() {
                                 Pubblica
                               </button>
                             ) : (
-                              <button className="act-btn" onClick={() => isLive ? navigate(`/warroom/${wr._id ?? wr.id}`) : mostraToast('Report War Room — funzionalità in sviluppo', '')}>{isLive ? 'Osserva' : 'Report'}</button>
+                              <button className="act-btn" onClick={() => isLive ? navigate(`/warroom/${wr._id ?? wr.id}`) : mostraToast('Report War Room — funzionalità in sviluppo', '')}>{isLive ? 'Vai alla sala' : 'Report'}</button>
                             )}
                             {isLive && (
                               <button
@@ -1209,7 +1205,7 @@ export default function Admin() {
               <div className="fg">
                 <div className="fg-lbl">Nuovo ruolo</div>
                 <select className="fg-input" value={roleModal.ruolo} onChange={(e) => setRoleModal((m) => ({ ...m, ruolo: e.target.value }))}>
-                  {['Guest', 'Player', 'Analyst', 'Manager', 'Admin'].map((r) => <option key={r}>{r}</option>)}
+                  {['Guest', 'Player', 'Analyst', 'Admin'].map((r) => <option key={r}>{r}</option>)}
                 </select>
               </div>
             </div>
@@ -1298,12 +1294,7 @@ export default function Admin() {
                 ? <>Dashboard <span>Admin</span></>
                 : TITOLI_SEZIONE[sezione]}
             </div>
-            <div className="tb-search">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text2)', flexShrink: 0 }}>
-                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-              </svg>
-              <input type="text" placeholder="Cerca nella piattaforma..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-            </div>
+
             {sezione === 'users' && (
               <button className="tb-btn tb-ghost" onClick={esportaCSV}>
                 Esporta CSV

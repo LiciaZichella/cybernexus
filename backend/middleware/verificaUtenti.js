@@ -35,12 +35,11 @@ const protect = async (req, res, next) => {
 };
 
 // Gerarchia ruoli: indice più alto = più permessi
-const RANK = { Guest: 0, Player: 1, Analyst: 2, Manager: 3, Admin: 4 };
+const RANK = { Guest: 0, Player: 1, Analyst: 2, Admin: 3 };
 
 // Limita l'accesso ai ruoli con rango >= al minimo tra quelli specificati.
-// authorize('Admin','Manager') → soglia Manager(3) → Manager e Admin passano.
-// authorize('Admin') → soglia Admin(4) → solo Admin.
-// Retrocompatibile: non serve modificare le chiamate esistenti nelle route.
+// authorize('Admin') → soglia Admin(3) → solo Admin.
+// authorize('Analyst') → soglia Analyst(2) → Analyst e Admin passano.
 const authorize = (...roles) => {
   const sogliaMinima = Math.min(...roles.map(r => RANK[r] ?? 99));
   return (req, res, next) => {

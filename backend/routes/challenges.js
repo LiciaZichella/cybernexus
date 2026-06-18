@@ -26,10 +26,10 @@ const submitLimiter = rateLimit({
 router.use(protect);
 
 router.get('/',    getChallenges);
-router.post('/',   authorize('Admin', 'Manager'), createChallenge);
+router.post('/',   authorize('Admin'), createChallenge);
 
 router.get('/:id',              getChallengeById);
-router.patch('/:id',            authorize('Admin', 'Manager'), updateChallenge);
+router.patch('/:id',            authorize('Admin'), updateChallenge);
 router.delete('/:id',           authorize('Admin'), deleteChallenge);
 router.post('/:id/submit',      submitLimiter, submitFlag);
 router.get('/:id/hint',         getHint);

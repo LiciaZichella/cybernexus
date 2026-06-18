@@ -8,7 +8,6 @@ const {
   joinWARRoom,
   resolveWARRoom,
   patchTask,
-  joinAsObserver,
   getReport,
   markStep,
   deleteWARRoom,
@@ -27,9 +26,9 @@ router.post('/draft', authorize('Admin'), saveDraft);
 router.get('/:id',               getWARRoomById);
 router.get('/:id/report',        getReport);
 router.post('/:id/join',         joinWARRoom);
-router.post('/:id/observe',      joinAsObserver);
+
 router.post('/:id/resolve',      resolveWARRoom);
-router.patch('/:id/status',      authorize('Admin', 'Manager'), updateStatus);
+router.patch('/:id/status',      authorize('Admin'), updateStatus);
 router.patch('/:id/step',        markStep);
 router.patch('/:id/task/:taskId', patchTask);
 router.delete('/:id',            authorize('Admin'), deleteWARRoom);

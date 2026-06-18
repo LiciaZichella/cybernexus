@@ -444,10 +444,7 @@ export default function Login() {
 
               {/* Password */}
               <div className="field-group">
-                <label className="field-label">
-                  Password
-                  {tab === 'login' && <span className="forgot-link" onClick={() => setError('Funzionalità non ancora disponibile')}>Hai dimenticato?</span>}
-                </label>
+                <label className="field-label">Password</label>
                 <div className="field-wrap">
                   <input
                     key={`pw-${shakeKey.pw}`}
