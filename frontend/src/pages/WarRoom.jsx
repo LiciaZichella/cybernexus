@@ -6,6 +6,7 @@ import { useNotifications } from '../context/NotificationsContext';
 import NavDropdown from '../components/NavDropdown';
 import { warroomAPI, getMemoryToken } from '../services/api';
 import Navbar from '../components/Navbar';
+import jsPDF from 'jspdf';
 import './WarRoom.css';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5005';
@@ -639,7 +640,6 @@ export default function WarRoom() {
   const scaricaReport = async () => {
     try {
       const { data } = await warroomAPI.getReport(id);
-      const { jsPDF } = await import('jspdf');
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const W = 210;
       const H = 297;
@@ -1338,17 +1338,17 @@ export default function WarRoom() {
               </div>
               <button
                 className="rm-close"
-                style={{ background: 'var(--bg3)', color: 'var(--text1)', border: '0.5px solid var(--border2)', marginBottom: 10 }}
-                onClick={scaricaReport}
-              >
-                ⬇ Scarica report PDF
-              </button>
-              <button
-                className="rm-close"
                 disabled={risoluzioneInCorso}
                 onClick={confermaRisolvi}
               >
                 {risoluzioneInCorso ? '⏳ Chiusura in corso...' : '✓ Conferma risoluzione'}
+              </button>
+              <button
+                className="rm-close"
+                style={{ background: 'var(--bg3)', color: 'var(--text1)', border: '0.5px solid var(--border2)', marginBottom: 10 }}
+                onClick={scaricaReport}
+              >
+                ⬇ Scarica report PDF
               </button>
               <button className="rm-close" onClick={() => navigate('/dashboard')}>← Torna alla dashboard</button>
             </div>
