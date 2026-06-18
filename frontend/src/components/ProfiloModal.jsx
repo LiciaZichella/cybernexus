@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usersAPI } from '../services/api';
@@ -122,6 +123,8 @@ export default function ProfiloModal({ open, onClose, userId, rank = 0 }) {
 
   if (!open || !userId) return null;
 
+  // Rendering tramite portal su document.body: evita il nuovo stacking context
+  // creato da backdrop-filter sulla navbar, che "intrappola" position:fixed.
   const p = profilo ?? {};
 
   // Badge calcolati dai dati reali
@@ -144,7 +147,7 @@ export default function ProfiloModal({ open, onClose, userId, rank = 0 }) {
   const isMe = user && userId &&
     userId.toString() === (user._id ?? user.id)?.toString();
 
-  return (
+  return createPortal(
     <div className="profile-overlay" onClick={handleClose}>
       <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
         <div className="pm-topbar" />
@@ -308,6 +311,7 @@ export default function ProfiloModal({ open, onClose, userId, rank = 0 }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
