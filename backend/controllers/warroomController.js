@@ -177,10 +177,9 @@ const resolveWARRoom = async (req, res) => {
       timeoutScenario.delete(req.params.id);
     }
 
-    // Assegna punti e incrementa warRoomsCompleted a tutti i membri attivi (non Observer)
-    const membriFull = room.members.filter(m => m.role !== 'Observer');
+    // Assegna punti e incrementa warRoomsCompleted a tutti i membri
     await Promise.all(
-      membriFull.map(m => User.findByIdAndUpdate(m.user, {
+      room.members.map(m => User.findByIdAndUpdate(m.user, {
         $inc: {
           warRoomsCompleted: 1,
           ...(puntiBase > 0 ? { points: puntiTotali } : {}),
@@ -190,18 +189,21 @@ const resolveWARRoom = async (req, res) => {
 
     // Payload del webhook con il riepilogo della sessione
     const webhookPayload = {
-      event:     'warroom.resolved',
+      event:      'warroom.resolved',
       resolvedAt: new Date().toISOString(),
       room: {
-        id:          room._id,
-        name:        room.name,
-        owner:       room.owner.username,
-        memberCount: room.memberCount,
-        members:     room.members.map((m) => m.user.username),
-        challenges:  room.challenges.map((c) => ({
+        id:              room._id,
+        name:            room.name,
+        owner:           room.owner.username,
+        memberCount:     room.memberCount,
+        members:         room.members.map((m) => m.user.username),
+        challenges:      room.challenges.map((c) => ({
           id:     c.challenge,
           status: c.status,
         })),
+        durataMin:       durataMin,
+        puntiTotali:     puntiTotali,
+        passiCompletati: room.passiCompletati?.length || 0,
       },
     };
 
@@ -215,15 +217,14 @@ const resolveWARRoom = async (req, res) => {
   }
 };
 
-// Utility: controlla che l'utente sia membro attivo (non Observer) o Admin
+// Utility: controlla che l'utente sia membro o Admin
 const isMembroOStaff = (room, userId, userRole) => {
-  const isStaff = userRole === 'Admin';
-  if (isStaff) return true;
+  if (userRole === 'Admin') return true;
   const membro = room.members.find(m => {
     const mId = (m.user?._id ?? m.user)?.toString() ?? '';
     return mId === userId.toString();
   });
-  return membro && membro.role !== 'Observer';
+  return !!membro;
 };
 
 // PATCH /api/warroom/:id/task/:taskId — aggiorna stato di un task Kanban

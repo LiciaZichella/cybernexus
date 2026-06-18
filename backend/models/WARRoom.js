@@ -54,11 +54,11 @@ const WARRoomSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Membri con ruolo interno alla sala (Observer = sola lettura, non conta in maxMembers)
+    // Membri con ruolo interno alla sala
     members: [
       {
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        role: { type: String, enum: ['Lead', 'Member', 'Observer'], default: 'Member' },
+        role: { type: String, enum: ['Lead', 'Member'], default: 'Member' },
         joinedAt: { type: Date, default: Date.now },
       },
     ],
@@ -178,10 +178,9 @@ WARRoomSchema.virtual('memberCount').get(function () {
   return this.members.length;
 });
 
-// Virtual: sala piena o no (gli Observer non contano nel limite)
+// Virtual: sala piena o no
 WARRoomSchema.virtual('isFull').get(function () {
-  const membriAttivi = this.members.filter(m => m.role !== 'Observer').length;
-  return membriAttivi >= this.maxMembers;
+  return this.members.length >= this.maxMembers;
 });
 
 // Metodo d'istanza: verifica se un utente è già membro

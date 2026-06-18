@@ -879,23 +879,6 @@
 }
 .warroom-app .obj-list-inline .obj-item { font-size:11px;padding:6px 10px }
 
-/* Banner observer — solo lettura */
-.warroom-app .observer-banner {
-  background:rgba(246,198,82,0.12);
-  border-bottom:1.5px solid rgba(246,198,82,0.50);
-  color:var(--amber);
-  font-size:12px;font-weight:700;
-  padding:9px 20px;text-align:center;
-  font-family:'JetBrains Mono',monospace;letter-spacing:0.7px;
-  flex-shrink:0;
-  box-shadow:0 2px 12px rgba(246,198,82,0.10);
-}
-/* Outline giallo sull'intera app quando è in modalità observer */
-.warroom-app.observer-mode {
-  outline:1.5px solid rgba(246,198,82,0.35);
-  outline-offset:-1px;
-}
-
 /* Input codice invito nel modal anteprima */
 .warroom-app .wr-preview-invite {
   padding:10px 0 4px;

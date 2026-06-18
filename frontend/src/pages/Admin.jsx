@@ -13,23 +13,6 @@ const calcolaHash = async (testo) => {
 };
 
 
-// Stato iniziale webhook
-const WEBHOOK_INIZIALE = {
-  discord: { url: 'https://discord.com/api/webhooks/123456/abcdef...', toggles: { warroom: true, utente: true, flag: false, rateLimit: true } },
-  slack:   { url: '', toggles: { warroom: false, utente: false, flag: false, rateLimit: false } },
-  email:   { email: 'admin@cybernexus.io', frequenza: 'daily', toggles: { critici: true, report: true } },
-  custom:  { url: '', headers: '', toggles: { tutti: false } },
-};
-
-// ── Componente toggler riutilizzabile ────────────────────────────────────────
-function Toggler({ on, onClick }) {
-  return (
-    <div className={`toggler ${on ? 'on' : 'off'}`} onClick={onClick}>
-      <div className="toggler-thumb" />
-    </div>
-  );
-}
-
 // ── Componente principale ────────────────────────────────────────────────────
 export default function Admin() {
   const navigate = useNavigate();
@@ -85,10 +68,6 @@ export default function Admin() {
 
   // Feed attività
   const [feedAttivita, setFeedAttivita] = useState([]);
-
-  // Webhook
-  const [webhooks, setWebhooks]           = useState(WEBHOOK_INIZIALE);
-  const [webhookTesting, setWebhookTesting] = useState({});
 
   // Modali
   const [roleModal, setRoleModal]       = useState({ aperto: false, username: '', userId: '', ruolo: 'Player' });
@@ -440,21 +419,6 @@ export default function Admin() {
       mostraToast('Errore nel cambio ruolo', 'terr');
     }
   };
-
-  const handleTestWebhook = (chiave, nome) => {
-    setWebhookTesting((w) => ({ ...w, [chiave]: 'testing' }));
-    setTimeout(() => {
-      setWebhookTesting((w) => ({ ...w, [chiave]: 'ok' }));
-      mostraToast(`Webhook ${nome} OK ✓`, 'tok');
-      setTimeout(() => setWebhookTesting((w) => ({ ...w, [chiave]: '' })), 3000);
-    }, 1400);
-  };
-
-  const toggleWebhookVoce = (wh, voce) =>
-    setWebhooks((prev) => ({
-      ...prev,
-      [wh]: { ...prev[wh], toggles: { ...prev[wh].toggles, [voce]: !prev[wh].toggles[voce] } },
-    }));
 
   const isMe = (u) => (u._id ?? u.id) === (user?.id ?? user?._id);
 
@@ -1067,103 +1031,6 @@ export default function Admin() {
     );
   };
 
-  const renderWebhooks = () => {
-    const wCards = [
-      { chiave: 'discord', ico: '💬', nome: 'Discord', canale: '#cybernexus-alerts',
-        voci: ['warroom', 'utente', 'flag', 'rateLimit'], etichette: ['War Room risolta', 'Nuovo utente', 'Flag catturata', 'Rate limit hit'] },
-      { chiave: 'slack',   ico: '📨', nome: 'Slack',   canale: '#incidents',
-        voci: ['warroom', 'utente', 'flag', 'rateLimit'], etichette: ['War Room risolta', 'Nuovo utente', 'Flag catturata', 'Rate limit hit'] },
-      { chiave: 'email',   ico: '📧', nome: 'Email',   canale: 'Digest giornaliero admin',
-        voci: ['critici', 'report'], etichette: ['Alert critici', 'Report giornaliero'] },
-      { chiave: 'custom',  ico: '🔗', nome: 'Custom endpoint', canale: 'POST su URL personalizzato',
-        voci: ['tutti'], etichette: ['Tutti gli eventi'] },
-    ];
-
-    const getBadgeStato = (chiave) => {
-      const w = webhooks[chiave];
-      const haUrl = !!(w.url || w.email);
-      if (!haUrl) return { cls: 'badge-gray', txt: '○ Disabilitato' };
-      return haUrl ? { cls: 'badge-ok', txt: '● Attivo' } : { cls: 'badge-warn', txt: '○ Non configurato' };
-    };
-
-    return (
-      <>
-        <div className="sec-eyebrow ai d1">
-          <div className="se-icon">🔔</div>
-          <div className="se-info">
-            <div className="se-title">Configurazione Webhook</div>
-            <div className="se-sub">Notifiche automatiche verso Discord, Slack, Email e endpoint custom</div>
-          </div>
-          <div className="se-badge badge-v">2 / 4 attivi</div>
-        </div>
-
-        <div className="wh-grid ai d2">
-          {wCards.map(({ chiave, ico, nome, canale, voci, etichette }) => {
-            const st = getBadgeStato(chiave);
-            const ts = webhookTesting[chiave];
-            return (
-              <div className="wh-card" key={chiave}>
-                <div className="wh-hdr">
-                  <div className="wh-ico">{ico}</div>
-                  <div>
-                    <div className="wh-name">{nome}</div>
-                    <div className="text-sm" style={{ fontSize: 10, marginTop: 1 }}>{canale}</div>
-                  </div>
-                  <span className={`wh-status ${st.cls}`}>{st.txt}</span>
-                </div>
-
-                <input
-                  className="fg-input" type="text" style={{ marginBottom: 10, fontSize: 11 }}
-                  placeholder={chiave === 'email' ? 'admin@esempio.io' : 'https://...'}
-                  value={webhooks[chiave].url ?? webhooks[chiave].email ?? ''}
-                  onChange={(e) => setWebhooks((prev) => ({
-                    ...prev,
-                    [chiave]: { ...prev[chiave], [chiave === 'email' ? 'email' : 'url']: e.target.value },
-                  }))}
-                />
-
-                {chiave === 'email' && (
-                  <select className="fg-input" style={{ marginBottom: 10, fontSize: 11 }}
-                    value={webhooks.email.frequenza}
-                    onChange={(e) => setWebhooks((prev) => ({ ...prev, email: { ...prev.email, frequenza: e.target.value } }))}>
-                    <option value="daily">Digest giornaliero (08:00)</option>
-                    <option value="realtime">In tempo reale</option>
-                    <option value="critical">Solo alert critici</option>
-                  </select>
-                )}
-                {chiave === 'custom' && (
-                  <input className="fg-input" type="text" placeholder='{"Authorization":"Bearer TOKEN"}'
-                    style={{ marginBottom: 10, fontSize: 10, fontFamily: 'monospace' }} />
-                )}
-
-                {voci.map((voce, i) => (
-                  <div key={voce} className="toggle-row">
-                    <Toggler on={webhooks[chiave].toggles[voce]} onClick={() => toggleWebhookVoce(chiave, voce)} />
-                    {etichette[i]}
-                  </div>
-                ))}
-
-                <button
-                  className={`wh-test${ts === 'testing' ? ' testing' : ts === 'ok' ? ' ok' : ''}`}
-                  onClick={() => handleTestWebhook(chiave, nome)}
-                >
-                  {ts === 'testing' ? 'Testing…' : ts === 'ok' ? `✓ ${nome} connesso` : 'Testa connessione →'}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'var(--bg2)', border: '0.5px solid var(--border)', borderRadius: 10 }} className="ai d3">
-          <span className="text-sm">Salva la configurazione webhook — le modifiche sono attive immediatamente.</span>
-          <button className="tb-btn tb-primary" onClick={() => mostraToast('Configurazione webhook salvata ✓', 'tok')}>
-            <span>Salva configurazione</span>
-          </button>
-        </div>
-      </>
-    );
-  };
-
   // ── Dati navigazione sidebar ─────────────────────────────────────────────────
   const SIDEBAR_GRUPPI = [
     { label: 'Panoramica', voci: [{ id: 'stats', ico: '⊞', etichetta: 'Dashboard', badge: null }] },
@@ -1172,11 +1039,10 @@ export default function Admin() {
       { id: 'ctf',     ico: '⚑',  etichetta: 'Sfide CTF', badge: null },
       { id: 'warroom', ico: '🛡️', etichetta: 'War Room',  badge: null },
     ]},
-    { label: 'Sistema', voci: [{ id: 'webhooks', ico: '🔔', etichetta: 'Webhook', badge: null }] },
   ];
 
-  const TITOLI_SEZIONE = { stats: 'Dashboard', users: 'Gestione utenti', ctf: 'Sfide CTF', warroom: 'War Room', webhooks: 'Webhook' };
-  const LABEL_BTN_TOP  = { stats: '+ Crea sfida', users: '+ Invita utente', ctf: '+ Crea sfida', warroom: '+ Crea War Room', webhooks: 'Salva tutto' };
+  const TITOLI_SEZIONE = { stats: 'Dashboard', users: 'Gestione utenti', ctf: 'Sfide CTF', warroom: 'War Room' };
+  const LABEL_BTN_TOP  = { stats: '+ Crea sfida', users: '+ Invita utente', ctf: '+ Crea sfida', warroom: '+ Crea War Room' };
 
   if (!user) return null;
 
@@ -1306,7 +1172,6 @@ export default function Admin() {
                 if (sezione === 'stats' || sezione === 'ctf')   setSezione('ctf');
                 else if (sezione === 'warroom')                  setSezione('warroom');
                 else if (sezione === 'users')                    mostraToast('Invito email — disponibile nel backend', 'tok');
-                else if (sezione === 'webhooks')                 mostraToast('Configurazione salvata ✓', 'tok');
               }}
             >
               <span>
@@ -1321,7 +1186,6 @@ export default function Admin() {
             {sezione === 'users'    && renderUsers()}
             {sezione === 'ctf'      && renderCTF()}
             {sezione === 'warroom'  && renderWarRoom()}
-            {sezione === 'webhooks' && renderWebhooks()}
           </div>
         </div>
 

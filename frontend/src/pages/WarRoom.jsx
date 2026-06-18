@@ -152,9 +152,6 @@ export default function WarRoom() {
   // Modali
   const [risolviAperto, setRisolviAperto] = useState(false);
   const [solAperta, setSolAperta] = useState(false);
-  const [webhookSel, setWebhookSel] = useState({ discord: true, slack: false, email: false, custom: false });
-  const [webhookInvio, setWebhookInvio] = useState(false);
-  const [webhookInviato, setWebhookInviato] = useState(false);
   const [tempoElapsedMin, setTempoElapsedMin] = useState(0);
   // Punti reali calcolati dal backend e ricevuti nel payload room-resolved
   const [puntiReali, setPuntiReali] = useState(null);
@@ -265,7 +262,7 @@ export default function WarRoom() {
         const inizioSala   = new Date(room.createdAt).getTime();
         const secTrascorsi = Math.floor((Date.now() - inizioSala) / 1000);
         setTempoRimanente(Math.max(0, durataSec - secTrascorsi));
-        // Non fare join se l'utente è già membro (qualsiasi ruolo incluso Observer)
+        // Non fare join se l'utente è già membro
         const membro = room.members?.find(m => {
           const mId = (m.user?._id ?? m.user)?.toString() ?? '';
           const uId = (user?._id || user?.id)?.toString() ?? '';
@@ -394,7 +391,8 @@ export default function WarRoom() {
 
       // Mostra subito il modal corretto senza aspettare aggiornaUser
       if (data.resolvedBy === user?.username) {
-        // Chi ha risolto: vede il modal di riepilogo con i punti
+        // Chi ha risolto: resetta il blocco pulsante e apre il modal di riepilogo
+        setRisoluzioneInCorso(false);
         setRisolviAperto(true);
       } else {
         // Gli altri: vedono il modal "sala chiusa da altri" con il nome di chi ha risolto
@@ -759,13 +757,6 @@ export default function WarRoom() {
       alert('Errore nel generare il report');
     }
   };
-
-  const inviaWebhook = () => {
-    if (webhookInvio || webhookInviato) return;
-    setWebhookInvio(true);
-    setTimeout(() => { setWebhookInvio(false); setWebhookInviato(true); }, 1400);
-  };
-
 
   const eseguiComando = () => {
     if (timerScaduto || uiBloccata) return;
@@ -1305,9 +1296,10 @@ export default function WarRoom() {
                 </div>
                 <div className="rm-wh-body">
                   <div className="rm-wh-sent">
-                    ✓ Il webhook viene inviato dal backend quando si clicca
-                    "Torna alla dashboard". Configura <strong>WEBHOOK_URL</strong> nel pannello Admin per
-                    ricevere notifiche esterne.
+                    ✓ Alla risoluzione dell'incidente, il backend invia automaticamente
+                    una notifica POST all'URL configurato nella variabile d'ambiente
+                    <strong> WEBHOOK_URL</strong> (file .env / pannello Render in produzione).
+                    Utile per integrazioni esterne (Discord, Slack, sistemi di monitoring).
                   </div>
                 </div>
               </div>
