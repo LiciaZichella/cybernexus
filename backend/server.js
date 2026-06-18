@@ -60,6 +60,11 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+// Debug temporaneo — rimuovere dopo verifica
+app.get('/api/debug-env', (req, res) => {
+  res.json({ CLIENT_ORIGIN: process.env.CLIENT_ORIGIN });
+});
+
 // Route autenticazione
 app.use('/api/auth',  require('./routes/auth'));
 
