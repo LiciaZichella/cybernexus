@@ -5,7 +5,7 @@ openapi: 3.0.0
 # ──────────────────────────────────────────────────────────────────────────────
 info:
   title: CyberNexus API
-  version: 1.0.0
+  version: 1.1.0
   description: |
     Backend della piattaforma educativa **CyberNexus** — CTF Arena e War Room collaborativa.
 
@@ -18,7 +18,8 @@ info:
     Usare `POST /api/auth/refresh` per rinnovarlo con il refresh token (7 giorni).
 
     ## Rate limiting
-    `POST /api/challenges/:id/submit` ha un limite di richieste per prevenire il bruteforce delle flag.
+    - Endpoint di autenticazione (`/register`, `/login`): 10 richieste per 15 minuti per IP
+    - `POST /api/challenges/:id/submit`: limite attivo per prevenire il bruteforce delle flag
 
 servers:
   - url: http://localhost:5005
@@ -80,6 +81,9 @@ components:
           type: string
           nullable: true
           example: https://avatars.cybernexus.io/marco.png
+        isBanned:
+          type: boolean
+          example: false
         solvedChallenges:
           type: array
           items:
@@ -132,78 +136,132 @@ components:
           items:
             type: string
           example: [steganografia, immagini]
-        files:
+        attachments:
           type: array
           items:
             type: string
           description: URL o percorsi dei file allegati
           example: [/uploads/challenge_001.zip]
+        isActive:
+          type: boolean
+          example: true
         solvedCount:
           type: integer
           description: Numero di utenti che hanno risolto la challenge
           example: 42
-        createdBy:
+        author:
           type: string
           description: ID dell'utente che ha creato la challenge
         createdAt:
           type: string
           format: date-time
 
+    Task:
+      type: object
+      description: Task del Kanban board di una War Room
+      properties:
+        _id:
+          type: string
+          example: 6634ab1f2e4b1c001234abcd
+        titolo:
+          type: string
+          example: Analizzare il dump di memoria
+        descrizione:
+          type: string
+          example: Usare Volatility per identificare il processo malevolo
+        stato:
+          type: string
+          enum: [todo, in_corso, in_review, fatto]
+          example: in_corso
+        assegnatoA:
+          type: string
+          nullable: true
+          description: ID dell'utente a cui è assegnato il task
+          example: 6634ab1f2e4b1c0012345678
+        creatoIl:
+          type: string
+          format: date-time
+
     WARRoom:
       type: object
+      description: Sala di risposta agli incidenti collaborativa
       properties:
         id:
           type: string
           example: 6634ab1f2e4b1c001234567a
-        title:
+        name:
           type: string
+          maxLength: 80
           example: Ransomware Attack #005
-        type:
+        description:
           type: string
-          description: Tipologia dell'incidente simulato
-          example: Ransomware Enterprise
+          maxLength: 500
+          example: Simulazione di un attacco ransomware su infrastruttura enterprise.
+        tipo:
+          type: string
+          enum: [Ransomware, DDoS, Phishing, Data Breach, Supply Chain, Zero-Day]
+          example: Ransomware
         severity:
           type: string
           enum: [Low, Medium, High, Critical]
           example: Critical
-        points:
-          type: integer
-          description: Punti assegnati al team a risoluzione completata
-          example: 1850
-        briefing:
-          type: string
-          description: Descrizione dell'incidente e contesto iniziale
-          example: Un ransomware ha cifrato i server di produzione.
-        playbook:
-          type: array
-          items:
-            type: string
-          description: Lista dei passi del playbook di risposta
-          example:
-            - Isolare i sistemi dalla rete
-            - Analizzare il dump di memoria
-            - Bloccare i server C2
         status:
           type: string
-          enum: [open, active, closed]
+          enum: [draft, active, closed]
           example: active
-        team:
+        isPrivate:
+          type: boolean
+          example: false
+        accessoLibero:
+          type: boolean
+          description: Se false richiede inviteCode anche per sale non private
+          example: true
+        maxMembers:
+          type: integer
+          minimum: 2
+          maximum: 50
+          example: 10
+        durataMinuti:
+          type: integer
+          example: 90
+        owner:
+          $ref: '#/components/schemas/User'
+        members:
+          type: array
+          description: Membri attivi nella sala
+          items:
+            type: object
+            properties:
+              user:
+                $ref: '#/components/schemas/User'
+              role:
+                type: string
+                enum: [Lead, Member]
+                example: Member
+              joinedAt:
+                type: string
+                format: date-time
+        passiCompletati:
           type: array
           items:
-            $ref: '#/components/schemas/User'
-          description: Membri attivi nella sala
+            type: integer
+          description: Indici dei passi del playbook completati
+          example: [0, 1]
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
         inviteCode:
           type: string
           nullable: true
-          description: Codice invito (presente solo se la sala è privata)
-          example: WR-A1B2C3
+          description: Codice invito — presente solo se isPrivate è true
+          example: a1b2c3d4
         createdAt:
           type: string
           format: date-time
-        resolvedAt:
+        updatedAt:
           type: string
           format: date-time
-          nullable: true
 
     LeaderboardEntry:
       type: object
@@ -217,6 +275,44 @@ components:
           type: integer
           description: Numero di challenge risolte
           example: 18
+
+    ActivityPoint:
+      type: object
+      description: Punto della heatmap di attività giornaliera
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-06-18"
+        count:
+          type: integer
+          description: Numero di flag catturate in quel giorno
+          example: 3
+
+    AdminEvent:
+      type: object
+      description: Evento del feed di attività della dashboard admin
+      properties:
+        tipo:
+          type: string
+          enum: [flag, warroom, utente]
+          example: flag
+        testo:
+          type: string
+          nullable: true
+          description: Username coinvolto (presente solo per eventi di tipo flag)
+          example: marco_r
+        azione:
+          type: string
+          example: 'ha catturato la flag di "Hidden in Plain Sight"'
+        quando:
+          type: string
+          format: date-time
+        extra:
+          type: string
+          nullable: true
+          description: Informazioni aggiuntive (es. punti guadagnati)
+          example: "+150 pts"
 
   # ─── Risposte HTTP comuni ────────────────────────────────────────────────────
   responses:
@@ -300,6 +396,7 @@ paths:
       description: |
         Crea un account con ruolo **Player** di default.
         Restituisce un access token (15 min) e un refresh token (7 giorni).
+        **Rate limiting**: massimo 10 richieste per 15 minuti per IP.
       requestBody:
         required: true
         content:
@@ -340,6 +437,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '409':
           $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
         '500':
           $ref: '#/components/responses/InternalError'
 
@@ -350,6 +449,7 @@ paths:
       description: |
         Restituisce un **access token** (durata 15 min) e un **refresh token** (durata 7 giorni).
         Conservare il refresh token per rinnovare automaticamente l'access token.
+        **Rate limiting**: massimo 10 richieste per 15 minuti per IP.
       requestBody:
         required: true
         content:
@@ -383,6 +483,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
         '500':
           $ref: '#/components/responses/InternalError'
 
@@ -416,6 +518,8 @@ paths:
                     type: string
                   refreshToken:
                     type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -425,7 +529,10 @@ paths:
     post:
       tags: [Auth]
       summary: Logout — invalida il refresh token
-      description: Revoca il refresh token lato server. Il client deve eliminare i token in locale.
+      description: |
+        Revoca il refresh token dell'utente autenticato lato server (lo azzera nel DB).
+        L'identità dell'utente viene ricavata dal Bearer token — nessun body richiesto.
+        Il client deve eliminare i token in locale.
       security:
         - BearerAuth: []
       responses:
@@ -443,6 +550,74 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalError'
+
+  /api/auth/google:
+    get:
+      tags: [Auth]
+      summary: Avvia il flusso OAuth con Google
+      description: |
+        Reindirizza il browser alla pagina di autenticazione di Google.
+        **Non testabile con "Try it out"** — il flusso avviene interamente via browser.
+        Al completamento, Google reindirizza a `/api/auth/google/callback`.
+      responses:
+        '302':
+          description: Redirect verso la pagina di autenticazione Google
+
+  /api/auth/google/callback:
+    get:
+      tags: [Auth]
+      summary: Callback OAuth Google
+      description: |
+        Ricevuto automaticamente dopo l'autenticazione con Google — **non chiamare direttamente**.
+        In caso di successo, reindirizza il browser al frontend con i token nei query params:
+        `{CLIENT_ORIGIN}/oauth/callback?accessToken=...&refreshToken=...`
+        In caso di errore: `{CLIENT_ORIGIN}/login?error=oauth`
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Codice di autorizzazione fornito da Google (gestito da Passport.js)
+      responses:
+        '302':
+          description: Redirect al frontend con access e refresh token nei query params
+        '401':
+          description: Autenticazione OAuth fallita — redirect a /login?error=oauth
+
+  /api/auth/github:
+    get:
+      tags: [Auth]
+      summary: Avvia il flusso OAuth con GitHub
+      description: |
+        Reindirizza il browser alla pagina di autenticazione di GitHub.
+        **Non testabile con "Try it out"** — il flusso avviene interamente via browser.
+        Al completamento, GitHub reindirizza a `/api/auth/github/callback`.
+      responses:
+        '302':
+          description: Redirect verso la pagina di autenticazione GitHub
+
+  /api/auth/github/callback:
+    get:
+      tags: [Auth]
+      summary: Callback OAuth GitHub
+      description: |
+        Ricevuto automaticamente dopo l'autenticazione con GitHub — **non chiamare direttamente**.
+        In caso di successo, reindirizza il browser al frontend con i token nei query params:
+        `{CLIENT_ORIGIN}/oauth/callback?accessToken=...&refreshToken=...`
+        In caso di errore: `{CLIENT_ORIGIN}/login?error=oauth`
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Codice di autorizzazione fornito da GitHub (gestito da Passport.js)
+      responses:
+        '302':
+          description: Redirect al frontend con access e refresh token nei query params
+        '401':
+          description: Autenticazione OAuth fallita — redirect a /login?error=oauth
 
   # ════════════════════════════════════════════════
   # UTENTI
@@ -516,6 +691,119 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
+  /api/users/me/activity:
+    get:
+      tags: [Utenti]
+      summary: Heatmap di attività degli ultimi 60 giorni (utente corrente)
+      description: |
+        Restituisce un array di esattamente 60 oggetti — uno per ogni giorno —
+        con il numero di flag catturate. Usato per la visualizzazione heatmap nel profilo.
+        I giorni senza attività hanno `count: 0`.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dati attività restituiti
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activity:
+                    type: array
+                    minItems: 60
+                    maxItems: 60
+                    items:
+                      $ref: '#/components/schemas/ActivityPoint'
+                    example:
+                      - date: "2026-06-17"
+                        count: 2
+                      - date: "2026-06-18"
+                        count: 5
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/users/me/submissions:
+    get:
+      tags: [Utenti]
+      summary: Lista delle flag catturate dall'utente corrente
+      description: |
+        Restituisce tutte le submission **corrette** dell'utente autenticato,
+        ordinate per data decrescente. Usato per il grafico di progressione punti.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista submission corrette
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  submissions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+                        pointsAwarded:
+                          type: integer
+                          example: 150
+                        challenge:
+                          type: object
+                          properties:
+                            title:
+                              type: string
+                              example: Hidden in Plain Sight
+                            category:
+                              type: string
+                              example: Forensics
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/users/me/attempts:
+    get:
+      tags: [Utenti]
+      summary: Lista di tutti i tentativi dell'utente corrente
+      description: |
+        Restituisce tutte le submission dell'utente autenticato (corrette e non),
+        con solo l'ID della challenge e l'esito. Usato per mostrare le sfide già tentate
+        nella lista challenge.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista tentativi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  submissions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        challenge:
+                          type: string
+                          description: ID della challenge tentata
+                          example: 6634ab1f2e4b1c0012345679
+                        isCorrect:
+                          type: boolean
+                          example: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
   /api/users:
     get:
       tags: [Utenti]
@@ -569,6 +857,43 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
+  /api/users/export-csv:
+    get:
+      tags: [Utenti]
+      summary: Esporta tutti gli utenti in formato CSV
+      description: |
+        Riservato agli **Admin**.
+        Genera un file CSV con i campi: `Username`, `Email`, `Ruolo`, `Punti`, `Data Registrazione`.
+        Separatore `;` (formato europeo), encoding UTF-8 con BOM per compatibilità Excel.
+        Il nome del file generato è `cybernexus_utenti_DDMMYYYY.csv`.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: File CSV scaricabile
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              example: 'attachment; filename="cybernexus_utenti_18062026.csv"'
+            Content-Type:
+              schema:
+                type: string
+              example: 'text/csv; charset=utf-8'
+          content:
+            text/csv:
+              schema:
+                type: string
+              example: |
+                "Username";"Email";"Ruolo";"Punti";"Data Registrazione"
+                "marco_r";"marco@cybernexus.io";"Player";1240;"18/06/2026 14:30"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
   /api/users/{id}:
     get:
       tags: [Utenti]
@@ -593,6 +918,59 @@ paths:
                 properties:
                   user:
                     $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/users/{id}/activity:
+    get:
+      tags: [Utenti]
+      summary: Attività e distribuzione per categoria di un utente specifico
+      description: |
+        Restituisce la heatmap degli ultimi 60 giorni **e** la distribuzione percentuale
+        per categoria delle challenge risolte. Usato nella pagina profilo pubblica.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId dell'utente
+          example: 6634ab1f2e4b1c0012345678
+      responses:
+        '200':
+          description: Attività e categorie restituite
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activity:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityPoint'
+                  categorie:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        nome:
+                          type: string
+                          example: Forensics
+                        count:
+                          type: integer
+                          example: 5
+                        pct:
+                          type: integer
+                          description: Percentuale arrotondata sul totale challenge risolte
+                          example: 42
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -653,6 +1031,57 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
+  /api/users/{id}/ban:
+    patch:
+      tags: [Utenti]
+      summary: Banna o riabilita un utente
+      description: |
+        Riservato agli **Admin**.
+        Un Admin non può bannare il proprio account.
+        Un utente bannato riceve 403 ad ogni richiesta autenticata (controllato dal middleware `protect`).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId dell'utente da bannare/riabilitare
+          example: 6634ab1f2e4b1c0012345678
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ban]
+              properties:
+                ban:
+                  type: boolean
+                  description: true per bannare, false per riabilitare
+                  example: true
+      responses:
+        '200':
+          description: Stato ban aggiornato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
   # ════════════════════════════════════════════════
   # CHALLENGE
   # ════════════════════════════════════════════════
@@ -660,8 +1089,10 @@ paths:
   /api/challenges:
     get:
       tags: [Challenge]
-      summary: Lista tutte le challenge
-      description: Risultati filtrabili per categoria e difficoltà.
+      summary: Lista tutte le challenge attive
+      description: |
+        Risultati filtrabili per categoria, difficoltà e titolo (ricerca testuale).
+        Paginati con 12 risultati per pagina di default. La flag non è mai inclusa nella risposta.
       security:
         - BearerAuth: []
       parameters:
@@ -679,14 +1110,44 @@ paths:
             enum: [Easy, Medium, Hard, Insane]
           description: Filtra per difficoltà
           example: Medium
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Ricerca per titolo (case-insensitive)
+          example: hidden
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 12
+            minimum: 1
+            maximum: 50
+          example: 12
       responses:
         '200':
-          description: Lista challenge
+          description: Lista challenge paginata
           content:
             application/json:
               schema:
                 type: object
                 properties:
+                  total:
+                    type: integer
+                    example: 38
+                  page:
+                    type: integer
+                    example: 1
+                  pages:
+                    type: integer
+                    example: 4
                   challenges:
                     type: array
                     items:
@@ -702,7 +1163,7 @@ paths:
       description: |
         Riservato agli **Admin**.
         La flag viene hashata con **SHA-256** prima di essere salvata nel DB — il valore
-        in chiaro non è mai persistito.
+        in chiaro non è mai persistito. Restituisce 409 se il titolo è già in uso.
       security:
         - BearerAuth: []
       requestBody:
@@ -739,6 +1200,12 @@ paths:
                   type: array
                   items:
                     $ref: '#/components/schemas/Hint'
+                attachments:
+                  type: array
+                  items:
+                    type: string
+                  description: URL o percorsi dei file allegati
+                  example: [/uploads/challenge_001.zip]
                 tags:
                   type: array
                   items:
@@ -760,6 +1227,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/InternalError'
 
@@ -786,10 +1255,126 @@ paths:
                 properties:
                   challenge:
                     $ref: '#/components/schemas/Challenge'
+                  alreadySolved:
+                    type: boolean
+                    description: true se l'utente autenticato ha già risolto questa challenge
+                    example: false
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    patch:
+      tags: [Challenge]
+      summary: Modifica una challenge esistente
+      description: |
+        Riservato agli **Admin**. Tutti i campi sono opzionali — solo quelli presenti
+        nel body vengono aggiornati. Se viene fornita una nuova `flag`, viene
+        ri-hashata SHA-256 prima del salvataggio.
+        Impostare `isActive: false` per disattivare la challenge senza eliminarla.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId della challenge
+          example: 6634ab1f2e4b1c0012345679
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: Hidden in Plain Sight v2
+                description:
+                  type: string
+                  example: Versione aggiornata — trova la flag nel file allegato.
+                category:
+                  type: string
+                  enum: [Web, Crypto, Forensics, Reverse, OSINT, Network, Misc]
+                difficulty:
+                  type: string
+                  enum: [Easy, Medium, Hard, Insane]
+                points:
+                  type: integer
+                  minimum: 1
+                  example: 200
+                flag:
+                  type: string
+                  description: Nuova flag in chiaro — verrà ri-hashata SHA-256
+                  example: FLAG{n3w_fl4g}
+                hints:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Hint'
+                isActive:
+                  type: boolean
+                  description: false per disattivare la challenge senza eliminarla
+                  example: true
+      responses:
+        '200':
+          description: Challenge aggiornata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  challenge:
+                    $ref: '#/components/schemas/Challenge'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      tags: [Challenge]
+      summary: Elimina una challenge
+      description: |
+        Riservato agli **Admin**. L'eliminazione è permanente e non reversibile.
+        Le submission esistenti per questa challenge non vengono eliminate.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId della challenge
+          example: 6634ab1f2e4b1c0012345679
+      responses:
+        '200':
+          description: Challenge eliminata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Sfida eliminata.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -800,11 +1385,13 @@ paths:
       tags: [Challenge]
       summary: Invia una flag per la verifica
       description: |
-        La flag inviata viene hashata SHA-256 e confrontata con il `flagHash` nel DB.
+        La flag inviata viene hashata SHA-256 e confrontata con il valore nel DB.
 
-        **Se corretta:** incrementa i punti dell'utente e aggiunge la challenge a `solvedChallenges`.
+        **Se corretta:** incrementa i punti dell'utente, aggiunge la challenge a `solvedChallenges`,
+        aggiorna lo streak e promuove automaticamente a **Analyst** se l'utente supera 500 punti
+        con ruolo Guest o Player.
 
-        **Rate limiting attivo** su questo endpoint per prevenire il bruteforce.
+        **Rate limiting attivo** su questo endpoint per prevenire il bruteforce delle flag.
       security:
         - BearerAuth: []
       parameters:
@@ -843,11 +1430,24 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "Flag corretta! +150 punti."
+                    example: "Flag corretta! Punti assegnati."
                   points:
                     type: integer
-                    description: Punti assegnati (0 se errata o già risolta)
+                    description: Punti della challenge (presenti se corretta)
                     example: 150
+                  pointsAwarded:
+                    type: integer
+                    description: Punti effettivamente assegnati (0 se errata o già risolta)
+                    example: 150
+                  nuovoStreak:
+                    type: integer
+                    description: Nuovo valore dello streak giornaliero (solo se corretta)
+                    example: 8
+                  promosso:
+                    type: string
+                    nullable: true
+                    description: Nuovo ruolo se l'utente è stato promosso automaticamente, null altrimenti
+                    example: Analyst
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -867,6 +1467,7 @@ paths:
         Restituisce il testo dell'hint all'indice specificato.
         Al **primo accesso** scala il `cost` in punti dall'utente.
         Gli accessi successivi allo stesso hint non scalano punti.
+        Restituisce 400 se i punti dell'utente sono insufficienti per il costo dell'hint.
       security:
         - BearerAuth: []
       parameters:
@@ -893,10 +1494,12 @@ paths:
                 type: object
                 properties:
                   hint:
-                    $ref: '#/components/schemas/Hint'
-                  pointsDeducted:
+                    type: string
+                    description: Testo del suggerimento
+                    example: Controlla gli header HTTP della risposta.
+                  cost:
                     type: integer
-                    description: Punti scalati (0 se l'hint era già stato acquistato)
+                    description: Costo in punti dell'hint (0 se gratuito)
                     example: 25
         '400':
           $ref: '#/components/responses/BadRequest'
@@ -915,7 +1518,10 @@ paths:
     get:
       tags: [War Room]
       summary: Lista tutte le War Room
-      description: Restituisce tutte le sale disponibili con stato e team attuale.
+      description: |
+        Gli utenti autenticati vedono solo le sale con `status: active`.
+        Gli **Admin** vedono anche le bozze (`draft`) e le sale chiuse (`closed`).
+        I campi `messages` e `notes` sono esclusi per alleggerire la risposta.
       security:
         - BearerAuth: []
       responses:
@@ -926,7 +1532,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  warrooms:
+                  total:
+                    type: integer
+                    example: 8
+                  rooms:
                     type: array
                     items:
                       $ref: '#/components/schemas/WARRoom'
@@ -937,8 +1546,11 @@ paths:
 
     post:
       tags: [War Room]
-      summary: Crea una nuova War Room
-      description: Riservato agli **Admin**.
+      summary: Crea una nuova War Room (pubblicata)
+      description: |
+        Riservato agli **Admin**. La sala viene creata con `status: active`
+        e il creatore viene automaticamente aggiunto come **Lead** del team.
+        Se `isPrivate: true`, viene generato automaticamente un codice invito esadecimale a 8 caratteri.
       security:
         - BearerAuth: []
       requestBody:
@@ -947,29 +1559,58 @@ paths:
           application/json:
             schema:
               type: object
-              required: [name, description]
+              required: [name]
               properties:
                 name:
                   type: string
+                  maxLength: 80
                   example: Ransomware Attack #005
                 description:
                   type: string
+                  maxLength: 500
                   example: Simulazione di un attacco ransomware su infrastruttura enterprise.
+                tipo:
+                  type: string
+                  enum: [Ransomware, DDoS, Phishing, Data Breach, Supply Chain, Zero-Day]
+                  default: Ransomware
+                  example: Ransomware
+                severity:
+                  type: string
+                  enum: [Low, Medium, High, Critical]
+                  default: Medium
+                  example: Critical
                 isPrivate:
                   type: boolean
                   default: false
                   description: Se true genera automaticamente un inviteCode
+                accessoLibero:
+                  type: boolean
+                  default: true
+                  description: Se false richiede inviteCode anche senza isPrivate
                 maxMembers:
                   type: integer
-                  minimum: 1
+                  minimum: 2
+                  maximum: 50
                   default: 10
-                  example: 5
+                  example: 10
                 challenges:
                   type: array
                   items:
                     type: string
                   description: ID delle challenge associate alla War Room
                   example: [6634ab1f2e4b1c0012345679]
+                tasks:
+                  type: array
+                  description: Task iniziali del Kanban board
+                  items:
+                    type: object
+                    properties:
+                      titolo:
+                        type: string
+                        example: Isolare i sistemi infetti
+                      descrizione:
+                        type: string
+                        example: Disconnettere dalla rete i server compromessi
       responses:
         '201':
           description: War Room creata
@@ -978,7 +1619,91 @@ paths:
               schema:
                 type: object
                 properties:
-                  warroom:
+                  room:
+                    $ref: '#/components/schemas/WARRoom'
+                  inviteCode:
+                    type: string
+                    nullable: true
+                    description: Codice invito generato (presente solo se isPrivate=true)
+                    example: a1b2c3d4
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/warroom/draft:
+    post:
+      tags: [War Room]
+      summary: Salva una War Room come bozza
+      description: |
+        Riservato agli **Admin**. Crea una War Room con `status: draft` —
+        non visibile agli utenti normali finché lo status non viene cambiato in `active`
+        tramite `PATCH /api/warroom/:id/status`.
+        A differenza di `POST /api/warroom`, il creatore **non** viene aggiunto al team.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  maxLength: 80
+                  example: Ransomware Attack #006
+                description:
+                  type: string
+                  maxLength: 500
+                  example: Bozza — scenario in preparazione.
+                tipo:
+                  type: string
+                  enum: [Ransomware, DDoS, Phishing, Data Breach, Supply Chain, Zero-Day]
+                  default: Ransomware
+                severity:
+                  type: string
+                  enum: [Low, Medium, High, Critical]
+                  default: Medium
+                isPrivate:
+                  type: boolean
+                  default: false
+                accessoLibero:
+                  type: boolean
+                  default: true
+                maxMembers:
+                  type: integer
+                  minimum: 2
+                  maximum: 50
+                  default: 10
+                challenges:
+                  type: array
+                  items:
+                    type: string
+                  example: [6634ab1f2e4b1c0012345679]
+                tasks:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      titolo:
+                        type: string
+                      descrizione:
+                        type: string
+      responses:
+        '201':
+          description: Bozza War Room creata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  room:
                     $ref: '#/components/schemas/WARRoom'
         '400':
           $ref: '#/components/responses/BadRequest'
@@ -993,7 +1718,9 @@ paths:
     get:
       tags: [War Room]
       summary: Dettaglio di una War Room
-      description: Restituisce tutti i dati della sala, inclusi playbook e team attuale.
+      description: |
+        Restituisce tutti i dati della sala, inclusi playbook, team, task, messaggi e note.
+        Le sale **private** sono accessibili solo ai membri o agli Admin.
       security:
         - BearerAuth: []
       parameters:
@@ -1011,12 +1738,51 @@ paths:
               schema:
                 type: object
                 properties:
-                  warroom:
+                  room:
                     $ref: '#/components/schemas/WARRoom'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      tags: [War Room]
+      summary: Elimina una War Room
+      description: |
+        Riservato agli **Admin**. L'eliminazione è permanente e non reversibile.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId della War Room
+          example: 6634ab1f2e4b1c001234567a
+      responses:
+        '200':
+          description: War Room eliminata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: War Room eliminata.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1027,9 +1793,11 @@ paths:
       tags: [War Room]
       summary: Entra in una War Room
       description: |
-        Aggiunge l'utente autenticato al team della sala.
-        Se la sala è **privata** è richiesto l'`inviteCode`.
-        Restituisce 403 se la sala ha raggiunto il numero massimo di membri.
+        Aggiunge l'utente autenticato al team della sala come **Member**.
+        **Requisito ruolo**: almeno `Analyst` o `Admin` — Guest e Player non possono partecipare
+        (l'utente viene promosso ad Analyst automaticamente risolvendo challenge per 500 pt).
+        Se `accessoLibero: false` o `isPrivate: true`, è richiesto l'`inviteCode`.
+        Restituisce 400 se la sala è al completo o se l'utente è già membro.
       security:
         - BearerAuth: []
       parameters:
@@ -1046,8 +1814,8 @@ paths:
               properties:
                 inviteCode:
                   type: string
-                  description: Codice invito — richiesto solo per le sale private
-                  example: WR-A1B2C3
+                  description: Codice invito — richiesto per sale private o ad accesso limitato
+                  example: a1b2c3d4
       responses:
         '200':
           description: Utente aggiunto alla sala
@@ -1056,8 +1824,13 @@ paths:
               schema:
                 type: object
                 properties:
-                  warroom:
-                    $ref: '#/components/schemas/WARRoom'
+                  message:
+                    type: string
+                    example: Accesso alla sala confermato.
+                  memberCount:
+                    type: integer
+                    description: Numero totale di membri nella sala dopo l'ingresso
+                    example: 4
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1074,9 +1847,16 @@ paths:
       tags: [War Room]
       summary: Risolvi e chiudi la War Room
       description: |
-        Segna la sala come **risolta** (`status → closed`), registra `resolvedAt`,
-        assegna i punti a tutti i membri del team e invia la notifica webhook
-        configurata in `WEBHOOK_URL` nel `.env` (se presente).
+        Segna la sala come **chiusa** (`status → closed`).
+        Eseguibile solo dal **proprietario** della sala o da un **Admin**.
+
+        **Calcolo punti:**
+        - 150 pt per ogni passo del playbook completato
+        - Bonus tempo: +350 pt se < 30 min, +150 pt se < 60 min
+
+        Incrementa `warRoomsCompleted` per tutti i membri e aggiorna i loro punti.
+        Emette l'evento Socket.IO `room-resolved` a tutti i client nella stanza.
+        Invia il payload webhook se `WEBHOOK_URL` è configurato nel `.env`.
       security:
         - BearerAuth: []
       parameters:
@@ -1088,18 +1868,289 @@ paths:
           example: 6634ab1f2e4b1c001234567a
       responses:
         '200':
-          description: War Room risolta con successo
+          description: War Room chiusa con successo
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  warroom:
-                    $ref: '#/components/schemas/WARRoom'
-                  pointsAwarded:
+                  message:
+                    type: string
+                    example: War Room chiusa con successo.
+                  room:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                        example: Ransomware Attack #005
+                      owner:
+                        type: string
+                        example: marco_r
+                      memberCount:
+                        type: integer
+                        example: 4
+                      members:
+                        type: array
+                        items:
+                          type: string
+                        description: Username dei membri del team
+                        example: [marco_r, alice, bob]
+                      durataMin:
+                        type: integer
+                        description: Durata totale della sessione in minuti
+                        example: 47
+                      puntiTotali:
+                        type: integer
+                        description: Punti assegnati a ciascun membro del team
+                        example: 600
+                      passiCompletati:
+                        type: integer
+                        description: Numero di passi del playbook completati
+                        example: 3
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/warroom/{id}/report:
+    get:
+      tags: [War Room]
+      summary: Report di riepilogo della War Room
+      description: |
+        Restituisce un riepilogo dell'esecuzione: durata, task completati,
+        membri coinvolti ed eventi di sistema registrati nella chat.
+        Accessibile solo ai **membri** della sala o agli **Admin**.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId della War Room
+          example: 6634ab1f2e4b1c001234567a
+      responses:
+        '200':
+          description: Report restituito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nome:
+                    type: string
+                    example: Ransomware Attack #005
+                  tipo:
+                    type: string
+                    example: Ransomware
+                  durata:
+                    type: string
+                    description: Durata formattata — "Xh Ymin" oppure "Zmin" se < 1 ora
+                    example: 47min
+                  taskCompletati:
                     type: integer
-                    description: Punti totali assegnati al team
-                    example: 1850
+                    example: 5
+                  taskTotali:
+                    type: integer
+                    example: 8
+                  membriCoinvolti:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        username:
+                          type: string
+                          example: marco_r
+                        ruolo:
+                          type: string
+                          enum: [Lead, Member]
+                          example: Lead
+                  eventiLog:
+                    type: integer
+                    description: Numero di messaggi di sistema registrati nella chat
+                    example: 12
+                  esito:
+                    type: string
+                    enum: [contenuto, non risolto]
+                    example: contenuto
+                  generatoIl:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/warroom/{id}/status:
+    patch:
+      tags: [War Room]
+      summary: Aggiorna lo status di una War Room
+      description: |
+        Riservato agli **Admin**. Permette di transitare tra gli stati:
+        `draft → active` (pubblicazione), `active → closed` (chiusura forzata),
+        o qualsiasi altra combinazione.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId della War Room
+          example: 6634ab1f2e4b1c001234567a
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [draft, active, closed]
+                  example: active
+      responses:
+        '200':
+          description: Status aggiornato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  room:
+                    $ref: '#/components/schemas/WARRoom'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/warroom/{id}/step:
+    patch:
+      tags: [War Room]
+      summary: Segna un passo del playbook come completato
+      description: |
+        Aggiunge l'indice del passo all'array `passiCompletati` della sala.
+        Accessibile solo ai **membri** della sala o agli **Admin**.
+        Se il passo è già completato, l'operazione è idempotente (nessun duplicato aggiunto).
+        I passi completati influenzano il calcolo dei punti in `POST /api/warroom/:id/resolve`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId della War Room
+          example: 6634ab1f2e4b1c001234567a
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stepIndex]
+              properties:
+                stepIndex:
+                  type: integer
+                  minimum: 0
+                  description: Indice 0-based del passo nel playbook da segnare come completato
+                  example: 2
+      responses:
+        '200':
+          description: Passo segnato come completato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  passiCompletati:
+                    type: array
+                    items:
+                      type: integer
+                    description: Array aggiornato di tutti gli indici dei passi completati
+                    example: [0, 1, 2]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/warroom/{id}/task/{taskId}:
+    patch:
+      tags: [War Room]
+      summary: Aggiorna lo stato di un task Kanban
+      description: |
+        Aggiorna il campo `stato` di un task nel board Kanban della sala.
+        Accessibile solo ai **membri** della sala o agli **Admin**.
+        Emette l'evento Socket.IO `task:update` a tutti i client connessi nella stanza.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId della War Room
+          example: 6634ab1f2e4b1c001234567a
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId del task
+          example: 6634ab1f2e4b1c001234abcd
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stato]
+              properties:
+                stato:
+                  type: string
+                  enum: [todo, in_corso, in_review, fatto]
+                  example: in_corso
+      responses:
+        '200':
+          description: Stato task aggiornato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: '#/components/schemas/Task'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1163,5 +2214,142 @@ paths:
                       $ref: '#/components/schemas/LeaderboardEntry'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ════════════════════════════════════════════════
+  # ADMIN
+  # ════════════════════════════════════════════════
+
+  /api/admin/stats:
+    get:
+      tags: [Admin]
+      summary: Statistiche aggregate della piattaforma
+      description: |
+        Riservato agli **Admin**. Restituisce contatori globali e la serie temporale
+        delle nuove registrazioni degli ultimi 7 giorni (un valore per giorno,
+        dall'indice 0 = 6 giorni fa all'indice 6 = oggi).
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Statistiche restituite
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalUtenti:
+                    type: integer
+                    description: Numero totale di utenti registrati
+                    example: 142
+                  totalFlag:
+                    type: integer
+                    description: Numero totale di flag catturate (submission corrette)
+                    example: 891
+                  totalSfide:
+                    type: integer
+                    description: Numero totale di challenge presenti nel sistema
+                    example: 38
+                  warRoomAttive:
+                    type: integer
+                    description: Numero di War Room con status "active"
+                    example: 3
+                  regUltimi7:
+                    type: array
+                    items:
+                      type: integer
+                    minItems: 7
+                    maxItems: 7
+                    description: Nuovi utenti registrati per giorno negli ultimi 7 giorni
+                    example: [2, 0, 5, 3, 1, 7, 4]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/admin/activity:
+    get:
+      tags: [Admin]
+      summary: Feed degli eventi recenti della piattaforma
+      description: |
+        Riservato agli **Admin**. Restituisce un feed cronologico misto (max 15 eventi) con:
+        - le ultime 10 flag catturate
+        - le ultime 5 War Room create
+        - gli ultimi 5 utenti registrati
+
+        Gli eventi sono ordinati per data decrescente e troncati a 15.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Feed eventi restituito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventi:
+                    type: array
+                    maxItems: 15
+                    items:
+                      $ref: '#/components/schemas/AdminEvent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ════════════════════════════════════════════════
+  # PLATFORM
+  # ════════════════════════════════════════════════
+
+  /api/platform/stats:
+    get:
+      tags: [Platform]
+      summary: Statistiche pubbliche della piattaforma
+      description: |
+        Endpoint **pubblico** — nessuna autenticazione richiesta.
+        Usato dalla Landing Page e dalla pagina di Login per mostrare i contatori
+        della piattaforma prima del login. Include il top 3 degli utenti per punti.
+      responses:
+        '200':
+          description: Statistiche pubbliche restituite
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  utenti:
+                    type: integer
+                    description: Numero totale di utenti registrati
+                    example: 142
+                  sfide:
+                    type: integer
+                    description: Numero di challenge attive
+                    example: 38
+                  warroom:
+                    type: integer
+                    description: Numero di War Room con status "active"
+                    example: 3
+                  top3:
+                    type: array
+                    description: I 3 utenti con più punti
+                    maxItems: 3
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: 6634ab1f2e4b1c0012345678
+                        username:
+                          type: string
+                          example: marco_r
+                        points:
+                          type: integer
+                          example: 3200
         '500':
           $ref: '#/components/responses/InternalError'
