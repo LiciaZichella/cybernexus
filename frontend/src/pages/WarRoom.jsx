@@ -139,7 +139,7 @@ export default function WarRoom() {
   const [comandoInput, setComandoInput] = useState('');
   const termBodyRef = useRef(null);
 
-  // Chat — inizia vuota, viene popolata dalla storia DB e dagli eventi socket (Bug 4)
+  // Chat — inizia vuota, viene popolata dalla storia DB e dagli eventi socket 
   const [messaggiChat, setMessaggiChat] = useState([]);
   const [inputChat, setInputChat] = useState('');
   const chatMsgsRef = useRef(null);
@@ -764,7 +764,7 @@ export default function WarRoom() {
     const prompt = `[${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}] `;
     setRigheTerminale(prev => [...prev, { tipo: 'cmd', prompt, testo: cmd }]);
 
-    // Dispatcher tematico: risposte basate sul comando (Bug 6)
+    // Dispatcher tematico: risposte basate sul comando 
     const lower = cmd.toLowerCase().trim();
     let output;
 

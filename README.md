@@ -6,24 +6,22 @@ Piattaforma educativa di cybersecurity sviluppata per l'esame di **Fondamenti de
 L'applicazione è una Single Page Application con client-side rendering e combina due moduli:
 
 - **CTF Arena** — sfide capture-the-flag individuali con verifica della flag tramite hashing SHA-256, suggerimenti a costo di punti, categorie e livelli di difficoltà.
-- **War Room** — simulatore collaborativo di incident response in tempo reale: un team entra in una sala che rappresenta un incidente informatico (ransomware, data breach, DDoS), segue un playbook, usa un terminale simulato, comunica via chat e genera un report finale.
+- **War Room** — simulatore collaborativo di incident response in tempo reale: un team entra in una sala che rappresenta un incidente informatico (ransomware, data breach, DDoS), segue un playbook, usa un terminale simulato, comunica via chat, genera un report finale e invia un webhook.
 
 I due moduli formano un percorso di crescita: prima si risolvono sfide CTF da soli per guadagnare punti ed esperienza, poi si mettono alla prova quelle competenze in scenari di emergenza simulati con altri.
 
----
 
 ## Funzionalità principali
 
 - Autenticazione con email/password (JWT) e login social con **Google** e **GitHub** (OAuth).
-- Sistema di ruoli progressivi: **Guest → Player → Analyst → Admin**. A 500 punti un Player viene promosso automaticamente ad Analyst e sblocca l'accesso alle War Room.
+- Sistema di ruoli progressivi: **Player → Analyst → Admin**. A 500 punti un Player viene promosso automaticamente ad Analyst e sblocca l'accesso alle War Room.
 - CTF Arena con filtri per categoria e difficoltà, ricerca, hint sbloccabili a costo di punti, verifica flag con SHA-256.
-- War Room collaborativa in tempo reale (Socket.IO): chat, terminale condiviso, playbook a step sincronizzati, board Kanban, report PDF.
+- War Room collaborativa in tempo reale (Socket.IO): chat, terminale condiviso, playbook a step sincronizzati, board Kanban, report PDF, webhook finale.
 - Leaderboard globale con classifica, podio e profili utente.
 - Dashboard personale con statistiche, heatmap di attività, progressione punti e achievement.
 - Pannello Admin per la gestione di utenti, sfide e War Room.
 - Documentazione delle API con **Swagger**.
 
----
 
 ## Stack tecnologico
 
@@ -44,7 +42,6 @@ I due moduli formano un percorso di crescita: prima si risolvono sfide CTF da so
 - Helmet, express-rate-limit (sicurezza)
 - swagger-ui-express + yamljs (documentazione)
 
----
 
 ## Struttura del progetto
 
@@ -69,7 +66,6 @@ cybernexus/
         └── services/   istanza Axios e chiamate API
 ```
 
----
 
 ## Requisiti
 
@@ -124,7 +120,6 @@ node seed.js
 
 Lo script crea un utente Admin, alcuni utenti Player di esempio e alcune sfide CTF di test.
 
----
 
 ## Variabili d'ambiente
 
@@ -170,7 +165,6 @@ Da questa pagina è possibile consultare tutti gli endpoint, vedere i parametri 
 e provare le chiamate direttamente dal browser. Per gli endpoint protetti, effettuare prima
 il login, copiare l'`accessToken` ricevuto e inserirlo con il pulsante **Authorize**.
 
----
 
 ## Credenziali di test
 
@@ -181,7 +175,6 @@ Dopo aver eseguito il seed, è possibile accedere con:
 | Admin  | admin@cybernexus.com    | Admin123!  |
 | Player | hacker01@example.com    | Player123! |
 
----
 
 ## Deploy
 
@@ -195,26 +188,23 @@ L'applicazione è deployata online:
 > periodo di inattività. La prima richiesta dopo una pausa può richiedere alcuni secondi
 > per "risvegliare" il server.
 
----
 
 ## Modello dei dati
 
 **User** — username, email, passwordHash, role (Guest/Player/Analyst/Admin), points,
 solvedChallenges, streak, warRoomsCompleted, isBanned, oauthProvider, createdAt.
 
-**Challenge** — title, description, category, difficulty, points, flagHash (SHA-256 della
-flag), hints `[{ text, cost }]`, attachments, solvedBy, isActive.
+**Challenge** — title, description, category, difficulty, points, flag (contiene l'hash SHA-256 della flag, mai la flag in chiaro; select:false), hints `[{ text, cost }]`, attachments, solvedBy, isActive.
 
-**WARRoom** — name, description, tipo (ransomware/data_breach/ddos), severity, durataMinuti,
+**WARRoom** — name, description, tipo (Ransomware, DDoS, Phishing, Data Breach, Supply Chain, Zero-Day; di cui solo Ransomware/Data Breach/DDoS hanno una sequenza di eventi-scenario automatici), severity, durataMinuti,
 status (draft/active/closed), members `[{ user, role }]`, playbook, tasks, iocs,
 comandiTerminale, inviteCode, isPrivate.
 
 **Submission** — user, challenge, warRoom, submittedFlag, isCorrect, pointsAwarded,
 ipAddress, createdAt.
 
----
 
-## Tecniche avanzate e sicurezza
+## Alcune tecniche avanzate e sicurezza
 
 - **Hashing flag con SHA-256**: le flag non sono mai salvate in chiaro nel database.
 - **Aggregation pipeline MongoDB**: classifica e statistiche calcolate lato database.
@@ -225,7 +215,6 @@ ipAddress, createdAt.
 - **Webhook fire-and-forget**: alla risoluzione di una War Room il backend invia una notifica POST a un URL esterno configurabile.
 - **Helmet**: header HTTP di sicurezza.
 
----
 
 ## Autori
 
