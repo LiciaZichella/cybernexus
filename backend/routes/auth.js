@@ -8,7 +8,7 @@ const { protect } = require('../middleware/verificaUtenti');
 const router = express.Router();
 
 
-const authLimiter = rateLimit({
+const authLimiter = rateLimit({ //rate Limit a piu livelli
   windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,
@@ -29,7 +29,7 @@ router.post('/login',    authLimiter, login);
 router.post('/refresh',  refresh);
 router.post('/logout',   protect, logout);
 
-
+//flusso OAuth
 router.get('/google',
   passport.authenticate('google', { scope: ['profile', 'email'], session: false })
 );

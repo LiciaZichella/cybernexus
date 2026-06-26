@@ -17,22 +17,22 @@ export const setRefreshCallback = (fn) => { onRefreshCallback = fn; };
 
 
 
-export const api = axios.create({ baseURL: (import.meta.env.VITE_API_URL || '') + '/api' });
+export const api = axios.create({ baseURL: (import.meta.env.VITE_API_URL || '') + '/api' }); //istanza Axios
 
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use((config) => { //interceptor sulla richiesta: prima di inviare quaolsiasi chiamata aggiungo il token all'header
   if (tokenInMemoria) {
-    config.headers.Authorization = `Bearer ${tokenInMemoria}`;
+    config.headers.Authorization = `Bearer ${tokenInMemoria}`; //gestione del token centralizzata in un punto solo
   }
   return config;
 });
 
 
-api.interceptors.response.use(
+api.interceptors.response.use( //interceptor risposte: auto-refresh
   (response) => response,
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry && onRefreshCallback) {
+    if (error.response?.status === 401 && !original._retry && onRefreshCallback) { //si evitano loop infiniti
       original._retry = true;
       const ok = await onRefreshCallback();
       if (ok) {
@@ -52,10 +52,10 @@ export const authAPI = {
   logout:   ()                => api.post('/auth/logout'),
   
   refresh:  (refreshToken)    => axios.post((import.meta.env.VITE_API_URL || '') + '/api/auth/refresh', { refreshToken }),
-};
+}; //axios, se usasse api, e il refresh fallisse con 401, l'interceptor provverebbe a fare il refresh del refresh(loop)
 
 
-
+//ogni metodo qui corrisponde esattamente a un endpoint nelle rotte
 export const usersAPI = {
   getMe:           ()           => api.get('/users/me'),
   updateMe:        (data)       => api.put('/users/me', data),

@@ -21,13 +21,13 @@ export default function OAuthCallback() {
     
     loginWithOAuth(at, rt).then(ok => navigate(ok ? '/dashboard' : '/login?error=oauth'));
   }, []); 
-
+//Mentre aspetta renderizza uno spinner CSS
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       height: '100vh', gap: 14, fontFamily: "'DM Sans',sans-serif",
       background: '#111827', color: '#8a96b0', fontSize: 14,
-    }}>
+    }}> 
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       <div style={{
         width: 20, height: 20, borderRadius: '50%',

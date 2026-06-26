@@ -32,10 +32,10 @@ export function AuthProvider({ children }) {
   const [loading, setLoading]         = useState(true);
 
   
-  const impostaToken = (token) => {
+  const impostaToken = (token) => { //aggiorna il token in api.js e lo stato React
     setMemoryToken(token);
     setAccessToken(token);
-  };
+  }; //sempre sincronizzati 
 
   
   const refreshToken = useCallback(async () => {

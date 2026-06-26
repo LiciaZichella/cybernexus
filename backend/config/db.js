@@ -1,7 +1,7 @@
-const mongoose = require('mongoose');
+const mongoose = require('mongoose'); //l'object document mapper di mongoDB
 
 
-const connectDB = async () => {
+const connectDB = async () => { //arrow function asincrona
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI);
     console.log(`MongoDB connesso: ${conn.connection.host}`);

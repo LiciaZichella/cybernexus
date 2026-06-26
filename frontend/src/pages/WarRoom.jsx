@@ -159,10 +159,6 @@ export default function WarRoom() {
   const [risoluzioneInCorso, setRisoluzioneInCorso] = useState(false);
   const ptsCounterRef = useRef(null);
 
-  // Vista centrale: terminale o kanban
-  const [vistaCentro, setVistaCentro] = useState('terminale');
-
-  
   const [tasks, setTasks] = useState([]);
 
   
@@ -282,7 +278,7 @@ export default function WarRoom() {
       .finally(() => setLoading(false));
   }, [id, authLoading]);
 
-  // ── Connessione Socket.IO ─────────────────────────────────────────────────────
+  // Connessione Socket.IO 
   useEffect(() => {
     // Non connettere se sala chiusa o se siamo nella lista
     if (!id || vistaChiusa) return;
@@ -527,7 +523,7 @@ export default function WarRoom() {
     return () => { document.body.style.overflow = ''; };
   }, [id]);
 
-  // ── ESC chiude pannello dettagli e modal ─────────────────────────────────────
+  //  ESC chiude pannello dettagli e modal 
   useEffect(() => {
     const handler = (e) => {
       if (e.key === 'Escape') { setDettagliAperto(false); setRisolviAperto(false); }
@@ -855,7 +851,7 @@ export default function WarRoom() {
 
   const toggleSb = (chiave) => setSbCompresse(prev => ({ ...prev, [chiave]: !prev[chiave] }));
 
-  // ── Valori derivati ───────────────────────────────────────────────────────────
+  // Valori derivati 
   const passoCorr = PASSI[passoAttivo] ?? PASSI[0] ?? {
     icon: '📋', categoria: '—', titolo: 'Nessun passo configurato',
     guida: '', obiettivi: [], tag: '—', avColore: 'var(--text3)', avIni: '—',
@@ -876,7 +872,7 @@ export default function WarRoom() {
 
 
 
-  // ── Render riga terminale ────────────────────────────────────────────────────
+  // Render riga terminale 
   const renderRiga = (r, i) => {
     if (r.tipo === 'cmd') return (
       <span key={i} className="t-line"><span className="t-p">{r.prompt}</span><span className="t-cmd">{r.testo}</span></span>
@@ -893,7 +889,7 @@ export default function WarRoom() {
     return <span key={i} className={`t-line t-${r.tipo}`}>{r.testo}</span>;
   };
 
-  // ── Loading / errore ─────────────────────────────────────────────────────────
+  // Loading / errore 
   if (loading) return (
     <div className="warroom-app">
       <div className="wr-loading"><div className="wr-spinner" /><span>Caricamento War Room...</span></div>
@@ -906,7 +902,7 @@ export default function WarRoom() {
     </div>
   );
 
-  // ── Vista sala già chiusa (status closed al caricamento o room-resolved ricevuto) ──
+  // Vista sala già chiusa (status closed al caricamento o room-resolved ricevuto) 
   if (vistaChiusa && sala) return (
     <div className="warroom-app">
       <Navbar />
@@ -930,7 +926,7 @@ export default function WarRoom() {
     </div>
   );
 
-  // ── Vista lista / stato vuoto (nessun id nella route) ────────────────────────
+  //  Vista lista / stato vuoto (nessun id nella route) 
   if (!id) {
     const canCreate = user?.role === 'Admin';
     return (
@@ -1154,7 +1150,7 @@ export default function WarRoom() {
     );
   }
 
-  // ── JSX principale ────────────────────────────────────────────────────────────
+  //JSX 
   return (
     <div className="warroom-app">
       <div className="scan-line" />
@@ -1517,7 +1513,7 @@ export default function WarRoom() {
                   <div className="term-dot" style={{ background: '#ff5f57' }} />
                   <div className="term-dot" style={{ background: '#ffbd2e' }} />
                   <div className="term-dot" style={{ background: '#28ca41' }} />
-                  <div className="term-title">analyst@cybernexus — incident-console #{id?.slice(-3) || '005'}</div>
+                  <div className="term-title">{user?.username || 'analyst'}@cybernexus — incident-console #{id?.slice(-3) || '005'}</div>
                   <div className="term-live"><div className="tld" />LIVE</div>
                 </div>
                 <div className="term-body" ref={termBodyRef}>

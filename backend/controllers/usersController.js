@@ -29,7 +29,7 @@ const updateMe = async (req, res) => {
 
     
     if (updates.username) {
-      const taken = await User.findOne({ username: updates.username, _id: { $ne: req.user._id } });
+      const taken = await User.findOne({ username: updates.username, _id: { $ne: req.user._id } }); //utente con quell'username ma id diverso
       if (taken) return res.status(409).json({ error: 'Username già in uso.' });
     }
 
@@ -59,13 +59,13 @@ const getUserById = async (req, res) => {
 };
 
 
-const getAllUsers = async (req, res) => {
+const getAllUsers = async (req, res) => { //solo Admin
   try {
     const page  = Math.max(1, parseInt(req.query.page)  || 1);
     const limit = Math.min(100, parseInt(req.query.limit) || 20);
     const skip  = (page - 1) * limit;
 
-    const [users, total] = await Promise.all([
+    const [users, total] = await Promise.all([ //find + count in parallelo
       User.find().sort({ points: -1 }).skip(skip).limit(limit),
       User.countDocuments(),
     ]);
@@ -82,7 +82,7 @@ const getAllUsers = async (req, res) => {
 };
 
 
-const changeUserRole = async (req, res) => {
+const changeUserRole = async (req, res) => { //solo Admin
   try {
     const RUOLI_VALIDI = ['Guest', 'Player', 'Analyst', 'Admin'];
     const { role } = req.body;
@@ -95,7 +95,7 @@ const changeUserRole = async (req, res) => {
     }
 
     
-    if (req.params.id === req.user._id.toString()) {
+    if (req.params.id === req.user._id.toString()) { //admin non può auto-declassarsi e perdere i permessi
       return res.status(403).json({ error: 'Non puoi modificare il tuo stesso ruolo.' });
     }
 
@@ -116,14 +116,14 @@ const changeUserRole = async (req, res) => {
 };
 
 
-const getMeActivity = async (req, res) => {
+const getMeActivity = async (req, res) => { //heatmap 60 giorni
   try {
     const sessantaGiorniFa = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
 
     const submissions = await Submission.find({
       user:      req.user._id,
       isCorrect: true,
-      createdAt: { $gte: sessantaGiorniFa },
+      createdAt: { $gte: sessantaGiorniFa }, //data maggiore o uguale a 60 giorni fa
     }).select('createdAt').lean();
 
     
@@ -135,7 +135,7 @@ const getMeActivity = async (req, res) => {
 
     
     const oggi = new Date();
-    const attivita = Array.from({ length: 60 }, (_, i) => {
+    const attivita = Array.from({ length: 60 }, (_, i) => { //sequenza di giorni
       const data   = new Date(oggi.getTime() - (59 - i) * 24 * 60 * 60 * 1000);
       const chiave = data.toISOString().slice(0, 10);
       return { date: chiave, count: contaPerGiorno[chiave] || 0 };
@@ -148,7 +148,7 @@ const getMeActivity = async (req, res) => {
 };
 
 
-const getMeSubmissions = async (req, res) => {
+const getMeSubmissions = async (req, res) => { //storico flag risolte
   try {
     const submissions = await Submission.find({
       user:      req.user._id,
@@ -166,7 +166,7 @@ const getMeSubmissions = async (req, res) => {
 };
 
 
-const getMeAttempts = async (req, res) => {
+const getMeAttempts = async (req, res) => { //quali sfide tentate
   try {
     const submissions = await Submission.find({ user: req.user._id })
       .select('challenge isCorrect')
@@ -179,7 +179,7 @@ const getMeAttempts = async (req, res) => {
 };
 
 
-const banUser = async (req, res) => {
+const banUser = async (req, res) => { //solo admin
   try {
     if (req.params.id === req.user._id.toString()) {
       return res.status(403).json({ error: 'Non puoi bannare il tuo account.' });
@@ -200,13 +200,13 @@ const banUser = async (req, res) => {
 };
 
 
-const exportUsersCSV = async (req, res) => {
+const exportUsersCSV = async (req, res) => { //csv utenti , solo admin
   try {
     const users = await User.find().sort({ points: -1 }).lean();
 
     
-    const SEP = ';';
-    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const SEP = ';'; //ecxel in italiano usa il punto e virgola
+    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`; //con le virgolette il CSV si romperebbe, raddoppio quelle interne
 
     
     const formattaData = (d) => {
@@ -245,7 +245,7 @@ const exportUsersCSV = async (req, res) => {
 };
 
 
-const getUserActivity = async (req, res) => {
+const getUserActivity = async (req, res) => { //come getMyActivity ma per un id qualsiasi e distribuzione per categoria
   try {
     const userId = req.params.id;
     const sessantaGiorniFa = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
@@ -299,6 +299,6 @@ const getUserActivity = async (req, res) => {
     if (err.name === 'CastError') return res.status(400).json({ error: 'ID non valido.' });
     res.status(500).json({ error: err.message });
   }
-};
+}; //deve restituire heatmap e categorie, dati reali per i grafici a barre e ciambella
 
 module.exports = { getMe, updateMe, getUserById, getAllUsers, changeUserRole, getMeActivity, getMeSubmissions, getMeAttempts, exportUsersCSV, getUserActivity, banUser };

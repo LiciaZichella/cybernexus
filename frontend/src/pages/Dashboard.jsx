@@ -572,7 +572,7 @@ export default function Dashboard() {
     }
   };
 
-  // ── Heatmap 60 giorni ─────────────────────────────────────────────────────────
+  // Heatmap 60 giorni 
   const heatmap = useMemo(() =>
     attivita.length
       ? attivita.map((a, i) => ({ id: i, bg: HEATMAP_COLORS[Math.min(a.count, 4)], delay: `${(i * 0.008).toFixed(3)}s` }))
@@ -581,7 +581,7 @@ export default function Dashboard() {
   const oggiCount = attivita.length ? attivita[attivita.length - 1].count : 0;
   const bestCount = attivita.length ? Math.max(...attivita.map(a => a.count)) : 0;
 
-  // ── Categorie risolte ─────────────────────────────────────────────────────────
+  // Categorie risolte 
   const catBars = useMemo(() => {
     if (!challenges.length) return [];
     const solvedSet = new Set((profile?.solvedChallenges || []).map(String));
@@ -596,7 +596,7 @@ export default function Dashboard() {
       .filter(c => c.total > 0);
   }, [challenges, profile]);
 
-  // ── Achievement dinamici ──────────────────────────────────────────────────────
+  // Achievement dinamici 
   const badges = useMemo(() => {
     const solvedSet     = new Set((profile?.solvedChallenges || []).map(String));
     const solved        = profile?.solvedChallenges?.length || 0;

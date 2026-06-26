@@ -16,3 +16,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </React.StrictMode>
 );
+//Context API di React: i componenti in profondità leggono lo stato dei provider senza che venga passato manualmente 

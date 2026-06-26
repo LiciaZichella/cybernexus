@@ -5,7 +5,7 @@ const { protect, authorize } = require('../middleware/verificaUtenti');
 const router = express.Router();
 
 
-router.use(protect);
+router.use(protect); //le rotte specifiche vanno sempre prima di quelle parametriche
 
 router.get('/me',              getMe);            
 router.put('/me',              updateMe);         

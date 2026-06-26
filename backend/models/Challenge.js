@@ -1,6 +1,6 @@
-const mongoose = require('mongoose');
+const mongoose = require('mongoose'); 
 
-const HintSchema = new mongoose.Schema({
+const HintSchema = new mongoose.Schema({ //suggerimento concetto correlato a challenge, array di suggerimenti
   text: { type: String, required: true },
   cost: { type: Number, default: 0, min: 0 }, 
 });
@@ -83,13 +83,13 @@ const ChallengeSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
+    toJSON: { virtuals: true }, //quando converti in json includi virtual
   }
 );
 
 
-ChallengeSchema.virtual('solveCount').get(function () {
+ChallengeSchema.virtual('solveCount').get(function () { //campo calcolato al volo, non salvato nel database
   return (this.solvedBy ?? []).length;
-});
+}); //per dati derivabili da altri (in questo caso slvedBy.lenght) è meglio virtual
 
 module.exports = mongoose.model('Challenge', ChallengeSchema);

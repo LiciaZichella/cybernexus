@@ -11,7 +11,7 @@ export default function LegalModal({ tipo, onClose }) {
       }}
     >
       <div
-        onClick={e => e.stopPropagation()}
+        onClick={e => e.stopPropagation()} //chiude il contenuto con onClik e con e.stopPropagation se si tocca fuori
         style={{
           background: 'var(--bg2,#0d1117)', border: '0.5px solid rgba(255,255,255,.12)',
           borderRadius: 16, maxWidth: 580, width: '100%', maxHeight: '80vh',

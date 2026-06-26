@@ -83,7 +83,7 @@ const WARRoomSchema = new mongoose.Schema(
     inviteCode: {
       type: String,
       unique: true,
-      sparse: true, 
+      sparse: true, //vincolo unicità solo ai documenti che hanno il campo
     },
 
     isPrivate: {
@@ -175,17 +175,17 @@ const WARRoomSchema = new mongoose.Schema(
 
 
 WARRoomSchema.virtual('memberCount').get(function () {
-  return this.members.length;
+  return this.members.length; //quanti membri
 });
 
 
-WARRoomSchema.virtual('isFull').get(function () {
+WARRoomSchema.virtual('isFull').get(function () { //la sala è piena?
   return this.members.length >= this.maxMembers;
 });
 
 
-WARRoomSchema.methods.hasMember = function (userId) {
-  return this.members.some((m) => m.user.equals(userId));
+WARRoomSchema.methods.hasMember = function (userId) { //questo utente è membro della sala?
+  return this.members.some((m) => m.user.equals(userId)); //se almeno un elemento soddisfa la codizione true
 };
 
 module.exports = mongoose.model('WARRoom', WARRoomSchema);

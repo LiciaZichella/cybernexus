@@ -9,7 +9,7 @@ const sha256 = (str) => crypto.createHash('sha256').update(str.trim()).digest('h
 
 const getChallenges = async (req, res) => {
   try {
-    const filter = { isActive: true };
+    const filter = { isActive: true }; //filtri
 
     
     if (req.query.category)   filter.category   = req.query.category;
@@ -24,7 +24,7 @@ const getChallenges = async (req, res) => {
     const limit = Math.min(50, parseInt(req.query.limit) || 12);
     const skip  = (page - 1) * limit;
 
-    const [docs, total] = await Promise.all([
+    const [docs, total] = await Promise.all([ //aspetta che finisce due query contemporanee
       Challenge.find(filter)
         .select('-flag')               
         .sort({ points: 1 })
@@ -35,8 +35,8 @@ const getChallenges = async (req, res) => {
     ]);
 
     
-    const challenges = docs.map(ch => {
-      const obj = ch.toJSON();
+    const challenges = docs.map(ch => { //nuovo array trasformato
+      const obj = ch.toJSON(); //ogni sfida in oggetto JSON
       delete obj.solvedBy;
       return obj;
     });
@@ -71,7 +71,7 @@ const getChallengeById = async (req, res) => {
   }
 };
 
-
+//solo Admin
 const createChallenge = async (req, res) => {
   try {
     const { title, description, category, difficulty, points, flag, hints, attachments, tags } = req.body;
@@ -146,16 +146,16 @@ const submitFlag = async (req, res) => {
         ? new Date(utente.lastActivityDate).toISOString().slice(0, 10)
         : null;
 
-      let nuovoStreak = utente.streak;
+      let nuovoStreak = utente.streak; //aggiorno steack giornaliero se è la prima volta che risolvo qualocsa oggi
       if (ultimaStr === null || ultimaStr < oggiStr) {
         
-        const ieri = new Date(oggi.getTime() - 86400000).toISOString().slice(0, 10);
-        nuovoStreak = ultimaStr === ieri ? utente.streak + 1 : 1;
+        const ieri = new Date(oggi.getTime() - 86400000).toISOString().slice(0, 10); //oggi-millesecondi di un giorno= ieri
+        nuovoStreak = ultimaStr === ieri ? utente.streak + 1 : 1; //incrementa se era ieri l'ultimo giorno altrimenti ricomincia da 1
       }
 
       
       const nuoviPunti = utente.points + challenge.points;
-      const promuovi   = nuoviPunti >= 500 && ['Player', 'Guest'].includes(utente.role);
+      const promuovi   = nuoviPunti >= 500 && ['Player', 'Guest'].includes(utente.role); //solo player e guest possono essere promossi
 
       
       utente.points += challenge.points;
@@ -166,7 +166,7 @@ const submitFlag = async (req, res) => {
       await utente.save();
 
       
-      req.app.get('io')?.emit('flag:catturata', {
+      req.app.get('io')?.emit('flag:catturata', { //collegamento a server.js maqnda evento real-time del feed live delle catture
         username:  utente.username,
         challenge: challenge.title,
         category:  challenge.category,
@@ -191,7 +191,7 @@ const submitFlag = async (req, res) => {
 };
 
 
-const updateChallenge = async (req, res) => {
+const updateChallenge = async (req, res) => { //sempre solo Admin
   try {
     const { title, description, category, difficulty, points, flag, hints, isActive } = req.body;
     const updates = {};
@@ -218,7 +218,7 @@ const updateChallenge = async (req, res) => {
 };
 
 
-const deleteChallenge = async (req, res) => {
+const deleteChallenge = async (req, res) => { //sempre solo Admin nel pannello
   try {
     const challenge = await Challenge.findByIdAndDelete(req.params.id);
     if (!challenge) return res.status(404).json({ error: 'Sfida non trovata.' });
@@ -230,7 +230,7 @@ const deleteChallenge = async (req, res) => {
 };
 
 
-const getHint = async (req, res) => {
+const getHint = async (req, res) => { //i suggerimenti, se il giocatore non ha abbastanza punti 400
   try {
     const index = parseInt(req.query.index);
     if (isNaN(index) || index < 0) {
@@ -253,7 +253,7 @@ const getHint = async (req, res) => {
 
     
     if (hint.cost > 0) {
-      await User.findByIdAndUpdate(req.user._id, { $inc: { points: -hint.cost } });
+      await User.findByIdAndUpdate(req.user._id, { $inc: { points: -hint.cost } }); //$inc decrementa atomicamente i punti, pratica sicura per concorreza
     }
 
     res.json({ hint: hint.text, cost: hint.cost });

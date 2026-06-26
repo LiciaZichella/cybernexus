@@ -5,11 +5,11 @@ const { inviaWebhook } = require('../services/webhook');
 const { timeoutScenario } = require('../sockets/warroom');
 
 
-let io = null;
+let io = null; //server.js inietta l'istanza Socket.IO dentro setIo
 const setIo = (ioInstance) => { io = ioInstance; };
 
 
-const generaInviteCode = () => crypto.randomBytes(4).toString('hex');
+const generaInviteCode = () => crypto.randomBytes(4).toString('hex'); //casuale e imprevedibile
 
 
 const getWARRooms = async (req, res) => {
@@ -17,7 +17,7 @@ const getWARRooms = async (req, res) => {
     const isStaff = req.user.role === 'Admin';
     const filter  = isStaff ? {} : { status: 'active' };
 
-    const rooms = await WARRoom.find(filter)
+    const rooms = await WARRoom.find(filter) //filtro cambia in base a chi chiede
       .select('-messages -notes')     
       .populate('owner', 'username')
       .sort({ createdAt: -1 });
@@ -41,7 +41,7 @@ const getWARRoomById = async (req, res) => {
     if (!room) return res.status(404).json({ error: 'War Room non trovata.' });
 
     
-    const isStaff  = req.user.role === 'Admin';
+    const isStaff  = req.user.role === 'Admin'; //se la sala è privata e non sei ne mebro ne Admin allora 403
     const isMember = room.hasMember(req.user._id);
     if (room.isPrivate && !isMember && !isStaff) {
       return res.status(403).json({ error: 'Accesso negato: sala privata.' });
@@ -55,7 +55,7 @@ const getWARRoomById = async (req, res) => {
 };
 
 
-const createWARRoom = async (req, res) => {
+const createWARRoom = async (req, res) => { //solo Admin
   try {
     const { name, description, isPrivate, maxMembers, challenges, comandiTerminale, tasks, tipo } = req.body;
 
@@ -90,14 +90,14 @@ const createWARRoom = async (req, res) => {
 const joinWARRoom = async (req, res) => {
   try {
     
-    const ruoliAmmessi = ['Analyst', 'Admin'];
+    const ruoliAmmessi = ['Analyst', 'Admin']; //accesso solo a ruoli consentiti
     if (!ruoliAmmessi.includes(req.user.role)) {
       return res.status(403).json({
         error: 'Devi essere almeno Analyst per entrare in una War Room. Risolvi sfide CTF per guadagnare 500 punti.',
       });
     }
 
-    const room = await WARRoom.findById(req.params.id);
+    const room = await WARRoom.findById(req.params.id); //serie di controlli
     if (!room)                return res.status(404).json({ error: 'War Room non trovata.' });
     if (room.status !== 'active') return res.status(400).json({ error: 'La sala non è attiva.' });
     if (room.isFull)          return res.status(400).json({ error: 'La sala è al completo.' });
@@ -130,7 +130,7 @@ const joinWARRoom = async (req, res) => {
 };
 
 
-const resolveWARRoom = async (req, res) => {
+const resolveWARRoom = async (req, res) => { //valida, calcola punti, chiude, emette evento, assegna punti, manda webhook
   try {
     const room = await WARRoom.findById(req.params.id)
       .populate('owner',   'username')
@@ -148,7 +148,7 @@ const resolveWARRoom = async (req, res) => {
       return res.status(403).json({ error: 'Solo il proprietario o lo staff può chiudere la sala.' });
     }
 
-    room.status = 'closed';
+    room.status = 'closed'; //solo owner o un admin chiude
     await room.save();
 
     
@@ -159,7 +159,7 @@ const resolveWARRoom = async (req, res) => {
     const puntiTotali = puntiBase + bonus;
 
     
-    if (io) {
+    if (io) { //emissione evento real-time: sala chiusa 
       io.of('/warroom').to(req.params.id).emit('room-resolved', {
         roomId:          req.params.id,
         resolvedBy:      req.user.username,
@@ -182,13 +182,13 @@ const resolveWARRoom = async (req, res) => {
       room.members.map(m => User.findByIdAndUpdate(m.user, {
         $inc: {
           warRoomsCompleted: 1,
-          ...(puntiBase > 0 ? { points: puntiTotali } : {}),
+          ...(puntiBase > 0 ? { points: puntiTotali } : {}), //assegna punti solo se la sala ha avuto progressi; altrimenti incrementa solo il contatore
         },
       }))
     );
 
     
-    const webhookPayload = {
+    const webhookPayload = { //collegamento a sevices/webhook.js
       event:      'warroom.resolved',
       resolvedAt: new Date().toISOString(),
       room: {
@@ -221,7 +221,7 @@ const resolveWARRoom = async (req, res) => {
 const isMembroOStaff = (room, userId, userRole) => {
   if (userRole === 'Admin') return true;
   const membro = room.members.find(m => {
-    const mId = (m.user?._id ?? m.user)?.toString() ?? '';
+    const mId = (m.user?._id ?? m.user)?.toString() ?? ''; //id mancante deiventa stringa vuota e userId trasformato in stringa per === corretta
     return mId === userId.toString();
   });
   return !!membro;
@@ -293,7 +293,7 @@ const getReport = async (req, res) => {
       username: m.user?.username || '—',
       ruolo:    m.role,
     }));
-    const eventiLog = room.messages.filter(m => m.type === 'system').length;
+    const eventiLog = room.messages.filter(m => m.type === 'system').length; //filter: conta quanti soddisfano una condizione
 
     res.json({
       nome:            room.name,

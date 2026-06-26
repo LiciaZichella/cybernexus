@@ -14,7 +14,7 @@ const { protect, authorize } = require('../middleware/verificaUtenti');
 const router = express.Router();
 
 
-const submitLimiter = rateLimit({
+const submitLimiter = rateLimit({ //altro rate limiting specifico flag
   windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,

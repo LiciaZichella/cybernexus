@@ -70,7 +70,7 @@ export default function Leaderboard() {
   const [compareIdx, setCompareIdx]     = useState(0);
 
 
-  // ── Caricamento classifica ──────────────────────────────────────────────────
+  // Caricamento classifica 
 
   const caricaClassifica = useCallback(async (pg, filter = 'global') => {
     try {

@@ -6,10 +6,10 @@ export function NotificationsProvider({ children }) {
   const [notifiche, setNotifiche] = useState([]);
 
   const aggiungiNotifica = useCallback((notifica) => {
-    setNotifiche(prev => [
+    setNotifiche(prev => [ //update function di setState, sempre stato piu aggiornato
       { id: Date.now() + Math.random(), letta: false, timestamp: new Date(), ...notifica },
-      ...prev,
-    ].slice(0, 50));
+      ...prev, //nuova notifica in cima
+    ].slice(0, 50)); 
   }, []);
 
   const segnaLetta = useCallback((id) => {

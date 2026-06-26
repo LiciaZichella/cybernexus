@@ -13,7 +13,7 @@ const calcolaHash = async (testo) => {
 };
 
 
-// ── Componente principale ────────────────────────────────────────────────────
+// Componente principale 
 export default function Admin() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -84,13 +84,13 @@ export default function Admin() {
   const barreRef     = useRef([]);
   const sparkRef     = useRef([]);
 
-  // ── Overflow body: previene lo scroll esterno nel layout full-height ────────
+  //  Overflow body: previene lo scroll esterno nel layout full-height 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  // ── ESC chiude modali ────────────────────────────────────────────────────────
+  //  ESC chiude modali 
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
@@ -1026,7 +1026,7 @@ export default function Admin() {
     );
   };
 
-  // ── Dati navigazione sidebar ─────────────────────────────────────────────────
+  // Dati navigazione sidebar 
   const SIDEBAR_GRUPPI = [
     { label: 'Panoramica', voci: [{ id: 'stats', ico: '⊞', etichetta: 'Dashboard', badge: null }] },
     { label: 'Gestione',   voci: [

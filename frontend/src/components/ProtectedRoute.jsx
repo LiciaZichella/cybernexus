@@ -17,5 +17,5 @@ export default function ProtectedRoute({ requiredRole }) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <Outlet />;
+  return <Outlet />; //se tutto ok componente figlio della rotta
 }

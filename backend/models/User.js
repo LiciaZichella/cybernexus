@@ -95,25 +95,25 @@ const UserSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, 
+    timestamps: true, // aggiunge automaticamente createdAt e updateAt
   }
 );
 
 
-UserSchema.pre('save', async function () {
+UserSchema.pre('save', async function () { //funzione normale perchè devo usare this
   if (!this.passwordHash || !this.isModified('passwordHash')) return;
   const salt = await bcrypt.genSalt(12);
   this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
 });
 
 
-UserSchema.methods.comparePassword = async function (plainPassword) {
+UserSchema.methods.comparePassword = async function (plainPassword) { //si devono sempre confrontare hashate
   return bcrypt.compare(plainPassword, this.passwordHash);
 };
 
 
-UserSchema.methods.toPublicJSON = function () {
-  return {
+UserSchema.methods.toPublicJSON = function () { //versione sicura dell'utente da inviare al frontend, senza passwordHash, tocken, oauthId
+  return { //uso this quindi function normale
     id: this._id,
     username: this.username,
     email: this.email,
@@ -127,6 +127,6 @@ UserSchema.methods.toPublicJSON = function () {
     isBanned: this.isBanned,
     createdAt: this.createdAt,
   };
-};
+}; //lo usano getMe, login, register...
 
 module.exports = mongoose.model('User', UserSchema);

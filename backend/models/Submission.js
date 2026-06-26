@@ -53,9 +53,9 @@ const SubmissionSchema = new mongoose.Schema(
 
 
 
-SubmissionSchema.index({ user: 1, challenge: 1 });
+SubmissionSchema.index({ user: 1, challenge: 1 }); //indice composto utente+sfida per lo storico personale e i controlli
 
 
-SubmissionSchema.index({ challenge: 1, isCorrect: 1 });
+SubmissionSchema.index({ challenge: 1, isCorrect: 1 }); //sfida+esito per quanti utenti hanno risolto
 
 module.exports = mongoose.model('Submission', SubmissionSchema);

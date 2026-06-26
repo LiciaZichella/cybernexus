@@ -25,7 +25,7 @@ const EVENTI_SCENARIO = {
 };
 
 
-const normalizzaTipo = (tipo) => {
+const normalizzaTipo = (tipo) => { 
   if (!tipo) return 'ransomware';
   const t = tipo.toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_');
   if (t.includes('breach') || t.includes('data')) return 'data_breach';
@@ -34,10 +34,10 @@ const normalizzaTipo = (tipo) => {
 };
 
 
-const timeoutScenario = new Map();
+const timeoutScenario = new Map(); //mappa condivisa con il controller che blocca la sala se conclusa
 
 
-const autenticaSocket = async (socket, next) => {
+const autenticaSocket = async (socket, next) => { //equivalente di protect, ma per i socket. Controlla la validità del token per la connessione
   try {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error('Token mancante.'));
@@ -57,16 +57,16 @@ const autenticaSocket = async (socket, next) => {
 
 const warroomSocket = (io) => {
   
-  const warNS = io.of('/warroom');
+  const warNS = io.of('/warroom'); //namaspace dedicato
 
-  warNS.use(autenticaSocket);
+  warNS.use(autenticaSocket); //middleware di autenticazione alle connessioni del namaspace
 
-  warNS.on('connection', (socket) => {
+  warNS.on('connection', (socket) => { //quando un client si connette inizia 
     const { user } = socket.data;
     console.log(`Socket connesso: ${user.username} (${socket.id})`);
 
     
-    socket.on('join-room', async ({ roomId }, ack) => {
+    socket.on('join-room', async ({ roomId }, ack) => { //ack callback di acknowledgment, la passa il client e richimiamo per rispondere
       try {
         const room = await WARRoom.findById(roomId);
         if (!room) return ack?.({ error: 'War Room non trovata.' });
@@ -77,11 +77,11 @@ const warroomSocket = (io) => {
           return ack?.({ error: 'Non sei membro di questa sala.' });
         }
 
-        socket.join(roomId);
+        socket.join(roomId); //entra il socket nella room chiamata come l'id
         socket.data.roomId = roomId;
 
         
-        socket.to(roomId).emit('user-joined', {
+        socket.to(roomId).emit('user-joined', { //avvisa gli altri dell'entrata
           username: user.username,
           avatar:   user.avatar,
         });
@@ -92,8 +92,8 @@ const warroomSocket = (io) => {
           const chiave = normalizzaTipo(room.tipo || '');
           const eventi = EVENTI_SCENARIO[chiave] || EVENTI_SCENARIO.ransomware;
           const timers = eventi.map(({ minuto, messaggio, tipo }) =>
-            setTimeout(() => {
-              warNS.to(roomId).emit('log-event', {
+            setTimeout(() => { //dentro settimeout clousure che ricorda messaggio, tipo, roomId
+              warNS.to(roomId).emit('log-event', { //il timer scatta e invia a tutta la room 
                 content:   messaggio,
                 tipo,
                 createdAt: new Date(),
@@ -113,7 +113,7 @@ const warroomSocket = (io) => {
     
     socket.on('leave-room', ({ roomId }) => {
       socket.leave(roomId);
-      socket.to(roomId).emit('user-left', { username: user.username });
+      socket.to(roomId).emit('user-left', { username: user.username }); //avvisa dell'uscita gli altri ma non te
     });
 
     
@@ -131,7 +131,7 @@ const warroomSocket = (io) => {
           type:    'text',
         };
         room.messages.push(nuovoMessaggio);
-        await room.save();
+        await room.save(); //lo salvo anche nel DB, non è volatile
 
         
         const salvato = room.messages[room.messages.length - 1];
@@ -145,8 +145,8 @@ const warroomSocket = (io) => {
         };
 
         
-        warNS.to(roomId).emit('chat-message', payload);
-        ack?.({ ok: true });
+        warNS.to(roomId).emit('chat-message', payload); //messaggio a tutta la room, me incluso perchè lo vedo
+        ack?.({ ok: true }); //conferma al mittente
       } catch (err) {
         ack?.({ error: err.message });
       }

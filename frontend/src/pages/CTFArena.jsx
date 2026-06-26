@@ -373,7 +373,7 @@ export default function CTFArena() {
       .catch(() => {});
   }, [authLoading, user]);
 
-  useEffect(() => {
+  useEffect(() => { //pattern debounce: evita di fare una chiamata API per ogni tasto
     const t = setTimeout(() => { setDebouncedSearch(searchQuery); setPage(1); }, 400);
     return () => clearTimeout(t);
   }, [searchQuery]);

@@ -7,7 +7,7 @@ const getLeaderboard = async (req, res) => {
     const limit = Math.min(100, parseInt(req.query.limit) || 20);
     const skip  = (page - 1) * limit;
 
-    const pipeline = [
+    const pipeline = [ //mongo elabora i dati con una sequenza di fasi, direttamente nel database
       
       {
         $group: {
@@ -26,11 +26,11 @@ const getLeaderboard = async (req, res) => {
       },
 
       
-      { $sort: { points: -1, username: 1 } },
+      { $sort: { points: -1, username: 1 } }, //se uguaglianza ordine alfabetico
 
       
       {
-        $facet: {
+        $facet: { //contemporaneamente piu sotto-pipeline paralleli sugli stessi dati 
           metadata: [{ $count: 'total' }],
           classifica: [
             { $skip: skip },
@@ -54,9 +54,9 @@ const getLeaderboard = async (req, res) => {
       },
     ];
 
-    const [result] = await User.aggregate(pipeline);
+    const [result] = await User.aggregate(pipeline); //il risultato darebbe metadata e classifica 
 
-    const total = result.metadata[0]?.total ?? 0;
+    const total = result.metadata[0]?.total ?? 0; //tot utenti
 
     res.json({
       total,

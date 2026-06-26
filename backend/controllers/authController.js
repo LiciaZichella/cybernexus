@@ -101,7 +101,7 @@ const refresh = async (req, res) => {
     user.refreshToken = newRefreshToken;
     await user.save({ validateModifiedOnly: true });
 
-    res.json({ accessToken, refreshToken: newRefreshToken });
+    res.json({ accessToken, refreshToken: newRefreshToken }); //rotazione refresh token
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -112,7 +112,7 @@ const logout = async (req, res) => {
   try {
     
     await User.findByIdAndUpdate(req.user._id, { refreshToken: null });
-    res.json({ message: 'Logout effettuato.' });
+    res.json({ message: 'Logout effettuato.' }); //solo un utente loggato puo effettuare un logout - collegamento middleware controller con req.user
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

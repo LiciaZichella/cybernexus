@@ -7,7 +7,7 @@ const WARRoom    = require('../models/WARRoom');
 const getStats = async (req, res) => {
   try {
     const setteGiorniFa = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
+    // Esecuzione parallela
     const [totalUtenti, totalFlag, totalSfide, warRoomAttive, aggReg] = await Promise.all([
       User.countDocuments(),
       Submission.countDocuments({ isCorrect: true }),
@@ -27,7 +27,7 @@ const getStats = async (req, res) => {
 
     
     const oggi = new Date();
-    const regUltimi7 = Array.from({ length: 7 }, (_, i) => {
+    const regUltimi7 = Array.from({ length: 7 }, (_, i) => { //Normalizzazione per il grafico
       const d = new Date(oggi.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
       const chiave = d.toISOString().slice(0, 10);
       return aggReg.find(r => r._id === chiave)?.n ?? 0;
@@ -56,10 +56,10 @@ const getActivity = async (req, res) => {
       User.find()
         .sort({ createdAt: -1 })
         .limit(5)
-        .lean(),
+        .lean(), //restituendo JSON puri
     ]);
 
-    const eventi = [];
+    const eventi = []; //di seguito caricamento array eventi
 
     submissions.forEach(s => {
       eventi.push({
@@ -97,9 +97,9 @@ const getActivity = async (req, res) => {
       });
     });
 
-    eventi.sort((a, b) => new Date(b.quando) - new Date(a.quando));
+    eventi.sort((a, b) => new Date(b.quando) - new Date(a.quando)); //ordinamento cronologico
 
-    res.json({ eventi: eventi.slice(0, 15) });
+    res.json({ eventi: eventi.slice(0, 15) }); //solo le prime 15
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
