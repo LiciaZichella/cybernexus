@@ -261,7 +261,13 @@
 
 
 @media (max-width: 768px) {
-  .cn-navbar { padding: 0 16px; }
-  .cn-items .cn-item span:not(svg):not(.cn-item) { display: none; }
-  .cn-logo { margin-right: 12px; }
+  .cn-navbar { padding: 0 12px; }
+  .cn-logo { margin-right: 8px; font-size: 14px; }
+  .cn-logo svg { width: 20px; height: 20px; }
+  .cn-items { gap: 2px; }
+  .cn-items .cn-item { font-size: 0; padding: 6px; gap: 0; }
+  .cn-right { gap: 6px; }
+  .cn-toggle { padding: 5px 7px; }
+  .cn-toggle span { display: none; }
+  .cn-admin-pill { font-size: 0; padding: 6px; }
 }
