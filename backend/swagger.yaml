@@ -1,8 +1,7 @@
 openapi: 3.0.0
 
-# ──────────────────────────────────────────────────────────────────────────────
-# CyberNexus API — documentazione OpenAPI 3.0.0
-# ──────────────────────────────────────────────────────────────────────────────
+# CyberNexus API
+
 info:
   title: CyberNexus API
   version: 1.1.0
@@ -22,15 +21,17 @@ info:
     - `POST /api/challenges/:id/submit`: limite attivo per prevenire il bruteforce delle flag
 
 servers:
+  - url: https://cybernexus-api.onrender.com
+    description: Produzione
   - url: http://localhost:5005
     description: Sviluppo locale
 
-# ──────────────────────────────────────────────────────────────────────────────
+
 # Componenti riutilizzabili
-# ──────────────────────────────────────────────────────────────────────────────
+
 components:
 
-  # ─── Sicurezza ──────────────────────────────────────────────────────────────
+  # ─── Sicurezza 
   securitySchemes:
     BearerAuth:
       type: http
@@ -38,7 +39,7 @@ components:
       bearerFormat: JWT
       description: JWT ottenuto da POST /api/auth/login
 
-  # ─── Schemi dati ────────────────────────────────────────────────────────────
+  # ─── Schemi dati 
   schemas:
 
     ApiError:
@@ -314,7 +315,7 @@ components:
           description: Informazioni aggiuntive (es. punti guadagnati)
           example: "+150 pts"
 
-  # ─── Risposte HTTP comuni ────────────────────────────────────────────────────
+  # ─── Risposte HTTP comuni 
   responses:
 
     BadRequest:
@@ -380,14 +381,12 @@ components:
           example:
             error: Errore interno del server.
 
-# ──────────────────────────────────────────────────────────────────────────────
+
 # Paths
-# ──────────────────────────────────────────────────────────────────────────────
+
 paths:
 
-  # ════════════════════════════════════════════════
   # AUTH
-  # ════════════════════════════════════════════════
 
   /api/auth/register:
     post:
@@ -619,9 +618,7 @@ paths:
         '401':
           description: Autenticazione OAuth fallita — redirect a /login?error=oauth
 
-  # ════════════════════════════════════════════════
   # UTENTI
-  # ════════════════════════════════════════════════
 
   /api/users/me:
     get:
@@ -1082,9 +1079,8 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
-  # ════════════════════════════════════════════════
+
   # CHALLENGE
-  # ════════════════════════════════════════════════
 
   /api/challenges:
     get:
@@ -1510,9 +1506,9 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
-  # ════════════════════════════════════════════════
+
   # WAR ROOM
-  # ════════════════════════════════════════════════
+
 
   /api/warroom:
     get:
@@ -2162,9 +2158,9 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
-  # ════════════════════════════════════════════════
+  
   # LEADERBOARD
-  # ════════════════════════════════════════════════
+  
 
   /api/leaderboard:
     get:
@@ -2217,9 +2213,9 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
-  # ════════════════════════════════════════════════
+  
   # ADMIN
-  # ════════════════════════════════════════════════
+  
 
   /api/admin/stats:
     get:
@@ -2303,9 +2299,9 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
-  # ════════════════════════════════════════════════
+  
   # PLATFORM
-  # ════════════════════════════════════════════════
+  
 
   /api/platform/stats:
     get:

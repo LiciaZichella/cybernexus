@@ -829,8 +829,7 @@ export default function Landing() {
         <div className="foot-links">
           <a className="foot-lnk" href="#" onClick={(e) => { e.preventDefault(); setModalLegale('privacy'); }}>Privacy</a>
           <a className="foot-lnk" href="#" onClick={(e) => { e.preventDefault(); setModalLegale('termini'); }}>Termini</a>
-          <a className="foot-lnk" href="http://localhost:5005/api/docs" target="_blank" rel="noreferrer">API Swagger</a>
-          <a className="foot-lnk" href="http://localhost:5005/api/docs" target="_blank" rel="noreferrer">Swagger</a>
+          <a className="foot-lnk" href={`${import.meta.env.VITE_API_URL}/api/docs`} target="_blank" rel="noreferrer">API Swagger</a>
         </div>
         <div className="foot-copy">© 2026 CyberNexus · Ingegneria Informatica</div>
       </footer>
